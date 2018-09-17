@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Relationships Service Stack
+
+Mappings:
+
+  LogMap:
+    PapertrailLog:
+      stage: "logs7.papertrailapp.com:23213"
+      prod: "should-be-prod-papertril-endpoint"
+
+Parameters:
+  Env:
+    Type: String
+    Default: stage
+    AllowedValues:
+      - stage
+      - prod
+    Description: Env name
+
+Globals:
+    Function:
+        Timeout: 300
+        MemorySize: 1024
+        Runtime: java8
+        Environment:
+          Variables:
+            ENV: !Ref Env
+            PAPERTRAIL_LOG_ADDRESS: !FindInMap [LogMap, PapertrailLog, !Ref Env]
+            NEO4J_URI: "bolt://34.254.205.98:7687"
+        Tags:
+          Company: Ringoid
+          Service: relationships
+          Environment: !Ref Env
+
+Resources:
+
+  KinesisConsumerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: build/distributions/relationships-1.0-SNAPSHOT.zip
+      FunctionName: !Join [ "-", [ !Ref Env, kinesis-consumer-relationships] ]
+      Handler: "com.ringoid.KinesisConsumer::handler"
+      Description: Consumer for Kinesis stream
+      Policies:
+        - AmazonKinesisFullAccess
+      Events:
+        CommonEventStreamEvent:
+          Type: Kinesis
+          Properties:
+            Stream:
+              Fn::ImportValue:
+                !Join [ "-", [ !Ref Env, CommonEventStreamExport] ]
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 10
+

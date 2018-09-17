@@ -1,0 +1,37 @@
+group 'com.ringoid'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile(
+            'com.amazonaws:aws-lambda-java-core:1.2.0',
+            'com.amazonaws:aws-lambda-java-events:2.2.2',
+            'com.amazonaws:aws-java-sdk-kinesis:1.11.163',
+            'org.neo4j.driver:neo4j-java-driver:1.4.4',
+            'io.symphonia:lambda-logging:1.0.0',
+            'com.google.code.gson:gson:2.8.2'
+    )
+}
+
+tasks.withType(JavaCompile) {
+    sourceCompatibility = "1.8"
+    targetCompatibility = "1.8"
+    options.encoding = 'UTF-8'
+}
+
+task buildZip(type: Zip) {
+    from compileJava
+    from processResources
+    into('lib') {
+        from configurations.runtime
+    }
+}
+
+build.dependsOn buildZip
