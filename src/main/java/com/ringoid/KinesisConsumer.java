@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.ringoid.events.BaseEvent;
 import com.ringoid.events.auth.AuthUtils;
+import com.ringoid.events.auth.UserOnlineEvent;
 import com.ringoid.events.auth.UserProfileCreatedEvent;
 import com.ringoid.events.auth.UserSettingsUpdatedEvent;
 import com.ringoid.events.image.ImageUtils;
@@ -23,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import static com.ringoid.events.EventTypes.AUTH_USER_ONLINE;
 import static com.ringoid.events.EventTypes.AUTH_USER_PROFILE_CREATED;
 import static com.ringoid.events.EventTypes.AUTH_USER_SETTINGS_UPDATED;
 import static com.ringoid.events.EventTypes.IMAGE_USER_DELETE_PHOTO;
@@ -67,6 +69,9 @@ public class KinesisConsumer {
             } else if (Objects.equals(baseEvent.getEventType(), IMAGE_USER_DELETE_PHOTO.name())) {
                 UserDeletePhotoEvent deletePhotoEvent = gson.fromJson(s, UserDeletePhotoEvent.class);
                 ImageUtils.deletePhoto(deletePhotoEvent, driver);
+            } else if (Objects.equals(baseEvent.getEventType(), AUTH_USER_ONLINE.name())) {
+                UserOnlineEvent userOnlineEvent = gson.fromJson(s, UserOnlineEvent.class);
+                AuthUtils.updateLastOnlineTime(userOnlineEvent, driver);
             }
         }
         log.info("successfully handle event {}", event);

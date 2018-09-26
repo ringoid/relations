@@ -12,6 +12,7 @@ import java.util.Map;
 
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.PersonProperties.CREATED;
+import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.SAFE_DISTANCE_IN_METER;
 import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
@@ -30,10 +31,12 @@ public class AuthUtils {
                             "ON MATCH SET " +
                             "n.%s = $sexValue, " +
                             "n.%s = $yearValue, " +
-                            "n.%s = $createdValue",
+                            "n.%s = $createdValue, " +
+                            "n.%s = $onlineUserTime",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
                     SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(),
-                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName());
+                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(),
+                    LAST_ONLINE_TIME.getPropertyName());
 
     private static final String UPDATE_SETTINGS =
             String.format("MERGE (n:%s {%s: $userIdValue}) " +
@@ -48,6 +51,13 @@ public class AuthUtils {
                     WHO_CAN_SEE_PHOTO.getPropertyName(), SAFE_DISTANCE_IN_METER.getPropertyName());
 
 
+    private static final String UPDATE_USER_ONLINE_TIME =
+            String.format("MERGE (n:%s {%s: $userIdValue}) " +
+                            "ON MATCH SET " +
+                            "n.%s = $onlineUserTime",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(),
+                    LAST_ONLINE_TIME.getPropertyName());
+
     public static void createProfile(UserProfileCreatedEvent event, Driver driver) {
         log.debug("create profile {}", event);
 
@@ -56,6 +66,7 @@ public class AuthUtils {
         parameters.put("sexValue", event.getSex());
         parameters.put("yearValue", event.getYearOfBirth());
         parameters.put("createdValue", event.getUnixTime());
+        parameters.put("onlineUserTime", event.getUnixTime());
 
         try (Session session = driver.session()) {
             session.writeTransaction(new TransactionWork<Integer>() {
@@ -93,5 +104,27 @@ public class AuthUtils {
             throw throwable;
         }
         log.info("successfully update profile settings {}", event);
+    }
+
+    public static void updateLastOnlineTime(UserOnlineEvent event, Driver driver) {
+        log.debug("update user online time {}", event);
+
+        final Map<String, Object> parameters = new HashMap<>();
+        parameters.put("userIdValue", event.getUserId());
+        parameters.put("onlineUserTime", event.getUnixTime());
+
+        try (Session session = driver.session()) {
+            session.writeTransaction(new TransactionWork<Integer>() {
+                @Override
+                public Integer execute(Transaction tx) {
+                    tx.run(UPDATE_USER_ONLINE_TIME, parameters);
+                    return 1;
+                }
+            });
+        } catch (Throwable throwable) {
+            log.error("error update user online time {}", event, throwable);
+            throw throwable;
+        }
+        log.info("successfully update user online time {}", event);
     }
 }

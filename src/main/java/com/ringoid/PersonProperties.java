@@ -6,7 +6,8 @@ public enum PersonProperties {
     YEAR("year_of_birth"),
     CREATED("profile_created_at"),
     WHO_CAN_SEE_PHOTO("who_can_see_photo"),
-    SAFE_DISTANCE_IN_METER("safe_distance_in_meter");
+    SAFE_DISTANCE_IN_METER("safe_distance_in_meter"),
+    LAST_ONLINE_TIME("last_online_time");
 
     private String propertyName;
 
