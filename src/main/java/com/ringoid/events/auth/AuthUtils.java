@@ -16,7 +16,6 @@ import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.SAFE_DISTANCE_IN_METER;
 import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
-import static com.ringoid.PersonProperties.WHO_CAN_SEE_PHOTO;
 import static com.ringoid.PersonProperties.YEAR;
 
 public class AuthUtils {
@@ -41,14 +40,12 @@ public class AuthUtils {
     private static final String UPDATE_SETTINGS =
             String.format("MERGE (n:%s {%s: $userIdValue}) " +
                             "ON CREATE SET " +
-                            "n.%s = $whoCanSeePhotoValue, " +
                             "n.%s = $safeDistanceInMeterValue " +
                             "ON MATCH SET " +
-                            "n.%s = $whoCanSeePhotoValue, " +
                             "n.%s = $safeDistanceInMeterValue",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
-                    WHO_CAN_SEE_PHOTO.getPropertyName(), SAFE_DISTANCE_IN_METER.getPropertyName(),
-                    WHO_CAN_SEE_PHOTO.getPropertyName(), SAFE_DISTANCE_IN_METER.getPropertyName());
+                    SAFE_DISTANCE_IN_METER.getPropertyName(),
+                    SAFE_DISTANCE_IN_METER.getPropertyName());
 
 
     private static final String UPDATE_USER_ONLINE_TIME =
@@ -88,7 +85,6 @@ public class AuthUtils {
 
         final Map<String, Object> parameters = new HashMap<>();
         parameters.put("userIdValue", event.getUserId());
-        parameters.put("whoCanSeePhotoValue", event.getWhoCanSeePhoto());
         parameters.put("safeDistanceInMeterValue", event.getSafeDistanceInMeter());
 
         try (Session session = driver.session()) {
