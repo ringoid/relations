@@ -27,6 +27,9 @@ Globals:
           Variables:
             ENV: !Ref Env
             PAPERTRAIL_LOG_ADDRESS: !FindInMap [LogMap, PapertrailLog, !Ref Env]
+            INTERNAL_STREAM_NAME:
+              Fn::ImportValue:
+                !Join [ "-", [ !Ref Env, InternalEventStreamExportName] ]
             NEO4J_URI: "bolt://34.254.205.98:7687"
         Tags:
           Company: Ringoid

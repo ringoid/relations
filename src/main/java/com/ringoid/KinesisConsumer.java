@@ -1,12 +1,17 @@
 package com.ringoid;
 
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.kinesis.AmazonKinesis;
+import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.KinesisEvent;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.ringoid.events.BaseEvent;
 import com.ringoid.events.actions.ActionsUtils;
+import com.ringoid.events.actions.UserBlockOtherEvent;
 import com.ringoid.events.actions.UserLikePhotoEvent;
+import com.ringoid.events.actions.UserUnlikePhotoEvent;
 import com.ringoid.events.actions.UserViewPhotoEvent;
 import com.ringoid.events.auth.AuthUtils;
 import com.ringoid.events.auth.UserOnlineEvent;
@@ -27,7 +32,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import static com.ringoid.events.EventTypes.ACTION_USER_BLOCK_OTHER;
 import static com.ringoid.events.EventTypes.ACTION_USER_LIKE_PHOTO;
+import static com.ringoid.events.EventTypes.ACTION_USER_UNLIKE_PHOTO;
 import static com.ringoid.events.EventTypes.ACTION_USER_VIEW_PHOTO;
 import static com.ringoid.events.EventTypes.AUTH_USER_ONLINE;
 import static com.ringoid.events.EventTypes.AUTH_USER_PROFILE_CREATED;
@@ -40,6 +47,8 @@ public class KinesisConsumer {
 
     private final Driver driver;
     private final Gson gson;
+    private final AmazonKinesis kinesis;
+    private final String internalStreamName;
 
     public KinesisConsumer() {
         String neo4jUri = System.getenv("NEO4J_URI");
@@ -47,12 +56,16 @@ public class KinesisConsumer {
         String userName = "neo4j";
         String password = "i-0033e09261e4a06b5";
 
+        internalStreamName = System.getenv("INTERNAL_STREAM_NAME");
+
         driver = GraphDatabase.driver(neo4jUri, AuthTokens.basic(userName, password),
                 Config.build().withMaxTransactionRetryTime(10, TimeUnit.SECONDS).toConfig());
 
         GsonBuilder builder = new GsonBuilder();
         gson = builder.create();
 
+        AmazonKinesisClientBuilder clientBuilder = AmazonKinesisClientBuilder.standard().withRegion(Regions.EU_WEST_1);
+        kinesis = clientBuilder.build();
     }
 
     public void handler(KinesisEvent event, Context context) {
@@ -79,10 +92,16 @@ public class KinesisConsumer {
                 AuthUtils.updateLastOnlineTime(userOnlineEvent, driver);
             } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_LIKE_PHOTO.name())) {
                 UserLikePhotoEvent userLikePhotoEvent = gson.fromJson(s, UserLikePhotoEvent.class);
-                ActionsUtils.likePhoto(userLikePhotoEvent, driver);
+                ActionsUtils.likePhoto(userLikePhotoEvent, driver, kinesis, internalStreamName, gson);
             } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_VIEW_PHOTO.name())) {
                 UserViewPhotoEvent userViewPhotoEvent = gson.fromJson(s, UserViewPhotoEvent.class);
                 ActionsUtils.viewPhoto(userViewPhotoEvent, driver);
+            } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_BLOCK_OTHER.name())) {
+                UserBlockOtherEvent userBlockOtherEvent = gson.fromJson(s, UserBlockOtherEvent.class);
+                ActionsUtils.block(userBlockOtherEvent, driver);
+            } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_UNLIKE_PHOTO.name())) {
+                UserUnlikePhotoEvent userUnlikePhotoEvent = gson.fromJson(s, UserUnlikePhotoEvent.class);
+                ActionsUtils.unlike(userUnlikePhotoEvent, driver);
             }
         }
         log.info("successfully handle event {}", event);

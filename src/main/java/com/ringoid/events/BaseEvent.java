@@ -1,7 +1,7 @@
 package com.ringoid.events;
 
 public class BaseEvent {
-    private String eventType;
+    protected String eventType;
 
     public String getEventType() {
         return eventType;
