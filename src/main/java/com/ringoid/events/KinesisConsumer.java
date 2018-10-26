@@ -1,4 +1,4 @@
-package com.ringoid;
+package com.ringoid.events;
 
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesis;
@@ -53,8 +53,8 @@ public class KinesisConsumer {
     public KinesisConsumer() {
         String neo4jUri = System.getenv("NEO4J_URI");
         //todo:read these value from Security Storage
-        String userName = "neo4j";
-        String password = "i-0033e09261e4a06b5";
+        String userName = System.getenv("NEO4J_USER");
+        String password = System.getenv("NEO4J_PASSWORD");
 
         internalStreamName = System.getenv("INTERNAL_STREAM_NAME");
 
