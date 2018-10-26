@@ -50,17 +50,21 @@ public class ActionsUtils {
 
     private static final String LIKED_PHOTO_QUERY =
             String.format("MATCH (sourceUser:%s {%s: $sourceUserId}), (p:%s {%s: $photoId}) " +
+                            "WHERE NOT (sourceUser)-[:%s]->(p) " +
                             "MERGE (sourceUser)-[photoRel:%s]->(p) " +
                             "ON CREATE SET photoRel.%s = $likeCount, photoRel.%s = $likedAt",
                     PERSON.getLabelName(), USER_ID.getPropertyName(), PHOTO.getLabelName(), PHOTO_ID.getPropertyName(),
+                    Relationships.UPLOAD_PHOTO.name(),
                     Relationships.LIKE.name(),
                     LIKE_COUNT.getPropertyName(), LIKED_AT.getPropertyName());
 
     private static final String LIKED_PROFILE_QUERY =
             String.format("MATCH (sourceUser:%s {%s: $sourceUserId}), (targetUser:%s {%s: $targetUserId}) " +
+                            "WHERE sourceUser.%s <> targetUser.%s " +
                             "MERGE (sourceUser)-[profileRel:%s]->(targetUser) " +
                             "ON CREATE SET profileRel.%s = $likedAt",
                     PERSON.getLabelName(), USER_ID.getPropertyName(), PERSON.getLabelName(), USER_ID.getPropertyName(),
+                    USER_ID.getPropertyName(), USER_ID.getPropertyName(),
                     Relationships.LIKE.name(),
                     LIKED_AT.getPropertyName());
 
@@ -88,37 +92,50 @@ public class ActionsUtils {
                     PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.LIKE.name(), PERSON.getLabelName(), USER_ID.getPropertyName());
 
     private static final String DELETE_ALL_INCOMING_PHOTO_RELATIONSHIPS_FROM_BLOCKED_PROFILE_QUERY =
-            String.format("MATCH (source:%s {%s:$sourceUserId})-[:%s]->(ph:%s)<-[r]-(target:%s {%s: $targetUserId}) DELETE r",
-                    PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), PERSON.getLabelName(), USER_ID.getPropertyName()
+            String.format("MATCH (source:%s {%s:$sourceUserId})-[:%s]->(ph:%s)<-[r]-(target:%s {%s: $targetUserId}) " +
+                            "WHERE source.%s <> target.%s " +
+                            "DELETE r",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), PERSON.getLabelName(), USER_ID.getPropertyName(),
+                    USER_ID.getPropertyName(), USER_ID.getPropertyName()
             );
 
     private static final String DELETE_ALL_OUTGOUING_PHOTO_RELATIONSHIPS_WITH_BLOCKED_PROFILE_QUERY =
-            String.format("MATCH (source:%s {%s:$sourceUserId})-[r]->(ph:%s)<-[:%s]-(target:%s {%s: $targetUserId}) DELETE r",
-                    PERSON.getLabelName(), USER_ID.getPropertyName(), PHOTO.getLabelName(), Relationships.UPLOAD_PHOTO.name(), PERSON.getLabelName(), USER_ID.getPropertyName()
+            String.format("MATCH (source:%s {%s:$sourceUserId})-[r]->(ph:%s)<-[:%s]-(target:%s {%s: $targetUserId}) " +
+                            "WHERE source.%s <> target.%s " +
+                            "DELETE r",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), PHOTO.getLabelName(), Relationships.UPLOAD_PHOTO.name(), PERSON.getLabelName(), USER_ID.getPropertyName(),
+                    USER_ID.getPropertyName(), USER_ID.getPropertyName()
             );
 
     private static final String DELETE_ALL_RELATIONSHIPS_BETWEEN_PROFILES_QUERY =
-            String.format("MATCH (source:%s {%s:$sourceUserId})-[r]-(target:%s {%s: $targetUserId}) DELETE r",
-                    PERSON.getLabelName(), USER_ID.getPropertyName(), PERSON.getLabelName(), USER_ID.getPropertyName()
+            String.format("MATCH (source:%s {%s:$sourceUserId})-[r]-(target:%s {%s: $targetUserId}) " +
+                            "WHERE source.%s <> target.%s " +
+                            "DELETE r",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), PERSON.getLabelName(), USER_ID.getPropertyName(),
+                    USER_ID.getPropertyName(), USER_ID.getPropertyName()
             );
 
     private static final String CREATE_BLOCK_QUERY =
             String.format("MATCH (source:%s {%s:$sourceUserId}), (target:%s {%s: $targetUserId}) " +
+                            "WHERE source.%s <> target.%s " +
                             "MERGE (source)-[r:%s]->(target) " +
                             "ON CREATE SET r.%s = $blockedAt",
                     PERSON.getLabelName(), USER_ID.getPropertyName(), PERSON.getLabelName(), USER_ID.getPropertyName(),
+                    USER_ID.getPropertyName(), USER_ID.getPropertyName(),
                     Relationships.BLOCK.name(),
                     BLOCK_AT.getPropertyName()
             );
 
     private static final String VIEW_QUERY =
             String.format("MATCH (sourceUser:%s {%s: $sourceUserId}), (p:%s {%s: $photoId}), (targetUser:%s {%s: $targetUserId}) " +
+                            "WHERE sourceUser.%s <> targetUser.%s AND (targetUser)-[:%s]->(p) " +
                             "MERGE (sourceUser)-[photoRel:%s]->(p) " +
                             "ON CREATE SET photoRel.%s = $viewCount, photoRel.%s = $viewTimeSec, photoRel.%s = $viewAt " +
                             "ON MATCH SET photoRel.%s = photoRel.%s + $viewCount, photoRel.%s = photoRel.%s + $viewTimeSec " +
                             "MERGE (sourceUser)-[profileRel:%s]->(targetUser) " +
                             "ON CREATE SET profileRel.%s = $viewAt",
                     PERSON.getLabelName(), USER_ID.getPropertyName(), PHOTO.getLabelName(), PHOTO_ID.getPropertyName(), PERSON.getLabelName(), USER_ID.getPropertyName(),
+                    USER_ID.getPropertyName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(),
                     Relationships.VIEW.name(),
                     VIEW_COUNT.getPropertyName(), VIEW_TIME_IN_SEC.getPropertyName(), VIEW_AT.getPropertyName(),
                     VIEW_COUNT.getPropertyName(), VIEW_COUNT.getPropertyName(), VIEW_TIME_IN_SEC.getPropertyName(), VIEW_TIME_IN_SEC.getPropertyName(),
@@ -127,8 +144,10 @@ public class ActionsUtils {
 
     private static final String DO_WE_HAVE_BLOCK_QUERY =
             String.format("MATCH (sourceUser:%s {%s: $sourceUserId})-[r:%s]-(target:%s {%s: $targetUserId}) " +
+                            "WHERE sourceUser.%s <> target.%s " +
                             "RETURN count(r) as %s",
                     PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.BLOCK.name(), PERSON.getLabelName(), USER_ID.getPropertyName(),
+                    USER_ID.getPropertyName(), USER_ID.getPropertyName(),
                     NUM
             );
 
@@ -281,12 +300,17 @@ public class ActionsUtils {
                     //there is no block, so we can like a photo
                     StatementResult result = tx.run(LIKED_PHOTO_QUERY, parameters);
                     SummaryCounters counters = result.summary().counters();
-                    if (counters.relationshipsCreated() > 0) {
-                        PhotoLikeEvent likeEvent = new PhotoLikeEvent(event.getTargetUserId(), event.getOriginPhotoId());
-                        sendEventIntoInternalQueue(likeEvent, kinesis, streamName, event.getTargetUserId(), gson);
+                    if (counters.relationshipsCreated() <= 0) {
+                        log.info("0 photo like relationships were created from userId {} to photoId {}",
+                                event.getUserId(), event.getOriginPhotoId());
+                        return 1;
                     }
+
                     log.info("{} photo like relationships were created from userId {} to photoId {}",
                             counters.relationshipsCreated(), event.getUserId(), event.getOriginPhotoId());
+
+                    PhotoLikeEvent likeEvent = new PhotoLikeEvent(event.getTargetUserId(), event.getOriginPhotoId());
+                    sendEventIntoInternalQueue(likeEvent, kinesis, streamName, event.getTargetUserId(), gson);
 
                     //now check which type of relationships we should create between profiles
                     //if there is a match already or a message then we should return
