@@ -2,8 +2,7 @@ package com.ringoid.api;
 
 public class NewFacesRequest {
     private String userId;
-    private String targetSex;
-    private int lastTimeWasOnline;
+    private int limit;
 
     public String getUserId() {
         return userId;
@@ -13,19 +12,19 @@ public class NewFacesRequest {
         this.userId = userId;
     }
 
-    public String getTargetSex() {
-        return targetSex;
+    public int getLimit() {
+        return limit;
     }
 
-    public void setTargetSex(String targetSex) {
-        this.targetSex = targetSex;
+    public void setLimit(int limit) {
+        this.limit = limit;
     }
 
-    public int getLastTimeWasOnline() {
-        return lastTimeWasOnline;
-    }
-
-    public void setLastTimeWasOnline(int lastTimeWasOnline) {
-        this.lastTimeWasOnline = lastTimeWasOnline;
+    @Override
+    public String toString() {
+        return "NewFacesRequest{" +
+                "userId='" + userId + '\'' +
+                ", limit=" + limit +
+                '}';
     }
 }

@@ -24,6 +24,15 @@ Mappings:
       test: i-0adfecbd7b86e8ef7
       prod: "instance id should be here"
 
+  FunctionName:
+    KinesisConsumerFunction:
+      test: test-kinesis-consumer-relationships
+      stage: stage-kinesis-consumer-relationships
+      prod: prod-kinesis-consumer-relationships
+    NewFacesFunction:
+      test: test-new-faces-relationships
+      stage: stage-new-faces-relationships
+      prod: prod-new-faces-relationships
 
 Parameters:
   Env:
@@ -61,7 +70,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: build/distributions/relationships-1.0-SNAPSHOT.zip
-      FunctionName: !Join [ "-", [ !Ref Env, kinesis-consumer-relationships] ]
+      FunctionName: !FindInMap [FunctionName, KinesisConsumerFunction, !Ref Env]
       Handler: "com.ringoid.events.KinesisConsumer::handler"
       Description: Consumer for Kinesis stream
       Policies:
@@ -75,4 +84,18 @@ Resources:
                 !Join [ "-", [ !Ref Env, CommonEventStreamExport] ]
             StartingPosition: TRIM_HORIZON
             BatchSize: 10
+
+  NewFacesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: build/distributions/relationships-1.0-SNAPSHOT.zip
+      FunctionName: !FindInMap [FunctionName, NewFacesFunction, !Ref Env]
+      Handler: "com.ringoid.api.NewFaces::handler"
+      Description: New Faces Feed function
+
+Outputs:
+  NewFacesFunctionExport:
+    Value: !FindInMap [FunctionName, NewFacesFunction, !Ref Env]
+    Export:
+      Name: !Join [ "-", [ !Ref Env, NewFacesFunctionExport] ]
 
