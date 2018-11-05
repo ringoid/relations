@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
+import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
 
 public class NewFaces {
@@ -33,27 +34,29 @@ public class NewFaces {
     private static final String TARGET_USER_ID = "targetUserId";
     private static final String TARGET_PHOTO_ID = "targetPhotoId";
 
-    //original query
-    //match (sourceUser:Person {user_id:10}) with sourceUser match (n:Person)-[upl:UPLOAD]->(ph:Photo) where sourceUser.user_id <> n.user_id and (not (n)-[]-(sourceUser)) with n, ph, upl optional match patt=(ph)<-[:LIKE]-(:Person) with n.user_id as userId, count(relationships(patt)) as likes order by likes desc limit 10 match (n:Person {user_id:userId})-[uplRel:UPLOAD]->(photo:Photo) with n.user_id as userId, likes, count(uplRel) as photos, n.was_online as wasOnline match (n:Person {user_id:userId})-[uplRel:UPLOAD]->(photo:Photo) with n, photo, likes, photos, wasOnline optional match (:Person)-[uploadRel:UPLOAD]->(photo)<-[l:LIKE]-(:Person) return n.user_id as userId, photo.photo_id as photoId, count(l) as eachPhotoLikes, likes, photos, wasOnline, uploadRel.photo_uploaded_at as photoUploadedAt order by likes desc, photos desc, wasOnline desc, eachPhotoLikes desc, photoUploadedAt desc
+    //original query (without sex)
+    //match (sourceUser:Person {user_id:10}) with sourceUser match (n:Person)-[upl:UPLOAD]->(ph:Photo) where sourceUser.user_id <> n.user_id and (not (n)-[]-(sourceUser)) with n, ph, upl optional match (ph)<-[ll:LIKE]-(:Person) with n, count(ll) as likes order by likes desc match (n)-[uplRel:UPLOAD]->(photo:Photo) with n, likes, count(uplRel) as photos, n.was_online as wasOnline order by likes desc, photos desc, wasOnline desc limit 10 match (n)-[uplRel:UPLOAD]->(photo:Photo) with n, photo, likes, photos, wasOnline optional match (:Person)-[uploadRel:UPLOAD]->(photo)<-[l:LIKE]-(:Person) return n.user_id as userId, photo.photo_id as photoId, count(l) as eachPhotoLikes, likes, photos, wasOnline, uploadRel.photo_uploaded_at as photoUploadedAt order by likes desc, photos desc, wasOnline desc, eachPhotoLikes desc, photoUploadedAt desc
     private final static String NEW_FACES_REQUEST =
             String.format(
-                    "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +
-                            "MATCH (n:%s)-[upl:%s]->(ph:%s) " +
-                            "WHERE sourceUser.%s <> n.%s " +
-                            "AND (NOT (n)-[]-(sourceUser)) WITH n, ph, upl " +
-                            "OPTIONAL MATCH (ph)<-[ll:%s]-(:%s) WITH n.%s AS userId, count(ll) AS likes ORDER BY likes DESC LIMIT $limit " +
-                            "MATCH (n:%s {%s:userId})-[uplRel:%s]->(photo:%s) WITH n.%s AS userId, likes, count(uplRel) AS photos, n.%s AS wasOnline " +
-                            "MATCH (n:%s {%s:userId})-[uplRel:%s]->(photo:%s) WITH n, photo, likes, photos, wasOnline " +
-                            "OPTIONAL MATCH (:%s)-[uploadRel:%s]->(photo)<-[l:%s]-(:%s) " +
-                            "RETURN n.user_id AS %s, photo.photo_id AS %s, count(l) AS eachPhotoLikes, likes, photos, wasOnline, uploadRel.photo_uploaded_at AS photoUploadedAt ORDER BY likes DESC, photos DESC, wasOnline DESC, eachPhotoLikes DESC, photoUploadedAt DESC",
-                    PERSON.getLabelName(), USER_ID.getPropertyName(),
-                    PERSON.getLabelName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),
-                    USER_ID.getPropertyName(), USER_ID.getPropertyName(),
-                    Relationships.LIKE.name(), PERSON.getLabelName(), USER_ID.getPropertyName(),
-                    PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), USER_ID.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(),
-                    PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),
-                    PERSON.getLabelName(), Relationships.UPLOAD_PHOTO.name(), Relationships.LIKE.name(), PERSON.getLabelName(),
-                    TARGET_USER_ID, TARGET_PHOTO_ID
+                    "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
+                            "MATCH (n:%s)-[upl:%s]->(ph:%s) " +//2
+                            "WHERE sourceUser.%s <> n.%s " +//3
+                            "AND sourceUser.%s <> n.%s " +//3.5
+                            "AND (NOT (n)-[]-(sourceUser)) WITH n, ph, upl " +//4
+                            "OPTIONAL MATCH (ph)<-[ll:%s]-(:%s) WITH n, count(ll) AS likes ORDER BY likes DESC " +//5
+                            "MATCH (n)-[uplRel:%s]->(photo:%s) WITH n, likes, count(uplRel) AS photos, n.%s AS wasOnline ORDER BY likes DESC, photos DESC, wasOnline DESC LIMIT $limit " +//6
+                            "MATCH (n)-[uplRel:%s]->(photo:%s) WITH n, photo, likes, photos, wasOnline " +//7
+                            "OPTIONAL MATCH (:%s)-[uploadRel:%s]->(photo)<-[l:%s]-(:%s) " +//8
+                            "RETURN n.user_id AS %s, photo.photo_id AS %s, count(l) AS eachPhotoLikes, likes, photos, wasOnline, uploadRel.photo_uploaded_at AS photoUploadedAt ORDER BY likes DESC, photos DESC, wasOnline DESC, eachPhotoLikes DESC, photoUploadedAt DESC",//9
+                    PERSON.getLabelName(), USER_ID.getPropertyName(),//1
+                    PERSON.getLabelName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//2
+                    USER_ID.getPropertyName(), USER_ID.getPropertyName(),//3
+                    SEX.getPropertyName(), SEX.getPropertyName(),//3.5
+                    Relationships.LIKE.name(), PERSON.getLabelName(),//5
+                    Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), LAST_ONLINE_TIME.getPropertyName(),//6
+                    Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//7
+                    PERSON.getLabelName(), Relationships.UPLOAD_PHOTO.name(), Relationships.LIKE.name(), PERSON.getLabelName(),//8
+                    TARGET_USER_ID, TARGET_PHOTO_ID//9
             );
 
     public NewFaces() {

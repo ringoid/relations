@@ -13,5 +13,7 @@ public enum EventTypes {
     ACTION_USER_BLOCK_OTHER,
     ACTION_USER_UNLIKE_PHOTO,
 
-    INTERNAL_PHOTO_LIKE_EVENT
+    INTERNAL_PHOTO_LIKE_EVENT, //this event goes outside to image service
+
+    FEEDS_NEW_FACES_SEEN_PROFILES
 }

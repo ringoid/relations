@@ -7,6 +7,7 @@ public enum Relationships {
     BLOCK,
     MATCH,
     MESSAGE,
+    WAS_RETURN_TO_NEW_FACES,
     UNSUPPORTED;
 
     public static Relationships fromString(String str) {
@@ -23,6 +24,8 @@ public enum Relationships {
                 return MATCH;
             case "MESSAGE":
                 return MESSAGE;
+            case "WAS_RETURN_TO_NEW_FACES":
+                return WAS_RETURN_TO_NEW_FACES;
             default:
                 return UNSUPPORTED;
         }
