@@ -12,7 +12,7 @@ Mappings:
 
   Neo4jMap:
     Neo4jUri:
-      stage: "bolt://34.254.205.98:7687"
+      stage: "bolt://34.254.188.103:7687"
       test: "bolt://34.245.93.115:7687"
       prod: "neo4j uri put HERE"
     Neo4jUser:
