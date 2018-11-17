@@ -13,7 +13,7 @@ Mappings:
   Neo4jMap:
     Neo4jUri:
       stage: "bolt://34.254.188.103:7687"
-      test: "bolt://34.245.93.115:7687"
+      test: "bolt://52.16.106.228:7687"
       prod: "neo4j uri put HERE"
     Neo4jUser:
       stage: neo4j
@@ -33,6 +33,10 @@ Mappings:
       test: test-new-faces-relationships
       stage: stage-new-faces-relationships
       prod: prod-new-faces-relationships
+    InternalCleanDbRelationshipsFunction:
+      test: test-internal-clean-db-relationships
+      stage: stage-internal-clean-db-relationships
+      prod: prod-internal-clean-db-relationships
 
 Parameters:
   Env:
@@ -66,6 +70,14 @@ Globals:
 
 Resources:
 
+  InternalCleanDbRelationshipsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: build/distributions/relationships-1.0-SNAPSHOT.zip
+      FunctionName: !FindInMap [FunctionName, InternalCleanDbRelationshipsFunction, !Ref Env]
+      Handler: "com.ringoid.internal.Clean::handler"
+      Description: Internal Clean DB for relationships
+
   KinesisConsumerFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -98,4 +110,8 @@ Outputs:
     Value: !FindInMap [FunctionName, NewFacesFunction, !Ref Env]
     Export:
       Name: !Join [ "-", [ !Ref Env, NewFacesFunctionExport] ]
+  InternalCleanDbRelationshipsFunctionExport:
+    Value: !FindInMap [FunctionName, InternalCleanDbRelationshipsFunction, !Ref Env]
+    Export:
+      Name: !Join [ "-", [ !Ref Env, InternalCleanDbRelationshipsFunctionExport] ]
 
