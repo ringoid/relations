@@ -12,6 +12,7 @@ public enum EventTypes {
     ACTION_USER_VIEW_PHOTO,
     ACTION_USER_BLOCK_OTHER,
     ACTION_USER_UNLIKE_PHOTO,
+    AUTH_USER_CALL_DELETE_HIMSELF,
 
     INTERNAL_PHOTO_LIKE_EVENT, //this event goes outside to image service
 

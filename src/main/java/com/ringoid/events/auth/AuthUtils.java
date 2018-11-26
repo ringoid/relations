@@ -1,9 +1,12 @@
 package com.ringoid.events.auth;
 
+import com.ringoid.Relationships;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
+import org.neo4j.driver.v1.summary.SummaryCounters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.ringoid.Labels.PERSON;
+import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.PersonProperties.CREATED;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.SAFE_DISTANCE_IN_METER;
@@ -54,6 +58,36 @@ public class AuthUtils {
                             "n.%s = $onlineUserTime",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
                     LAST_ONLINE_TIME.getPropertyName());
+
+    //match (p:Person {user_id:1000})-[:UPLOAD]->(ph:Photo) detach delete ph,p
+    private static final String DELETE_USER =
+            String.format(
+                    "MATCH (n:%s {%s: $userIdValue})-[:%s]->(ph:%s) DETACH DELETE ph,n",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName());
+
+    public static void deleteUser(UserCallDeleteHimselfEvent event, Driver driver) {
+        log.debug("delete user {}", event);
+
+        final Map<String, Object> parameters = new HashMap<>();
+        parameters.put("userIdValue", event.getUserId());
+
+        try (Session session = driver.session()) {
+            session.writeTransaction(new TransactionWork<Integer>() {
+                @Override
+                public Integer execute(Transaction tx) {
+                    StatementResult result = tx.run(DELETE_USER, parameters);
+                    SummaryCounters counters = result.summary().counters();
+                    log.info("{} relationships were deleted, {} nodes where deleted where drop userId {}",
+                            counters.relationshipsDeleted(), counters.nodesDeleted(), event.getUserId());
+                    return 1;
+                }
+            });
+        } catch (Throwable throwable) {
+            log.error("error delete user {}", event, throwable);
+            throw throwable;
+        }
+        log.info("successfully delete user {}", event);
+    }
 
     public static void createProfile(UserProfileCreatedEvent event, Driver driver) {
         log.debug("create profile {}", event);

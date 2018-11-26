@@ -13,6 +13,7 @@ import com.ringoid.events.actions.UserLikePhotoEvent;
 import com.ringoid.events.actions.UserUnlikePhotoEvent;
 import com.ringoid.events.actions.UserViewPhotoEvent;
 import com.ringoid.events.auth.AuthUtils;
+import com.ringoid.events.auth.UserCallDeleteHimselfEvent;
 import com.ringoid.events.auth.UserOnlineEvent;
 import com.ringoid.events.auth.UserProfileCreatedEvent;
 import com.ringoid.events.auth.UserSettingsUpdatedEvent;
@@ -37,6 +38,7 @@ import static com.ringoid.events.EventTypes.ACTION_USER_BLOCK_OTHER;
 import static com.ringoid.events.EventTypes.ACTION_USER_LIKE_PHOTO;
 import static com.ringoid.events.EventTypes.ACTION_USER_UNLIKE_PHOTO;
 import static com.ringoid.events.EventTypes.ACTION_USER_VIEW_PHOTO;
+import static com.ringoid.events.EventTypes.AUTH_USER_CALL_DELETE_HIMSELF;
 import static com.ringoid.events.EventTypes.AUTH_USER_ONLINE;
 import static com.ringoid.events.EventTypes.AUTH_USER_PROFILE_CREATED;
 import static com.ringoid.events.EventTypes.AUTH_USER_SETTINGS_UPDATED;
@@ -92,6 +94,9 @@ public class KinesisConsumer {
             } else if (Objects.equals(baseEvent.getEventType(), AUTH_USER_ONLINE.name())) {
                 UserOnlineEvent userOnlineEvent = gson.fromJson(s, UserOnlineEvent.class);
                 AuthUtils.updateLastOnlineTime(userOnlineEvent, driver);
+            } else if (Objects.equals(baseEvent.getEventType(), AUTH_USER_CALL_DELETE_HIMSELF.name())) {
+                UserCallDeleteHimselfEvent userCallDeleteHimselfEvent = gson.fromJson(s, UserCallDeleteHimselfEvent.class);
+                AuthUtils.deleteUser(userCallDeleteHimselfEvent, driver);
             } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_LIKE_PHOTO.name())) {
                 UserLikePhotoEvent userLikePhotoEvent = gson.fromJson(s, UserLikePhotoEvent.class);
                 ActionsUtils.likePhoto(userLikePhotoEvent, driver, kinesis, internalStreamName, gson);
