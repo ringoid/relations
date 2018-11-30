@@ -4,6 +4,9 @@ public enum Relationships {
     UPLOAD_PHOTO,
     LIKE,
     VIEW,
+    VIEW_IN_LIKES_YOU,
+    VIEW_IN_MATCHES,
+    VIEW_IN_MESSAGES,
     BLOCK,
     MATCH,
     MESSAGE,
@@ -18,6 +21,12 @@ public enum Relationships {
                 return LIKE;
             case "VIEW":
                 return VIEW;
+            case "VIEW_IN_LIKES_YOU":
+                return VIEW_IN_LIKES_YOU;
+            case "VIEW_IN_MATCHES":
+                return VIEW_IN_MATCHES;
+            case "VIEW_IN_MESSAGES":
+                return VIEW_IN_MESSAGES;
             case "BLOCK":
                 return BLOCK;
             case "MATCH":

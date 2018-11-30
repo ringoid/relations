@@ -1,7 +1,8 @@
-package com.ringoid.api;
+package com.ringoid.api.newfaces;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.ringoid.Relationships;
+import com.ringoid.api.ProfileResponse;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -34,8 +35,16 @@ public class NewFaces {
     private static final String TARGET_USER_ID = "targetUserId";
     private static final String TARGET_PHOTO_ID = "targetPhotoId";
 
-    //original query (without sex)
-    //match (sourceUser:Person {user_id:10}) with sourceUser match (n:Person)-[upl:UPLOAD]->(ph:Photo) where sourceUser.user_id <> n.user_id and (not (n)-[]-(sourceUser)) with n, ph, upl optional match (ph)<-[ll:LIKE]-(:Person) with n, count(ll) as likes order by likes desc match (n)-[uplRel:UPLOAD]->(photo:Photo) with n, likes, count(uplRel) as photos, n.was_online as wasOnline order by likes desc, photos desc, wasOnline desc limit 10 match (n)-[uplRel:UPLOAD]->(photo:Photo) with n, photo, likes, photos, wasOnline optional match (:Person)-[uploadRel:UPLOAD]->(photo)<-[l:LIKE]-(:Person) return n.user_id as userId, photo.photo_id as photoId, count(l) as eachPhotoLikes, likes, photos, wasOnline, uploadRel.photo_uploaded_at as photoUploadedAt order by likes desc, photos desc, wasOnline desc, eachPhotoLikes desc, photoUploadedAt desc
+    //original query (without sex):
+    //match (sourceUser:Person {user_id:10}) with sourceUser
+    //match (n:Person)-[upl:UPLOAD]->(ph:Photo)
+    //where sourceUser.user_id <> n.user_id
+    //and (not (n)-[]-(sourceUser)) with n, ph, upl
+    //optional match (ph)<-[ll:LIKE]-(:Person) with n, count(ll) as likes order by likes desc
+    //match (n)-[uplRel:UPLOAD]->(photo:Photo) with n, likes, count(uplRel) as photos, n.was_online as wasOnline
+    //order by likes desc, photos desc, wasOnline desc limit 10
+    //match (n)-[uplRel:UPLOAD]->(photo:Photo) with n, photo, likes, photos, wasOnline
+    //optional match (:Person)-[uploadRel:UPLOAD]->(photo)<-[l:LIKE]-(:Person) return n.user_id as userId, photo.photo_id as photoId, count(l) as eachPhotoLikes, likes, photos, wasOnline, uploadRel.photo_uploaded_at as photoUploadedAt order by likes desc, photos desc, wasOnline desc, eachPhotoLikes desc, photoUploadedAt desc
     private final static String NEW_FACES_REQUEST =
             String.format(
                     "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1

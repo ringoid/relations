@@ -1,4 +1,4 @@
-package com.ringoid.api;
+package com.ringoid.api.newfaces;
 
 public class NewFacesRequest {
     private String userId;

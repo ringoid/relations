@@ -1,4 +1,6 @@
-package com.ringoid.api;
+package com.ringoid.api.newfaces;
+
+import com.ringoid.api.ProfileResponse;
 
 import java.util.List;
 
