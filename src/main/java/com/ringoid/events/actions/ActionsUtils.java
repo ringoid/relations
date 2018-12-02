@@ -91,8 +91,9 @@ public class ActionsUtils {
 
     private static final String CREATE_MATCH_QUERY =
             String.format("MATCH (source:%s {%s: $sourceUserId})<-[like:%s]-(target:%s {%s: $targetUserId}) " +
-                            "DELETE like MERGE (source)-[:MATCH]-(target)",
-                    PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.LIKE.name(), PERSON.getLabelName(), USER_ID.getPropertyName());
+                            "DELETE like MERGE (source)-[:%s]-(target)",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.LIKE.name(), PERSON.getLabelName(), USER_ID.getPropertyName(),
+                    Relationships.MATCH.name());
 
     private static final String DELETE_ALL_INCOMING_PHOTO_RELATIONSHIPS_FROM_BLOCKED_PROFILE_QUERY =
             String.format("MATCH (source:%s {%s:$sourceUserId})-[:%s]->(ph:%s)<-[r]-(target:%s {%s: $targetUserId}) " +

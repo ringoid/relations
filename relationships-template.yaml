@@ -37,6 +37,10 @@ Mappings:
       test: test-likes-you-relationships
       stage: stage-likes-you-relationships
       prod: prod-likes-you-relationships
+    MatchesFunction:
+      test: test-matches-relationships
+      stage: stage-matches-relationships
+      prod: prod-matches-relationships
     InternalCleanDbRelationshipsFunction:
       test: test-internal-clean-db-relationships
       stage: stage-internal-clean-db-relationships
@@ -117,6 +121,15 @@ Resources:
       Handler: "com.ringoid.api.lmm.LikesYou::handler"
       Description: Likes You Feed function
 
+  MatchesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: build/distributions/relationships-1.0-SNAPSHOT.zip
+      FunctionName: !FindInMap [FunctionName, MatchesFunction, !Ref Env]
+      Handler: "com.ringoid.api.lmm.Matches::handler"
+      Description: Matches Feed function
+
+
 Outputs:
   NewFacesFunctionExport:
     Value: !FindInMap [FunctionName, NewFacesFunction, !Ref Env]
@@ -126,6 +139,10 @@ Outputs:
     Value: !FindInMap [FunctionName, LikesYouFunction, !Ref Env]
     Export:
       Name: !Join [ "-", [ !Ref Env, LikesYouFunctionExport] ]
+  MatchesFunctionExport:
+    Value: !FindInMap [FunctionName, MatchesFunction, !Ref Env]
+    Export:
+      Name: !Join [ "-", [ !Ref Env, MatchesFunctionExport] ]
 
   InternalCleanDbRelationshipsFunctionExport:
     Value: !FindInMap [FunctionName, InternalCleanDbRelationshipsFunction, !Ref Env]
