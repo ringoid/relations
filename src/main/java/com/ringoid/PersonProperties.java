@@ -7,7 +7,8 @@ public enum PersonProperties {
     CREATED("profile_created_at"),
     SAFE_DISTANCE_IN_METER("safe_distance_in_meter"),
     LAST_ONLINE_TIME("last_online_time"),
-    LAST_ACTION_TIME("last_action_time");
+    LAST_ACTION_TIME("last_action_time"),
+    USER_STATUS("user_status");
 
     private String propertyName;
 

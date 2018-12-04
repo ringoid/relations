@@ -2,6 +2,7 @@ package com.ringoid.api.lmm;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.ringoid.Relationships;
+import com.ringoid.UserStatus;
 import com.ringoid.api.LMMRequest;
 import com.ringoid.api.LMMResponse;
 import com.ringoid.api.ProfileResponse;
@@ -29,6 +30,7 @@ import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.USER_ID;
+import static com.ringoid.PersonProperties.USER_STATUS;
 import static com.ringoid.PhotoProperties.PHOTO_ID;
 import static com.ringoid.PhotoProperties.PHOTO_UPLOADED;
 
@@ -59,6 +61,7 @@ public class LikesYou {
                             "WHERE sourceUser.%s <> targetUser.%s " +//2
 
                             "AND (NOT (sourceUser)-[:%s]->(targetUser)) " +//3
+                            "AND targetUser.%s <> $hiddenUserStatus " +//3.1
                             "WITH sourceUser, targetUser, ph " +//4
 
                             "OPTIONAL MATCH (ph)<-[ll:%s]-(:%s) WITH sourceUser, targetUser, count(ll) as likesThatUserHas " +//5
@@ -74,7 +77,7 @@ public class LikesYou {
                     USER_ID.getPropertyName(), USER_ID.getPropertyName(),//2
 
                     Relationships.VIEW_IN_LIKES_YOU.name(),//3
-
+                    USER_STATUS.getPropertyName(),//3.1
                     Relationships.LIKE.name(), PERSON.getLabelName(),//5
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//6
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), Relationships.LIKE.name(),//7
@@ -90,6 +93,8 @@ public class LikesYou {
                             "WHERE sourceUser.%s <> targetUser.%s " +//2
 
                             "AND (sourceUser)-[:%s]->(targetUser) " +//3
+                            "AND targetUser.%s <> $hiddenUserStatus " +//3.1
+
                             "WITH sourceUser, targetUser, ph " +//4
 
                             "OPTIONAL MATCH (ph)<-[ll:%s]-(:%s) WITH sourceUser, targetUser, count(ll) as likesThatUserHas " +//5
@@ -105,6 +110,7 @@ public class LikesYou {
                     USER_ID.getPropertyName(), USER_ID.getPropertyName(),//2
 
                     Relationships.VIEW_IN_LIKES_YOU.name(),//3
+                    USER_STATUS.getPropertyName(),//3.1
 
                     Relationships.LIKE.name(), PERSON.getLabelName(),//5
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//6
@@ -128,6 +134,7 @@ public class LikesYou {
         log.debug("handle likes you request {}", request);
         final Map<String, Object> parameters = new HashMap<>();
         parameters.put("sourceUserId", request.getUserId());
+        parameters.put("hiddenUserStatus", UserStatus.HIDDEN.getValue());
 
         int lastActionTime = lastActionTime(parameters);
         LMMResponse response = new LMMResponse();

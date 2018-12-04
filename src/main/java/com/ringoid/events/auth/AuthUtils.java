@@ -1,6 +1,7 @@
 package com.ringoid.events.auth;
 
 import com.ringoid.Relationships;
+import com.ringoid.UserStatus;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
@@ -21,7 +23,10 @@ import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.SAFE_DISTANCE_IN_METER;
 import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
+import static com.ringoid.PersonProperties.USER_STATUS;
 import static com.ringoid.PersonProperties.YEAR;
+import static com.ringoid.UserStatus.ACTIVE;
+import static com.ringoid.UserStatus.HIDDEN;
 
 public class AuthUtils {
     private static final Logger log = LoggerFactory.getLogger(AuthUtils.class);
@@ -33,16 +38,18 @@ public class AuthUtils {
                             "n.%s = $yearValue, " +
                             "n.%s = $createdValue, " +
                             "n.%s = 0, " +
-                            "n.%s = $onlineUserTime " +
+                            "n.%s = $onlineUserTime, " +
+                            "n.%s = $activeUserStatus " +
                             "ON MATCH SET " +
                             "n.%s = $sexValue, " +
                             "n.%s = $yearValue, " +
                             "n.%s = $createdValue, " +
                             "n.%s = 0, " +
-                            "n.%s = $onlineUserTime",
+                            "n.%s = $onlineUserTime, " +
+                            "n.%s = $activeUserStatus",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
-                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(),
-                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LAST_ONLINE_TIME.getPropertyName());
+                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(), USER_STATUS.getPropertyName(),
+                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(), USER_STATUS.getPropertyName());
 
     private static final String UPDATE_SETTINGS =
             String.format("MERGE (n:%s {%s: $userIdValue}) " +
@@ -62,23 +69,45 @@ public class AuthUtils {
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
                     LAST_ONLINE_TIME.getPropertyName());
 
-    //match (p:Person {user_id:1000})-[:UPLOAD]->(ph:Photo) detach delete ph,p
-    private static final String DELETE_USER =
-            String.format(
-                    "MATCH (n:%s {%s: $userIdValue})-[:%s]->(ph:%s) DETACH DELETE ph,n",
-                    PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName());
+    private static String deleteQuery(UserStatus userStatus, Map<String, Object> parameters) {
+        switch (userStatus) {
+            case ACTIVE: {
+                //match (p:Person {user_id:1000})-[:UPLOAD]->(ph:Photo) detach delete ph,p
+                return String.format(
+                        "MATCH (n:%s {%s: $userIdValue})-[:%s]->(ph:%s) DETACH DELETE ph,n",
+                        PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName());
+            }
+            case HIDDEN: {
+                //match (p:Person {user_id:1000}) SET p.user_status = hidden
+                return String.format(
+                        "MATCH (n:%s {%s: $userIdValue}) SET n.%s = $hiddenUserStatus",
+                        PERSON.getLabelName(), USER_ID.getPropertyName(), USER_STATUS.getPropertyName());
+            }
+            default: {
+                log.error("unsupported user status {} with delete user request with params {}", userStatus, parameters);
+                throw new IllegalArgumentException("unsupported user status " + userStatus);
+            }
+        }
+    }
 
     public static void deleteUser(UserCallDeleteHimselfEvent event, Driver driver) {
         log.debug("delete user {}", event);
-
         final Map<String, Object> parameters = new HashMap<>();
         parameters.put("userIdValue", event.getUserId());
+        parameters.put("hiddenUserStatus", HIDDEN.getValue());
 
         try (Session session = driver.session()) {
             session.writeTransaction(new TransactionWork<Integer>() {
                 @Override
                 public Integer execute(Transaction tx) {
-                    StatementResult result = tx.run(DELETE_USER, parameters);
+                    String query;
+                    if (Objects.equals(event.getUserReportStatus(), "REPORTED") ||
+                            Objects.equals(event.getUserReportStatus(), "REPORT_INITIATOR")) {
+                        query = deleteQuery(HIDDEN, parameters);
+                    } else {
+                        query = deleteQuery(ACTIVE, parameters);
+                    }
+                    StatementResult result = tx.run(query, parameters);
                     SummaryCounters counters = result.summary().counters();
                     log.info("{} relationships were deleted, {} nodes where deleted where drop userId {}",
                             counters.relationshipsDeleted(), counters.nodesDeleted(), event.getUserId());
@@ -101,6 +130,7 @@ public class AuthUtils {
         parameters.put("yearValue", event.getYearOfBirth());
         parameters.put("createdValue", event.getUnixTime());
         parameters.put("onlineUserTime", event.getUnixTime());
+        parameters.put("activeUserStatus", UserStatus.ACTIVE.getValue());
 
         try (Session session = driver.session()) {
             session.writeTransaction(new TransactionWork<Integer>() {

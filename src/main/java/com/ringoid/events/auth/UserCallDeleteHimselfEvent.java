@@ -5,7 +5,7 @@ import com.ringoid.events.BaseEvent;
 public class UserCallDeleteHimselfEvent extends BaseEvent {
     private String userId;
     private int unixTime;
-    private boolean userWasReported;
+    private String userReportStatus;// CLEAN || REPORTED || REPORT_INITIATOR
 
     public String getUserId() {
         return userId;
@@ -23,12 +23,12 @@ public class UserCallDeleteHimselfEvent extends BaseEvent {
         this.unixTime = unixTime;
     }
 
-    public boolean isUserWasReported() {
-        return userWasReported;
+    public String getUserReportStatus() {
+        return userReportStatus;
     }
 
-    public void setUserWasReported(boolean userWasReported) {
-        this.userWasReported = userWasReported;
+    public void setUserReportStatus(String userReportStatus) {
+        this.userReportStatus = userReportStatus;
     }
 
     @Override
@@ -36,7 +36,7 @@ public class UserCallDeleteHimselfEvent extends BaseEvent {
         return "UserCallDeleteHimselfEvent{" +
                 "userId='" + userId + '\'' +
                 ", unixTime=" + unixTime +
-                ", userWasReported=" + userWasReported +
+                ", userReportStatus='" + userReportStatus + '\'' +
                 ", eventType='" + eventType + '\'' +
                 '}';
     }

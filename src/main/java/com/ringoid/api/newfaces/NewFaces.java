@@ -2,6 +2,7 @@ package com.ringoid.api.newfaces;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.ringoid.Relationships;
+import com.ringoid.UserStatus;
 import com.ringoid.api.ProfileResponse;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
@@ -26,6 +27,7 @@ import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
+import static com.ringoid.PersonProperties.USER_STATUS;
 
 public class NewFaces {
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -51,6 +53,7 @@ public class NewFaces {
                             "MATCH (n:%s)-[upl:%s]->(ph:%s) " +//2
                             "WHERE sourceUser.%s <> n.%s " +//3
                             "AND sourceUser.%s <> n.%s " +//3.5
+                            "AND n.%s <> $hiddenUserStatus " +//3.6
                             "AND (NOT (n)-[]-(sourceUser)) WITH n, ph, upl " +//4
                             "OPTIONAL MATCH (ph)<-[ll:%s]-(:%s) WITH n, count(ll) AS likes ORDER BY likes DESC " +//5
                             "MATCH (n)-[uplRel:%s]->(photo:%s) WITH n, likes, count(uplRel) AS photos, n.%s AS wasOnline ORDER BY likes DESC, photos DESC, wasOnline DESC LIMIT $limit " +//6
@@ -61,6 +64,7 @@ public class NewFaces {
                     PERSON.getLabelName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//2
                     USER_ID.getPropertyName(), USER_ID.getPropertyName(),//3
                     SEX.getPropertyName(), SEX.getPropertyName(),//3.5
+                    USER_STATUS.getPropertyName(), //3.6
                     Relationships.LIKE.name(), PERSON.getLabelName(),//5
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), LAST_ONLINE_TIME.getPropertyName(),//6
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//7
@@ -83,6 +87,7 @@ public class NewFaces {
         final Map<String, Object> parameters = new HashMap<>();
         parameters.put("sourceUserId", request.getUserId());
         parameters.put("limit", request.getLimit());
+        parameters.put("hiddenUserStatus", UserStatus.HIDDEN.getValue());
 
         List<Map<String, List<String>>> faces = newFaces(parameters);
 

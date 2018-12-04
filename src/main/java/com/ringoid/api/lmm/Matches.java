@@ -2,6 +2,7 @@ package com.ringoid.api.lmm;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.ringoid.Relationships;
+import com.ringoid.UserStatus;
 import com.ringoid.api.LMMRequest;
 import com.ringoid.api.LMMResponse;
 import com.ringoid.api.ProfileResponse;
@@ -29,6 +30,7 @@ import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.USER_ID;
+import static com.ringoid.PersonProperties.USER_STATUS;
 import static com.ringoid.PhotoProperties.PHOTO_ID;
 import static com.ringoid.PhotoProperties.PHOTO_UPLOADED;
 
@@ -65,6 +67,8 @@ public class Matches {
                             "WHERE sourceUser.%s <> targetUser.%s " +//2
 
                             "AND (NOT (sourceUser)-[:%s]->(targetUser)) " +//3
+                            "AND targetUser.%s <> $hiddenUserStatus " +//3.1
+
                             "WITH sourceUser, targetUser, ph " +//4
 
                             "OPTIONAL MATCH (ph)<-[sourceLike:%s]-(sourceUser) " +//4.1
@@ -85,6 +89,7 @@ public class Matches {
                     USER_ID.getPropertyName(), USER_ID.getPropertyName(),//2
 
                     Relationships.VIEW_IN_MATCHES.name(),//3
+                    USER_STATUS.getPropertyName(),//3.1
 
                     Relationships.LIKE.name(), //4.1
                     Relationships.MATCH.name(), Relationships.UPLOAD_PHOTO.name(), //4.3
@@ -104,6 +109,8 @@ public class Matches {
                             "WHERE sourceUser.%s <> targetUser.%s " +//2
 
                             "AND (sourceUser)-[:%s]->(targetUser) " +//3
+                            "AND targetUser.%s <> $hiddenUserStatus " +//3.1
+
                             "WITH sourceUser, targetUser, ph " +//4
 
                             "OPTIONAL MATCH (ph)<-[sourceLike:%s]-(sourceUser) " +//4.1
@@ -124,6 +131,7 @@ public class Matches {
                     USER_ID.getPropertyName(), USER_ID.getPropertyName(),//2
 
                     Relationships.VIEW_IN_MATCHES.name(),//3
+                    USER_STATUS.getPropertyName(),//3.1
 
                     Relationships.LIKE.name(), //4.1
                     Relationships.MATCH.name(), Relationships.UPLOAD_PHOTO.name(), //4.3
@@ -150,6 +158,7 @@ public class Matches {
         log.debug("handle matches you request {}", request);
         final Map<String, Object> parameters = new HashMap<>();
         parameters.put("sourceUserId", request.getUserId());
+        parameters.put("hiddenUserStatus", UserStatus.HIDDEN.getValue());
 
         int lastActionTime = lastActionTime(parameters);
         LMMResponse response = new LMMResponse();
