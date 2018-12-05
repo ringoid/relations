@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.ringoid.DeletePhotoProperties.DELETE_AT;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.PersonProperties.USER_ID;
@@ -33,6 +34,24 @@ public class ImageUtils {
             String.format("MATCH (p:%s {%s: $photoIdValue}) " +
                             "DETACH DELETE p",
                     PHOTO.getLabelName(), PHOTO_ID.getPropertyName());
+
+    private static String deletePhotoQuery(boolean userTakePartInReport) {
+        if (!userTakePartInReport) {
+            return String.format("MATCH (p:%s {%s: $photoIdValue}) " +
+                            "DETACH DELETE p",
+                    PHOTO.getLabelName(), PHOTO_ID.getPropertyName());
+        }
+
+        return String.format(
+                "MATCH (n:%s {%s: $userIdValue})-[upl:%s]->(p:%s {%s: $photoIdValue}) " +
+                        "DELETE upl WITH n, p " +
+                        "MERGE (n)-[d:%s]->(p) " +
+                        "ON CREATE SET d.%s = $deletedAtValue",
+                PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), PHOTO_ID.getPropertyName(),
+                Relationships.DELETE_PHOTO.name(),
+                DELETE_AT.getPropertyName()
+        );
+    }
 
     public static void uploadPhoto(UserUploadedPhotoEvent event, Driver driver) {
         log.debug("upload photo {}", event);
@@ -62,12 +81,15 @@ public class ImageUtils {
 
         final Map<String, Object> parameters = new HashMap<>();
         parameters.put("photoIdValue", event.getPhotoId());
+        parameters.put("userIdValue", event.getUserId());
+        parameters.put("deletedAtValue", event.getUnixTime());
 
         try (Session session = driver.session()) {
             session.writeTransaction(new TransactionWork<Integer>() {
                 @Override
                 public Integer execute(Transaction tx) {
-                    tx.run(DELETE_PHOTO, parameters);
+                    String query = deletePhotoQuery(event.isUserTakePartInReport());
+                    tx.run(query, parameters);
                     return 1;
                 }
             });

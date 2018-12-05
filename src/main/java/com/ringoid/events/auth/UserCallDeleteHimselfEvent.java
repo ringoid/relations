@@ -5,7 +5,7 @@ import com.ringoid.events.BaseEvent;
 public class UserCallDeleteHimselfEvent extends BaseEvent {
     private String userId;
     private int unixTime;
-    private String userReportStatus;// CLEAN || REPORTED || REPORT_INITIATOR
+    private String userReportStatus;// CLEAN || TAKE_PART_IN_REPORT
 
     public String getUserId() {
         return userId;

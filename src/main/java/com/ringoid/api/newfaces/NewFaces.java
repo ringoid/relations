@@ -41,7 +41,7 @@ public class NewFaces {
     //match (sourceUser:Person {user_id:10}) with sourceUser
     //match (n:Person)-[upl:UPLOAD]->(ph:Photo)
     //where sourceUser.user_id <> n.user_id
-    //and (not (n)-[]-(sourceUser)) with n, ph, upl
+    //and (not (sourceUser)-[]->(n)) and (not (n)-[:LIKE|VIEW_IN_LIKES_YOU|VIEW_IN_MATCHES|VIEW_IN_MESSAGES|BLOCK|MATCH|MESSAGE]->(sourceUser)) with n, ph, upl
     //optional match (ph)<-[ll:LIKE]-(:Person) with n, count(ll) as likes order by likes desc
     //match (n)-[uplRel:UPLOAD]->(photo:Photo) with n, likes, count(uplRel) as photos, n.was_online as wasOnline
     //order by likes desc, photos desc, wasOnline desc limit 10
@@ -54,7 +54,8 @@ public class NewFaces {
                             "WHERE sourceUser.%s <> n.%s " +//3
                             "AND sourceUser.%s <> n.%s " +//3.5
                             "AND n.%s <> $hiddenUserStatus " +//3.6
-                            "AND (NOT (n)-[]-(sourceUser)) WITH n, ph, upl " +//4
+                            "AND (NOT (n)<-[]-(sourceUser)) " +//4
+                            "AND (NOT (n)-[:%s|%s|%s|%s|%s|%s|%s]->(sourceUser)) WITH n, ph, upl " +//4.1
                             "OPTIONAL MATCH (ph)<-[ll:%s]-(:%s) WITH n, count(ll) AS likes ORDER BY likes DESC " +//5
                             "MATCH (n)-[uplRel:%s]->(photo:%s) WITH n, likes, count(uplRel) AS photos, n.%s AS wasOnline ORDER BY likes DESC, photos DESC, wasOnline DESC LIMIT $limit " +//6
                             "MATCH (n)-[uplRel:%s]->(photo:%s) WITH n, photo, likes, photos, wasOnline " +//7
@@ -65,6 +66,7 @@ public class NewFaces {
                     USER_ID.getPropertyName(), USER_ID.getPropertyName(),//3
                     SEX.getPropertyName(), SEX.getPropertyName(),//3.5
                     USER_STATUS.getPropertyName(), //3.6
+                    Relationships.LIKE.name(), Relationships.VIEW_IN_LIKES_YOU.name(), Relationships.VIEW_IN_MATCHES.name(), Relationships.VIEW_IN_MESSAGES.name(), Relationships.BLOCK.name(), Relationships.MATCH.name(), Relationships.MESSAGE.name(),//4.1
                     Relationships.LIKE.name(), PERSON.getLabelName(),//5
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), LAST_ONLINE_TIME.getPropertyName(),//6
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//7

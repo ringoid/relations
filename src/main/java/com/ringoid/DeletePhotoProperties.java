@@ -1,12 +1,11 @@
 package com.ringoid;
 
-public enum BlockProperties {
-    BLOCK_AT("view_at"),
-    BLOCK_REASON_NUM("reason");
+public enum DeletePhotoProperties {
+    DELETE_AT("delete_at");
 
     private String propertyName;
 
-    BlockProperties(String propertyName) {
+    DeletePhotoProperties(String propertyName) {
         this.propertyName = propertyName;
     }
 

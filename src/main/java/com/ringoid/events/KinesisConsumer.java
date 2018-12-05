@@ -105,7 +105,7 @@ public class KinesisConsumer {
                 ActionsUtils.viewPhoto(userViewPhotoEvent, driver);
             } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_BLOCK_OTHER.name())) {
                 UserBlockOtherEvent userBlockOtherEvent = gson.fromJson(s, UserBlockOtherEvent.class);
-                ActionsUtils.block(userBlockOtherEvent, driver);
+                ActionsUtils.block(userBlockOtherEvent, driver, kinesis, internalStreamName, gson);
             } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_UNLIKE_PHOTO.name())) {
                 UserUnlikePhotoEvent userUnlikePhotoEvent = gson.fromJson(s, UserUnlikePhotoEvent.class);
                 ActionsUtils.unlike(userUnlikePhotoEvent, driver);

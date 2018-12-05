@@ -101,8 +101,7 @@ public class AuthUtils {
                 @Override
                 public Integer execute(Transaction tx) {
                     String query;
-                    if (Objects.equals(event.getUserReportStatus(), "REPORTED") ||
-                            Objects.equals(event.getUserReportStatus(), "REPORT_INITIATOR")) {
+                    if (Objects.equals(event.getUserReportStatus(), "TAKE_PART_IN_REPORT")) {
                         query = deleteQuery(HIDDEN, parameters);
                     } else {
                         query = deleteQuery(ACTIVE, parameters);

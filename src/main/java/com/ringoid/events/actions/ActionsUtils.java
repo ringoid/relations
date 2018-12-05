@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import static com.ringoid.BlockProperties.BLOCK_AT;
+import static com.ringoid.BlockProperties.BLOCK_REASON_NUM;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.LikeProperties.LIKED_AT;
@@ -40,6 +41,7 @@ import static com.ringoid.common.Utils.doWeHaveBlock;
 public class ActionsUtils {
     private static final Logger log = LoggerFactory.getLogger(ActionsUtils.class);
 
+    private static final int REPORT_REASON_TRESHOLD = 19;
     private static final String RELATIONSHIP_TYPE = "relationShipType";
     private static final String START_NODE_USER_ID = "startNodeUserId";
     private static final String END_NODE_USER_ID = "endNodeUserId";
@@ -123,11 +125,19 @@ public class ActionsUtils {
             String.format("MATCH (source:%s {%s:$sourceUserId}), (target:%s {%s: $targetUserId}) " +
                             "WHERE source.%s <> target.%s " +
                             "MERGE (source)-[r:%s]->(target) " +
-                            "ON CREATE SET r.%s = $blockedAt",
+                            "ON CREATE SET r.%s = $blockedAt, r.%s = $blockReasonNum " +
+                            "WITH source " +
+                            "MATCH (target:%s {%s: $targetUserId})-[:%s]->(targetPhoto:%s {%s: $targetPhotoId}) " +
+                            "MERGE (source)-[r:%s]->(targetPhoto) " +
+                            "ON CREATE SET r.%s = $blockedAt, r.%s = $blockReasonNum",
                     PERSON.getLabelName(), USER_ID.getPropertyName(), PERSON.getLabelName(), USER_ID.getPropertyName(),
                     USER_ID.getPropertyName(), USER_ID.getPropertyName(),
                     Relationships.BLOCK.name(),
-                    BLOCK_AT.getPropertyName()
+                    BLOCK_AT.getPropertyName(), BLOCK_REASON_NUM.getPropertyName(),
+
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), PHOTO_ID.getPropertyName(),
+                    Relationships.BLOCK.name(),
+                    BLOCK_AT.getPropertyName(), BLOCK_REASON_NUM.getPropertyName()
             );
 
     private static final String UPDATE_LAST_ACTION_TIME_QUERY =
@@ -136,22 +146,37 @@ public class ActionsUtils {
                     PERSON.getLabelName(), USER_ID.getPropertyName(), LAST_ACTION_TIME.getPropertyName()
             );
 
+    private static String deleteRelsQuery(Relationships... rels) {
+        String resultStr = "";
+        for (Relationships each : rels) {
+            resultStr += each.name() + "|";
+        }
+        resultStr = resultStr.substring(0, resultStr.lastIndexOf("|"));
+        return String.format(
+                "MATCH (sourceUser:%s {%s: $sourceUserId})-[rel:%s]->(targetUser:%s {%s: $targetUserId}) " +
+                        "DELETE rel",
+                PERSON.getLabelName(), USER_ID.getPropertyName(),
+                resultStr,
+                PERSON.getLabelName(), USER_ID.getPropertyName()
+        );
+    }
 
     private static String viewQuery(UserViewPhotoEvent event) {
         ViewRelationshipSource source = ViewRelationshipSource.fromString(event.getSource());
-        Relationships targetRelationship;
+        Relationships targetPhotoRelationship = Relationships.VIEW;
+        Relationships targetProfileRelationship;
         switch (source) {
             case NEW_FACES:
-                targetRelationship = Relationships.VIEW;
+                targetProfileRelationship = Relationships.VIEW;
                 break;
             case WHO_LIKED_ME:
-                targetRelationship = Relationships.VIEW_IN_LIKES_YOU;
+                targetProfileRelationship = Relationships.VIEW_IN_LIKES_YOU;
                 break;
             case MATCHES:
-                targetRelationship = Relationships.VIEW_IN_MATCHES;
+                targetProfileRelationship = Relationships.VIEW_IN_MATCHES;
                 break;
             case MESSAGES:
-                targetRelationship = Relationships.VIEW_IN_MESSAGES;
+                targetProfileRelationship = Relationships.VIEW_IN_MESSAGES;
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported source " + source.getValue());
@@ -166,10 +191,12 @@ public class ActionsUtils {
                         "ON CREATE SET profileRel.%s = $viewAt",
                 PERSON.getLabelName(), USER_ID.getPropertyName(), PHOTO.getLabelName(), PHOTO_ID.getPropertyName(), PERSON.getLabelName(), USER_ID.getPropertyName(),
                 USER_ID.getPropertyName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(),
-                targetRelationship.name(),
+
+
+                targetPhotoRelationship.name(),
                 VIEW_COUNT.getPropertyName(), VIEW_TIME_IN_SEC.getPropertyName(), VIEW_AT.getPropertyName(),
                 VIEW_COUNT.getPropertyName(), VIEW_COUNT.getPropertyName(), VIEW_TIME_IN_SEC.getPropertyName(), VIEW_TIME_IN_SEC.getPropertyName(),
-                targetRelationship.name(),
+                targetProfileRelationship.name(),
                 VIEW_AT.getPropertyName()
         );
     }
@@ -220,13 +247,16 @@ public class ActionsUtils {
         }
     }
 
-    public static void block(UserBlockOtherEvent event, Driver driver) {
+    public static void block(UserBlockOtherEvent event, Driver driver,
+                             AmazonKinesis kinesis, String streamName, Gson gson) {
         log.debug("block user event {} for userId {}", event, event.getUserId());
         final Map<String, Object> parameters = new HashMap<>();
         parameters.put("sourceUserId", event.getUserId());
         parameters.put("targetUserId", event.getTargetUserId());
         parameters.put("blockedAt", event.getBlockedAt());
         parameters.put("lastActionTime", event.getBlockedAt());
+        parameters.put("blockReasonNum", event.getBlockReasonNum());
+        parameters.put("targetPhotoId", event.getOriginPhotoId());
 
         try (Session session = driver.session()) {
             session.writeTransaction(new TransactionWork<Integer>() {
@@ -254,8 +284,13 @@ public class ActionsUtils {
                             counters.relationshipsDeleted(), event.getUserId(), event.getTargetUserId());
                     result = tx.run(CREATE_BLOCK_QUERY, parameters);
                     counters = result.summary().counters();
-                    log.info("{} block relationships were created between source profile userId {} and target profile userId {}",
-                            counters.relationshipsCreated(), event.getUserId(), event.getTargetUserId());
+                    log.info("{} block relationships were created between source profile userId {}, target profile userId {} and target photoId {}",
+                            counters.relationshipsCreated(), event.getUserId(), event.getTargetUserId(), event.getTargetPhotoId());
+
+                    //currently users couldn't block itself concurrently (only first block will be applied
+                    if (event.getBlockReasonNum() > REPORT_REASON_TRESHOLD && counters.relationshipsCreated() > 0) {
+                        sendEventIntoInternalQueue(event, kinesis, streamName, event.getTargetUserId(), gson);
+                    }
                     return 1;
                 }
             });
@@ -292,6 +327,26 @@ public class ActionsUtils {
                     SummaryCounters counters = result.summary().counters();
                     log.info("{} view relationships were created from source userId {} to photoId {} and target userId {}",
                             counters.relationshipsCreated(), event.getUserId(), event.getOriginPhotoId(), event.getTargetUserId());
+
+                    Map<String, Object> map = getAllRel(tx, parameters, event.getUserId(), event.getTargetUserId());
+                    Set<Relationships> existRelationshipsBetweenProfiles = (Set<Relationships>) map.get("set");
+
+                    String deleteOtherViewsQuery = null;
+                    if (existRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_MESSAGES)) {
+                        deleteOtherViewsQuery = deleteRelsQuery(Relationships.VIEW, Relationships.VIEW_IN_LIKES_YOU, Relationships.VIEW_IN_MATCHES);
+                    } else if (existRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_MATCHES)) {
+                        deleteOtherViewsQuery = deleteRelsQuery(Relationships.VIEW, Relationships.VIEW_IN_LIKES_YOU);
+                    } else if (existRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_LIKES_YOU)) {
+                        deleteOtherViewsQuery = deleteRelsQuery(Relationships.VIEW);
+                    }
+
+                    if (deleteOtherViewsQuery != null) {
+                        result = tx.run(deleteOtherViewsQuery, parameters);
+                        counters = result.summary().counters();
+                        log.info("{} parent view relationships were deleted from source userId {} and target userId {}",
+                                counters.relationshipsDeleted(), event.getUserId(), event.getTargetUserId());
+
+                    }
                     return 1;
                 }
             });
@@ -325,6 +380,7 @@ public class ActionsUtils {
                     existRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_LIKES_YOU);
                     existRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_MATCHES);
                     existRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_MESSAGES);
+                    existRelationshipsBetweenProfiles.remove(Relationships.WAS_RETURN_TO_NEW_FACES);
 
                     if (existRelationshipsBetweenProfiles.contains(Relationships.BLOCK)) {
                         log.warn("BLOCK exist between source userId {} and target userId {}, can not like photo {}",
