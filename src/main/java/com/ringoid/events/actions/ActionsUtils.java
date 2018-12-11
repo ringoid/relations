@@ -5,6 +5,7 @@ import com.amazonaws.services.kinesis.model.PutRecordRequest;
 import com.google.gson.Gson;
 import com.ringoid.Relationships;
 import com.ringoid.ViewRelationshipSource;
+import com.ringoid.events.internal.events.MessageEvent;
 import com.ringoid.events.internal.events.PhotoLikeEvent;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Record;
@@ -96,6 +97,22 @@ public class ActionsUtils {
                             "DELETE like MERGE (source)-[:%s]-(target)",
                     PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.LIKE.name(), PERSON.getLabelName(), USER_ID.getPropertyName(),
                     Relationships.MATCH.name());
+
+    private static final String CREATE_MESSAGE_AFTER_LIKE_QUERY =
+            String.format("MATCH (source:%s {%s: $sourceUserId})<-[like:%s]-(target:%s {%s: $targetUserId})-[upl:%s]->(p:%s {%s: $targetPhotoId}) " +
+                            "DELETE like MERGE (source)-[:%s]-(target) WITH source, p " +
+                            "MERGE (source)-[:%s]->(p)",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.LIKE.name(), PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), PHOTO_ID.getPropertyName(),
+                    Relationships.MESSAGE.name(),
+                    Relationships.MESSAGE.name());
+
+    private static final String CREATE_MESSAGE_AFTER_MATCH_QUERY =
+            String.format("MATCH (source:%s {%s: $sourceUserId})-[mat:%s]-(target:%s {%s: $targetUserId})-[upl:%s]->(p:%s {%s: $targetPhotoId}) " +
+                            "DELETE mat MERGE (source)-[:%s]-(target) WITH source, p " +
+                            "MERGE (source)-[:%s]->(p)",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.MATCH.name(), PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), PHOTO_ID.getPropertyName(),
+                    Relationships.MESSAGE.name(),
+                    Relationships.MESSAGE.name());
 
     private static final String DELETE_ALL_INCOMING_PHOTO_RELATIONSHIPS_FROM_BLOCKED_PROFILE_QUERY =
             String.format("MATCH (source:%s {%s:$sourceUserId})-[:%s]->(ph:%s)<-[r]-(target:%s {%s: $targetUserId}) " +
@@ -201,6 +218,99 @@ public class ActionsUtils {
         );
     }
 
+    public static void message(UserMessageEvent event, Driver driver,
+                               AmazonKinesis kinesis, String streamName, Gson gson) {
+        log.debug("message user event {} for userId {}", event, event.getUserId());
+        final Map<String, Object> parameters = new HashMap<>();
+        parameters.put("sourceUserId", event.getUserId());
+        parameters.put("targetUserId", event.getTargetUserId());
+        parameters.put("targetPhotoId", event.getOriginPhotoId());
+        parameters.put("messageAt", event.getMessageAt());
+        parameters.put("lastActionTime", event.getMessageAt());
+
+        try (Session session = driver.session()) {
+            session.writeTransaction(new TransactionWork<Integer>() {
+                @Override
+                public Integer execute(Transaction tx) {
+                    tx.run(UPDATE_LAST_ACTION_TIME_QUERY, parameters);
+
+                    if (doWeHaveBlock(event.getUserId(), event.getTargetUserId(), tx)) {
+                        log.warn("BLOCK exist between source userId {} and target userId {}, can not message",
+                                event.getUserId(), event.getTargetUserId());
+                        return 1;
+                    }
+
+                    Map<String, Object> map = getAllRel(tx, parameters, event.getUserId(), event.getTargetUserId());
+                    Set<Relationships> existRelationshipsBetweenProfiles = (Set<Relationships>) map.get("set");
+                    if (!existRelationshipsBetweenProfiles.contains(Relationships.LIKE) &&
+                            !existRelationshipsBetweenProfiles.contains(Relationships.MATCH) &&
+                            !existRelationshipsBetweenProfiles.contains(Relationships.MESSAGE)) {
+                        log.warn("LIKE, MATCH or MESSAGE does not exist between source userId {} and target userId {}, can not message",
+                                event.getUserId(), event.getTargetUserId());
+                        return 1;
+                    }
+
+
+                    existRelationshipsBetweenProfiles.remove(Relationships.VIEW);
+                    existRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_LIKES_YOU);
+                    existRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_MATCHES);
+                    existRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_MESSAGES);
+                    existRelationshipsBetweenProfiles.remove(Relationships.WAS_RETURN_TO_NEW_FACES);
+
+                    MessageEvent messageEvent = new MessageEvent(event.getUserId(), event.getTargetUserId(),
+                            event.getText(), event.getUnixTime());
+
+                    //if message already exist just send it
+                    if (existRelationshipsBetweenProfiles.contains(Relationships.MESSAGE)) {
+                        sendEventIntoInternalQueue(messageEvent, kinesis, streamName, event.getUserId(), gson);
+                        log.debug("MESSAGE already exist between source userId {} and target userId {}, send message",
+                                event.getUserId(), event.getTargetUserId());
+                        return 1;
+                    }
+
+                    if (existRelationshipsBetweenProfiles.contains(Relationships.MATCH)) {
+                        StatementResult result = tx.run(CREATE_MESSAGE_AFTER_MATCH_QUERY, parameters);
+                        SummaryCounters counters = result.summary().counters();
+                        log.info("{} message relationships were created for source userId {} to target userId {} and target photoId {}",
+                                counters.relationshipsCreated(), event.getUserId(), event.getTargetUserId(), event.getOriginPhotoId());
+                        sendEventIntoInternalQueue(messageEvent, kinesis, streamName, event.getUserId(), gson);
+                        return 1;
+                    }
+
+                    //now check that user has right like
+                    //first check that it's opposite like
+                    String startNode = null;
+                    List<Record> recordList = (List<Record>) map.get("list");
+                    for (Record each : recordList) {
+                        if (Objects.equals(each.get(RELATIONSHIP_TYPE).asString(), Relationships.LIKE.name())) {
+                            startNode = each.get(START_NODE_USER_ID).asString();
+                        }
+                    }
+
+                    if (Objects.equals(startNode, event.getUserId())) {
+                        log.warn("there is a like between source profile userId {} and target profile userId {}, but wrong direction, can not create message",
+                                event.getUserId(), event.getTargetUserId());
+                        return 1;
+                    }
+
+                    //match here, but it's already message !!!
+                    StatementResult result = tx.run(CREATE_MESSAGE_AFTER_LIKE_QUERY, parameters);
+                    SummaryCounters counters = result.summary().counters();
+                    if (counters.relationshipsCreated() > 0) {
+                        sendEventIntoInternalQueue(messageEvent, kinesis, streamName, event.getUserId(), gson);
+                    }
+                    log.info("{} message relationships were created between source profile userId {}, target profile userId {} and target photoId {}",
+                            counters.relationshipsCreated(), event.getUserId(), event.getTargetUserId(), event.getOriginPhotoId());
+
+                    return 1;
+                }
+            });
+        } catch (Throwable throwable) {
+            log.error("error like photo {}", event, throwable);
+            throw throwable;
+        }
+    }
+
     public static void unlike(UserUnlikePhotoEvent event, Driver driver) {
         log.debug("unlike photo event {} for userId {}", event, event.getUserId());
         final Map<String, Object> parameters = new HashMap<>();
@@ -217,6 +327,17 @@ public class ActionsUtils {
 
                     if (doWeHaveBlock(event.getUserId(), event.getTargetUserId(), tx)) {
                         log.warn("BLOCK exist between source userId {} and target userId {}, can not unlike photo {}",
+                                event.getUserId(), event.getTargetUserId(), event.getOriginPhotoId());
+                        return 1;
+                    }
+
+                    Map<String, Object> map = getAllRel(tx, parameters, event.getUserId(), event.getTargetUserId());
+                    Set<Relationships> existRelationshipsBetweenProfiles = (Set<Relationships>) map.get("set");
+                    if (!existRelationshipsBetweenProfiles.contains(Relationships.VIEW) &&
+                            !existRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_LIKES_YOU) &&
+                            !existRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_MESSAGES) &&
+                            !existRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_MATCHES)) {
+                        log.warn("VIEW does not exist between source userId {} and target userId {}, can not unlike photo {}",
                                 event.getUserId(), event.getTargetUserId(), event.getOriginPhotoId());
                         return 1;
                     }
@@ -269,6 +390,19 @@ public class ActionsUtils {
                                 event.getUserId(), event.getTargetUserId());
                         return 1;
                     }
+
+                    //todo:future place for optimization (can ask only about VIEW rel)
+                    Map<String, Object> map = getAllRel(tx, parameters, event.getUserId(), event.getTargetUserId());
+                    Set<Relationships> existRelationshipsBetweenProfiles = (Set<Relationships>) map.get("set");
+                    if (!existRelationshipsBetweenProfiles.contains(Relationships.VIEW) &&
+                            !existRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_LIKES_YOU) &&
+                            !existRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_MESSAGES) &&
+                            !existRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_MATCHES)) {
+                        log.warn("VIEW does not exist between source userId {} and target userId {}, can not block photo {}",
+                                event.getUserId(), event.getTargetUserId(), event.getOriginPhotoId());
+                        return 1;
+                    }
+
 
                     StatementResult result = tx.run(DELETE_ALL_INCOMING_PHOTO_RELATIONSHIPS_FROM_BLOCKED_PROFILE_QUERY, parameters);
                     SummaryCounters counters = result.summary().counters();
@@ -376,6 +510,14 @@ public class ActionsUtils {
 
                     Map<String, Object> map = getAllRel(tx, parameters, event.getUserId(), event.getTargetUserId());
                     Set<Relationships> existRelationshipsBetweenProfiles = (Set<Relationships>) map.get("set");
+                    if (!existRelationshipsBetweenProfiles.contains(Relationships.VIEW) &&
+                            !existRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_LIKES_YOU) &&
+                            !existRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_MESSAGES) &&
+                            !existRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_MATCHES)) {
+                        log.warn("VIEW does not exist between source userId {} and target userId {}, can not like photo {}",
+                                event.getUserId(), event.getTargetUserId(), event.getOriginPhotoId());
+                        return 1;
+                    }
                     existRelationshipsBetweenProfiles.remove(Relationships.VIEW);
                     existRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_LIKES_YOU);
                     existRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_MATCHES);

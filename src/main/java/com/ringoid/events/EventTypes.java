@@ -14,7 +14,10 @@ public enum EventTypes {
     ACTION_USER_UNLIKE_PHOTO,
     AUTH_USER_CALL_DELETE_HIMSELF,
 
+    ACTION_USER_MESSAGE,
+
     INTERNAL_PHOTO_LIKE_EVENT, //this event goes outside to image service
+    INTERNAL_USER_SEND_MESSAGE_EVENT, //this event goes to messages service
 
     FEEDS_NEW_FACES_SEEN_PROFILES
 }

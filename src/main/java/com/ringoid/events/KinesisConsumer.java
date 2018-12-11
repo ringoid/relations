@@ -10,6 +10,7 @@ import com.google.gson.GsonBuilder;
 import com.ringoid.events.actions.ActionsUtils;
 import com.ringoid.events.actions.UserBlockOtherEvent;
 import com.ringoid.events.actions.UserLikePhotoEvent;
+import com.ringoid.events.actions.UserMessageEvent;
 import com.ringoid.events.actions.UserUnlikePhotoEvent;
 import com.ringoid.events.actions.UserViewPhotoEvent;
 import com.ringoid.events.auth.AuthUtils;
@@ -36,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.ringoid.events.EventTypes.ACTION_USER_BLOCK_OTHER;
 import static com.ringoid.events.EventTypes.ACTION_USER_LIKE_PHOTO;
+import static com.ringoid.events.EventTypes.ACTION_USER_MESSAGE;
 import static com.ringoid.events.EventTypes.ACTION_USER_UNLIKE_PHOTO;
 import static com.ringoid.events.EventTypes.ACTION_USER_VIEW_PHOTO;
 import static com.ringoid.events.EventTypes.AUTH_USER_CALL_DELETE_HIMSELF;
@@ -106,6 +108,9 @@ public class KinesisConsumer {
             } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_BLOCK_OTHER.name())) {
                 UserBlockOtherEvent userBlockOtherEvent = gson.fromJson(s, UserBlockOtherEvent.class);
                 ActionsUtils.block(userBlockOtherEvent, driver, kinesis, internalStreamName, gson);
+            } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_MESSAGE.name())) {
+                UserMessageEvent userMessage = gson.fromJson(s, UserMessageEvent.class);
+                ActionsUtils.message(userMessage, driver, kinesis, internalStreamName, gson);
             } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_UNLIKE_PHOTO.name())) {
                 UserUnlikePhotoEvent userUnlikePhotoEvent = gson.fromJson(s, UserUnlikePhotoEvent.class);
                 ActionsUtils.unlike(userUnlikePhotoEvent, driver);
