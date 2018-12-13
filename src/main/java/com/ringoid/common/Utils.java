@@ -2,9 +2,12 @@ package com.ringoid.common;
 
 import com.ringoid.Relationships;
 import com.ringoid.api.ProfileResponse;
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TransactionWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,5 +80,66 @@ public class Utils {
         }
 
         return profiles;
+    }
+
+    public static List<Map<String, List<String>>> llmRequest(Map<String, Object> parameters, String query,
+                                                             String targetUserIdParamName, String targetPhotoIdParamName,
+                                                             String logInfoRequestType,
+                                                             Driver driver) {
+        final List<Map<String, List<String>>> resultMap = new ArrayList<>();
+        final List<String> orderList = new ArrayList<>();
+        final Map<String, List<String>> tmpMap = new HashMap<>();
+
+        try (Session session = driver.session()) {
+            session.readTransaction(new TransactionWork<Integer>() {
+                @Override
+                public Integer execute(Transaction tx) {
+                    StatementResult result = tx.run(query, parameters);
+                    List<Record> list = result.list();
+                    int photoCounter = 0;
+                    for (Record each : list) {
+                        String targetUserId = each.get(targetUserIdParamName).asString();
+                        String targetPhotoId = each.get(targetPhotoIdParamName).asString();
+                        List<String> photos = tmpMap.get(targetUserId);
+                        if (photos == null) {
+                            orderList.add(targetUserId);
+                            photos = new ArrayList<>();
+                            tmpMap.put(targetUserId, photos);
+                        }
+                        photos.add(targetPhotoId);
+                        photoCounter++;
+                    }
+                    log.info("{} photo were found for {} request {} for userId {}",
+                            photoCounter, logInfoRequestType, parameters, parameters.get("sourceUserId"));
+                    return 1;
+                }
+            });
+        } catch (Throwable throwable) {
+            log.error("error {} request, request {} for userId {}", logInfoRequestType, parameters.get("sourceUserId"), throwable);
+            throw throwable;
+        }
+        for (String eachUserId : orderList) {
+            List<String> photos = tmpMap.get(eachUserId);
+            Map<String, List<String>> eachProfileWithPhotos = new HashMap<>();
+            eachProfileWithPhotos.put(eachUserId, photos);
+            resultMap.add(eachProfileWithPhotos);
+        }
+        return resultMap;
+    }
+
+    public static int lastActionTime(Map<String, Object> parameters, Driver driver) {
+        int lastActionTime;
+        try (Session session = driver.session()) {
+            lastActionTime = session.readTransaction(new TransactionWork<Integer>() {
+                @Override
+                public Integer execute(Transaction tx) {
+                    return Utils.lastActionTime(parameters, tx);
+                }
+            });
+        } catch (Throwable throwable) {
+            log.error("error last action time request, request {} for userId {}", parameters.get("sourceUserId"), throwable);
+            throw throwable;
+        }
+        return lastActionTime;
     }
 }

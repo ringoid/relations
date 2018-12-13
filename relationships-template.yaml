@@ -41,6 +41,10 @@ Mappings:
       test: test-matches-relationships
       stage: stage-matches-relationships
       prod: prod-matches-relationships
+    MessagesFunction:
+      test: test-messages-relationships
+      stage: stage-messages-relationships
+      prod: prod-messages-relationships
     InternalCleanDbRelationshipsFunction:
       test: test-internal-clean-db-relationships
       stage: stage-internal-clean-db-relationships
@@ -129,6 +133,14 @@ Resources:
       Handler: "com.ringoid.api.lmm.Matches::handler"
       Description: Matches Feed function
 
+  MessagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: build/distributions/relationships-1.0-SNAPSHOT.zip
+      FunctionName: !FindInMap [FunctionName, MessagesFunction, !Ref Env]
+      Handler: "com.ringoid.api.lmm.Messages::handler"
+      Description: Messages Feed function
+
 
 Outputs:
   NewFacesFunctionExport:
@@ -143,6 +155,10 @@ Outputs:
     Value: !FindInMap [FunctionName, MatchesFunction, !Ref Env]
     Export:
       Name: !Join [ "-", [ !Ref Env, MatchesFunctionExport] ]
+  MessagesFunctionExport:
+    Value: !FindInMap [FunctionName, MessagesFunction, !Ref Env]
+    Export:
+      Name: !Join [ "-", [ !Ref Env, MessagesFunctionExport] ]
 
   InternalCleanDbRelationshipsFunctionExport:
     Value: !FindInMap [FunctionName, InternalCleanDbRelationshipsFunction, !Ref Env]

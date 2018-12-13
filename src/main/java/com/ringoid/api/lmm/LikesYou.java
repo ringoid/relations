@@ -11,15 +11,9 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.TransactionWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -136,7 +130,7 @@ public class LikesYou {
         parameters.put("sourceUserId", request.getUserId());
         parameters.put("hiddenUserStatus", UserStatus.HIDDEN.getValue());
 
-        int lastActionTime = lastActionTime(parameters);
+        int lastActionTime = Utils.lastActionTime(parameters, driver);
         LMMResponse response = new LMMResponse();
         response.setLastActionTime(lastActionTime);
 
@@ -145,7 +139,13 @@ public class LikesYou {
             return response;
         }
 
-        List<Map<String, List<String>>> receivedProfiles = likesYou(parameters, request.isRequestNewPart());
+        String query = LIKES_YOU_OLD_PART;
+        if (request.isRequestNewPart()) {
+            query = LIKES_YOU_NEW_PART;
+        }
+
+        List<Map<String, List<String>>> receivedProfiles = Utils.llmRequest(parameters, query,
+                TARGET_USER_ID, TARGET_PHOTO_ID, "likesYou", driver);
 
         List<ProfileResponse> profiles = Utils.profileResponse(receivedProfiles);
         response.setProfiles(profiles);
@@ -155,65 +155,4 @@ public class LikesYou {
         return response;
     }
 
-    private int lastActionTime(Map<String, Object> parameters) {
-        int lastActionTime;
-        try (Session session = driver.session()) {
-            lastActionTime = session.readTransaction(new TransactionWork<Integer>() {
-                @Override
-                public Integer execute(Transaction tx) {
-                    return Utils.lastActionTime(parameters, tx);
-                }
-            });
-        } catch (Throwable throwable) {
-            log.error("error last action time request, request {} for userId {}", parameters.get("sourceUserId"), throwable);
-            throw throwable;
-        }
-        return lastActionTime;
-    }
-
-    private List<Map<String, List<String>>> likesYou(Map<String, Object> parameters, boolean requestNewProfiles) {
-        final List<Map<String, List<String>>> resultMap = new ArrayList<>();
-        final List<String> orderList = new ArrayList<>();
-        final Map<String, List<String>> tmpMap = new HashMap<>();
-
-        try (Session session = driver.session()) {
-            session.readTransaction(new TransactionWork<Integer>() {
-                @Override
-                public Integer execute(Transaction tx) {
-                    String query = LIKES_YOU_OLD_PART;
-                    if (requestNewProfiles) {
-                        query = LIKES_YOU_NEW_PART;
-                    }
-                    StatementResult result = tx.run(query, parameters);
-                    List<Record> list = result.list();
-                    int photoCounter = 0;
-                    for (Record each : list) {
-                        String targetUserId = each.get(TARGET_USER_ID).asString();
-                        String targetPhotoId = each.get(TARGET_PHOTO_ID).asString();
-                        List<String> photos = tmpMap.get(targetUserId);
-                        if (photos == null) {
-                            orderList.add(targetUserId);
-                            photos = new ArrayList<>();
-                            tmpMap.put(targetUserId, photos);
-                        }
-                        photos.add(targetPhotoId);
-                        photoCounter++;
-                    }
-                    log.info("{} photo were found for likes you request {} for userId {}",
-                            photoCounter, parameters, parameters.get("sourceUserId"));
-                    return 1;
-                }
-            });
-        } catch (Throwable throwable) {
-            log.error("error likes you request, request {} for userId {}", parameters.get("sourceUserId"), throwable);
-            throw throwable;
-        }
-        for (String eachUserId : orderList) {
-            List<String> photos = tmpMap.get(eachUserId);
-            Map<String, List<String>> eachProfileWithPhotos = new HashMap<>();
-            eachProfileWithPhotos.put(eachUserId, photos);
-            resultMap.add(eachProfileWithPhotos);
-        }
-        return resultMap;
-    }
 }

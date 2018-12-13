@@ -11,15 +11,9 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.TransactionWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,27 +37,28 @@ public class Matches {
     private static final String TARGET_PHOTO_ID = "targetPhotoId";
     private static final String OWN_LAST_ACTION_TIME = "lastActionTime";
 
-    //    match (sourceUser:Person {user_id:1})<-[:MATCH]-(targetUser)-[:UPLOAD]->(ph:Photo) where sourceUser.user_id <>
-    //    targetUser.user_id
-    //    AND (NOT (sourceUser)-[:VIEW_IN_MATCHES]->(targetUser))
-    //    with sourceUser, targetUser, ph
-    //
-    //    optional match (ph)<-[sourceLike:LIKE]-(sourceUser)
-    //    with sourceUser, targetUser, count(sourceLike) as likesThatSourceMakes
-    //    match (sourceUser)<-[:MATCH]-(targetUser)-[:UPLOAD_PHOTO]->(ph:Photo)
-    //    with sourceUser, targetUser,likesThatSourceMakes, ph
-
-    //    optional match (ph)<-[ll:LIKE]-(:Person) with sourceUser, targetUser, count(ll) as likesThatUserHas, likesThatSourceMakes
-    //    match (targetUser)-[upl:UPLOAD]->(photo:Photo) with sourceUser, targetUser, likesThatUserHas, count(upl) as uploads, likesThatSourceMakes
-    //    match (sourceUser)-[:UPLOAD]->(sPh:Photo)<-[rrr:LIKE]-(targetUser)
-    //    with sourceUser, targetUser, targetUser.was_online as onlineTime, likesThatUserHas, uploads, count(rrr) as howManyBackLikes, likesThatSourceMakes
-    //    match (targetUser)-[uplRel:UPLOAD]->(trPhoto:Photo) with sourceUser, targetUser, onlineTime, likesThatUserHas, howManyBackLikes, trPhoto, uplRel.photo_uploaded_at as photoUploadedTime, uploads, likesThatSourceMakes
-    //    optional match (trPhoto)<-[anyView]-(sourceUser) with sourceUser, targetUser, onlineTime, likesThatUserHas, howManyBackLikes, uploads, trPhoto, photoUploadedTime, count(anyView) as viewPhotoCountBySource, likesThatSourceMakes
-    //    optional match (trPhoto)<-[lrl:LIKE]-(:Person) return sourceUser.last_action_time as lastActionTime, targetUser.user_id, likesThatUserHas, uploads, howManyBackLikes, onlineTime, viewPhotoCountBySource, count(lrl) as targetPhotoWasLiked, photoUploadedTime, trPhoto.photo_id as photoId, likesThatSourceMakes
-    //    order by likesThatSourceMakes DESC, likesThatUserHas DESC, uploads DESC, howManyBackLikes DESC, onlineTime DESC, viewPhotoCountBySource ASC, targetPhotoWasLiked DESC, photoUploadedTime DESC
+//    match (sourceUser:Person {user_id:"56adeed94278b1f7fb5dc33a6153d8b86758aef4"})-[:MATCH]-(targetUser)-[:UPLOAD_PHOTO]->(ph:Photo)
+//    where sourceUser.user_id <> targetUser.user_id
+//
+//    AND (NOT (sourceUser)-[:VIEW_IN_MATCHES]->(targetUser))
+//    AND targetUser.user_status <> "hidden"
+//    with sourceUser, targetUser, ph
+//    optional match (ph)<-[sourceLike:LIKE]-(sourceUser)
+//    with sourceUser, targetUser, count(sourceLike) as likesThatSourceMakes
+//    match (sourceUser)-[:MATCH]-(targetUser)-[:UPLOAD_PHOTO]->(ph:Photo)
+//    with sourceUser, targetUser,likesThatSourceMakes, ph
+//
+//    optional match (ph)<-[ll:LIKE]-(:Person) with sourceUser, targetUser, count(ll) as likesThatUserHas, likesThatSourceMakes
+//    match (targetUser)-[upl:UPLOAD_PHOTO]->(photo:Photo) with sourceUser, targetUser, likesThatUserHas, count(upl) as uploads, likesThatSourceMakes
+//    match (sourceUser)-[:UPLOAD_PHOTO]->(sPh:Photo)<-[rrr:LIKE]-(targetUser)
+//    with sourceUser, targetUser, targetUser.was_online as onlineTime, likesThatUserHas, uploads, count(rrr) as howManyBackLikes, likesThatSourceMakes
+//    match (targetUser)-[uplRel:UPLOAD_PHOTO]->(trPhoto:Photo) with sourceUser, targetUser, onlineTime, likesThatUserHas, howManyBackLikes, trPhoto, uplRel.photo_uploaded_at as photoUploadedTime, uploads, likesThatSourceMakes
+//    optional match (trPhoto)<-[anyView]-(sourceUser) with sourceUser, targetUser, onlineTime, likesThatUserHas, howManyBackLikes, uploads, trPhoto, photoUploadedTime, count(anyView) as viewPhotoCountBySource, likesThatSourceMakes
+//    optional match (trPhoto)<-[lrl:LIKE]-(:Person) return sourceUser.last_action_time as lastActionTime, targetUser.user_id, likesThatUserHas, uploads, howManyBackLikes, onlineTime, viewPhotoCountBySource, count(lrl) as targetPhotoWasLiked, photoUploadedTime, trPhoto.photo_id as photoId, likesThatSourceMakes
+//    order by likesThatSourceMakes DESC, likesThatUserHas DESC, uploads DESC, howManyBackLikes DESC, onlineTime DESC, viewPhotoCountBySource ASC, targetPhotoWasLiked DESC, photoUploadedTime DESC
     private static final String MATCHES_NEW_PART =
             String.format(
-                    "MATCH (sourceUser:%s {%s:$sourceUserId})<-[:%s]-(targetUser)-[:%s]->(ph:%s) " +//1
+                    "MATCH (sourceUser:%s {%s:$sourceUserId})-[:%s]-(targetUser)-[:%s]->(ph:%s) " +//1
                             "WHERE sourceUser.%s <> targetUser.%s " +//2
 
                             "AND (NOT (sourceUser)-[:%s]->(targetUser)) " +//3
@@ -73,7 +68,7 @@ public class Matches {
 
                             "OPTIONAL MATCH (ph)<-[sourceLike:%s]-(sourceUser) " +//4.1
                             "WITH sourceUser, targetUser, count(sourceLike) as likesThatSourceMakes " +//4.2
-                            "MATCH (sourceUser)<-[:%s]-(targetUser)-[:%s]->(ph:Photo) " +//4.3
+                            "MATCH (sourceUser)-[:%s]-(targetUser)-[:%s]->(ph:Photo) " +//4.3
                             "WITH sourceUser, targetUser,likesThatSourceMakes, ph " +//4.4
 
                             "OPTIONAL MATCH (ph)<-[ll:%s]-(:%s) WITH sourceUser, targetUser, count(ll) as likesThatUserHas, likesThatSourceMakes " +//5
@@ -105,7 +100,7 @@ public class Matches {
 
     private static final String MATCHES_OLD_PART =
             String.format(
-                    "MATCH (sourceUser:%s {%s:$sourceUserId})<-[:%s]-(targetUser)-[:%s]->(ph:%s) " +//1
+                    "MATCH (sourceUser:%s {%s:$sourceUserId})-[:%s]-(targetUser)-[:%s]->(ph:%s) " +//1
                             "WHERE sourceUser.%s <> targetUser.%s " +//2
 
                             "AND (sourceUser)-[:%s]->(targetUser) " +//3
@@ -115,7 +110,7 @@ public class Matches {
 
                             "OPTIONAL MATCH (ph)<-[sourceLike:%s]-(sourceUser) " +//4.1
                             "WITH sourceUser, targetUser, count(sourceLike) as likesThatSourceMakes " +//4.2
-                            "MATCH (sourceUser)<-[:%s]-(targetUser)-[:%s]->(ph:Photo) " +//4.3
+                            "MATCH (sourceUser)-[:%s]-(targetUser)-[:%s]->(ph:Photo) " +//4.3
                             "WITH sourceUser, targetUser,likesThatSourceMakes, ph " +//4.4
 
                             "OPTIONAL MATCH (ph)<-[ll:%s]-(:%s) WITH sourceUser, targetUser, count(ll) as likesThatUserHas, likesThatSourceMakes " +//5
@@ -160,7 +155,7 @@ public class Matches {
         parameters.put("sourceUserId", request.getUserId());
         parameters.put("hiddenUserStatus", UserStatus.HIDDEN.getValue());
 
-        int lastActionTime = lastActionTime(parameters);
+        int lastActionTime = Utils.lastActionTime(parameters, driver);
         LMMResponse response = new LMMResponse();
         response.setLastActionTime(lastActionTime);
 
@@ -169,7 +164,13 @@ public class Matches {
             return response;
         }
 
-        List<Map<String, List<String>>> receivedProfiles = matches(parameters, request.isRequestNewPart());
+        String query = MATCHES_OLD_PART;
+        if (request.isRequestNewPart()) {
+            query = MATCHES_NEW_PART;
+        }
+
+        List<Map<String, List<String>>> receivedProfiles = Utils.llmRequest(parameters, query,
+                TARGET_USER_ID, TARGET_PHOTO_ID, "matches", driver);
 
         List<ProfileResponse> profiles = Utils.profileResponse(receivedProfiles);
         response.setProfiles(profiles);
@@ -179,65 +180,4 @@ public class Matches {
         return response;
     }
 
-    private int lastActionTime(Map<String, Object> parameters) {
-        int lastActionTime;
-        try (Session session = driver.session()) {
-            lastActionTime = session.readTransaction(new TransactionWork<Integer>() {
-                @Override
-                public Integer execute(Transaction tx) {
-                    return Utils.lastActionTime(parameters, tx);
-                }
-            });
-        } catch (Throwable throwable) {
-            log.error("error last action time request, request {} for userId {}", parameters.get("sourceUserId"), throwable);
-            throw throwable;
-        }
-        return lastActionTime;
-    }
-
-    private List<Map<String, List<String>>> matches(Map<String, Object> parameters, boolean requestNewProfiles) {
-        final List<Map<String, List<String>>> resultMap = new ArrayList<>();
-        final List<String> orderList = new ArrayList<>();
-        final Map<String, List<String>> tmpMap = new HashMap<>();
-
-        try (Session session = driver.session()) {
-            session.readTransaction(new TransactionWork<Integer>() {
-                @Override
-                public Integer execute(Transaction tx) {
-                    String query = MATCHES_OLD_PART;
-                    if (requestNewProfiles) {
-                        query = MATCHES_NEW_PART;
-                    }
-                    StatementResult result = tx.run(query, parameters);
-                    List<Record> list = result.list();
-                    int photoCounter = 0;
-                    for (Record each : list) {
-                        String targetUserId = each.get(TARGET_USER_ID).asString();
-                        String targetPhotoId = each.get(TARGET_PHOTO_ID).asString();
-                        List<String> photos = tmpMap.get(targetUserId);
-                        if (photos == null) {
-                            orderList.add(targetUserId);
-                            photos = new ArrayList<>();
-                            tmpMap.put(targetUserId, photos);
-                        }
-                        photos.add(targetPhotoId);
-                        photoCounter++;
-                    }
-                    log.info("{} photo were found for matches request {} for userId {}",
-                            photoCounter, parameters, parameters.get("sourceUserId"));
-                    return 1;
-                }
-            });
-        } catch (Throwable throwable) {
-            log.error("error matches request, request {} for userId {}", parameters.get("sourceUserId"), throwable);
-            throw throwable;
-        }
-        for (String eachUserId : orderList) {
-            List<String> photos = tmpMap.get(eachUserId);
-            Map<String, List<String>> eachProfileWithPhotos = new HashMap<>();
-            eachProfileWithPhotos.put(eachUserId, photos);
-            resultMap.add(eachProfileWithPhotos);
-        }
-        return resultMap;
-    }
 }

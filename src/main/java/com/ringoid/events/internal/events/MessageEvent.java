@@ -9,15 +9,17 @@ public class MessageEvent extends BaseEvent {
     private String targetUserId;
     private String text;
     private int unixTime;
+    private int messageAt;
 
     public MessageEvent() {
     }
 
-    public MessageEvent(String userId, String targetUserId, String text, int unixTime) {
+    public MessageEvent(String userId, String targetUserId, String text, int unixTime, int messageAt) {
         this.userId = userId;
         this.targetUserId = targetUserId;
         this.text = text;
         this.unixTime = unixTime;
+        this.messageAt = messageAt;
         this.eventType = INTERNAL_USER_SEND_MESSAGE_EVENT.name();
     }
 
@@ -51,5 +53,13 @@ public class MessageEvent extends BaseEvent {
 
     public void setUnixTime(int unixTime) {
         this.unixTime = unixTime;
+    }
+
+    public int getMessageAt() {
+        return messageAt;
+    }
+
+    public void setMessageAt(int messageAt) {
+        this.messageAt = messageAt;
     }
 }

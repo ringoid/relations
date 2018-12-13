@@ -31,6 +31,7 @@ import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.LikeProperties.LIKED_AT;
 import static com.ringoid.LikeProperties.LIKE_COUNT;
+import static com.ringoid.MessageProperties.MSG_COUNT;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.PhotoProperties.PHOTO_ID;
@@ -109,10 +110,24 @@ public class ActionsUtils {
     private static final String CREATE_MESSAGE_AFTER_MATCH_QUERY =
             String.format("MATCH (source:%s {%s: $sourceUserId})-[mat:%s]-(target:%s {%s: $targetUserId})-[upl:%s]->(p:%s {%s: $targetPhotoId}) " +
                             "DELETE mat MERGE (source)-[:%s]-(target) WITH source, p " +
-                            "MERGE (source)-[:%s]->(p)",
+                            "MERGE (source)-[msg:%s]->(p) " +
+                            "ON CREATE SET msg.%s = $msgCount " +
+                            "ON MATCH SET msg.%s = msg.%s + $msgCount",
                     PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.MATCH.name(), PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), PHOTO_ID.getPropertyName(),
                     Relationships.MESSAGE.name(),
-                    Relationships.MESSAGE.name());
+                    Relationships.MESSAGE.name(),
+                    MSG_COUNT.getPropertyName(),
+                    MSG_COUNT.getPropertyName(), MSG_COUNT.getPropertyName());
+
+    private static final String CREATE_MESSAGE_AFTER_MESSAGE_QUERY =
+            String.format("MATCH (source:%s {%s: $sourceUserId})-[mess:%s]-(target:%s {%s: $targetUserId})-[upl:%s]->(p:%s {%s: $targetPhotoId}) " +
+                            "MERGE (source)-[msg:%s]->(p) " +
+                            "ON CREATE SET msg.%s = $msgCount " +
+                            "ON MATCH SET msg.%s = msg.%s + $msgCount",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.MESSAGE.name(), PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), PHOTO_ID.getPropertyName(),
+                    Relationships.MESSAGE.name(),
+                    MSG_COUNT.getPropertyName(),
+                    MSG_COUNT.getPropertyName(), MSG_COUNT.getPropertyName());
 
     private static final String DELETE_ALL_INCOMING_PHOTO_RELATIONSHIPS_FROM_BLOCKED_PROFILE_QUERY =
             String.format("MATCH (source:%s {%s:$sourceUserId})-[:%s]->(ph:%s)<-[r]-(target:%s {%s: $targetUserId}) " +
@@ -227,6 +242,7 @@ public class ActionsUtils {
         parameters.put("targetPhotoId", event.getOriginPhotoId());
         parameters.put("messageAt", event.getMessageAt());
         parameters.put("lastActionTime", event.getMessageAt());
+        parameters.put("msgCount", 1);
 
         try (Session session = driver.session()) {
             session.writeTransaction(new TransactionWork<Integer>() {
@@ -258,13 +274,17 @@ public class ActionsUtils {
                     existRelationshipsBetweenProfiles.remove(Relationships.WAS_RETURN_TO_NEW_FACES);
 
                     MessageEvent messageEvent = new MessageEvent(event.getUserId(), event.getTargetUserId(),
-                            event.getText(), event.getUnixTime());
+                            event.getText(), event.getUnixTime(), event.getMessageAt());
 
                     //if message already exist just send it
                     if (existRelationshipsBetweenProfiles.contains(Relationships.MESSAGE)) {
-                        sendEventIntoInternalQueue(messageEvent, kinesis, streamName, event.getUserId(), gson);
                         log.debug("MESSAGE already exist between source userId {} and target userId {}, send message",
                                 event.getUserId(), event.getTargetUserId());
+                        StatementResult result = tx.run(CREATE_MESSAGE_AFTER_MESSAGE_QUERY, parameters);
+                        SummaryCounters counters = result.summary().counters();
+                        log.info("{} message relationships were created for source userId {} to target userId {} and target photoId {}",
+                                counters.relationshipsCreated(), event.getUserId(), event.getTargetUserId(), event.getOriginPhotoId());
+                        sendEventIntoInternalQueue(messageEvent, kinesis, streamName, event.getUserId(), gson);
                         return 1;
                     }
 
