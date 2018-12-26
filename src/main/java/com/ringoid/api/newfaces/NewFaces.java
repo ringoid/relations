@@ -60,7 +60,11 @@ public class NewFaces {
                             "MATCH (n)-[uplRel:%s]->(photo:%s) WITH n, likes, count(uplRel) AS photos, n.%s AS wasOnline ORDER BY likes DESC, photos DESC, wasOnline DESC LIMIT $limit " +//6
                             "MATCH (n)-[uplRel:%s]->(photo:%s) WITH n, photo, likes, photos, wasOnline " +//7
                             "OPTIONAL MATCH (:%s)-[uploadRel:%s]->(photo)<-[l:%s]-(:%s) " +//8
-                            "RETURN n.user_id AS %s, photo.photo_id AS %s, count(l) AS eachPhotoLikes, likes, photos, wasOnline, uploadRel.photo_uploaded_at AS photoUploadedAt ORDER BY likes DESC, photos DESC, wasOnline DESC, eachPhotoLikes DESC, photoUploadedAt DESC",//9
+
+                            "WITH n, photo, likes, photos, wasOnline, count(l) AS eachPhotoLikes " +//8.1
+                            "MATCH (n)-[uploadRel:%s]->(photo) " +//8.2
+
+                            "RETURN n.user_id AS %s, photo.photo_id AS %s, likes, photos, wasOnline, uploadRel.photo_uploaded_at AS photoUploadedAt ORDER BY likes DESC, photos DESC, wasOnline DESC, eachPhotoLikes DESC, photoUploadedAt DESC",//9
                     PERSON.getLabelName(), USER_ID.getPropertyName(),//1
                     PERSON.getLabelName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//2
                     USER_ID.getPropertyName(), USER_ID.getPropertyName(),//3
@@ -71,6 +75,7 @@ public class NewFaces {
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), LAST_ONLINE_TIME.getPropertyName(),//6
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//7
                     PERSON.getLabelName(), Relationships.UPLOAD_PHOTO.name(), Relationships.LIKE.name(), PERSON.getLabelName(),//8
+                    Relationships.UPLOAD_PHOTO.name(),//8.2
                     TARGET_USER_ID, TARGET_PHOTO_ID//9
             );
 
