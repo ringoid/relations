@@ -31,6 +31,7 @@ import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.LikeProperties.LIKED_AT;
 import static com.ringoid.LikeProperties.LIKE_COUNT;
+import static com.ringoid.MessageProperties.MSG_AT;
 import static com.ringoid.MessageProperties.MSG_COUNT;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.USER_ID;
@@ -101,30 +102,54 @@ public class ActionsUtils {
 
     private static final String CREATE_MESSAGE_AFTER_LIKE_QUERY =
             String.format("MATCH (source:%s {%s: $sourceUserId})<-[like:%s]-(target:%s {%s: $targetUserId})-[upl:%s]->(p:%s {%s: $targetPhotoId}) " +
-                            "DELETE like MERGE (source)-[:%s]-(target) WITH source, p " +
-                            "MERGE (source)-[:%s]->(p)",
+                            "DELETE like MERGE (source)-[msg:%s]-(target) " +
+                            "ON CREATE SET msg.%s = $messageAt " +
+                            "ON MATCH SET msg.%s = $messageAt " +
+                            "WITH source, p " +
+                            "MERGE (source)-[ms:%s]->(p) " +
+                            "ON CREATE SET ms.%s = $msgCount " +
+                            "ON MATCH SET ms.%s = ms.%s + $msgCount",
                     PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.LIKE.name(), PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), PHOTO_ID.getPropertyName(),
                     Relationships.MESSAGE.name(),
-                    Relationships.MESSAGE.name());
+                    MSG_AT.getPropertyName(),
+                    MSG_AT.getPropertyName(),
+                    Relationships.MESSAGE.name(),
+                    MSG_COUNT.getPropertyName(),
+                    MSG_COUNT.getPropertyName(), MSG_COUNT.getPropertyName());
+
+//    private static final String UPDATE_MESSAGE_TIME_AT_QUERY =
+//            String.format(
+//                    "MATCH (source:%s {%s: $sourceUserId})-[mat:%s]-(target:%s {%s: $targetUserId}) " +
+//                            "SET mat.%s = $messageAt",
+//                    PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.MATCH.name(), PERSON.getLabelName(), USER_ID.getPropertyName(),
+//                    MSG_AT.getPropertyName()
+//            );
 
     private static final String CREATE_MESSAGE_AFTER_MATCH_QUERY =
             String.format("MATCH (source:%s {%s: $sourceUserId})-[mat:%s]-(target:%s {%s: $targetUserId})-[upl:%s]->(p:%s {%s: $targetPhotoId}) " +
-                            "DELETE mat MERGE (source)-[:%s]-(target) WITH source, p " +
-                            "MERGE (source)-[msg:%s]->(p) " +
-                            "ON CREATE SET msg.%s = $msgCount " +
-                            "ON MATCH SET msg.%s = msg.%s + $msgCount",
+                            "DELETE mat MERGE (source)-[msg:%s]-(target) " +
+                            "ON CREATE SET msg.%s = $messageAt " +
+                            "ON MATCH SET msg.%s = $messageAt " +
+                            "WITH source, p " +
+                            "MERGE (source)-[ms:%s]->(p) " +
+                            "ON CREATE SET ms.%s = $msgCount " +
+                            "ON MATCH SET ms.%s = ms.%s + $msgCount",
                     PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.MATCH.name(), PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), PHOTO_ID.getPropertyName(),
                     Relationships.MESSAGE.name(),
+                    MSG_AT.getPropertyName(),
+                    MSG_AT.getPropertyName(),
                     Relationships.MESSAGE.name(),
                     MSG_COUNT.getPropertyName(),
                     MSG_COUNT.getPropertyName(), MSG_COUNT.getPropertyName());
 
     private static final String CREATE_MESSAGE_AFTER_MESSAGE_QUERY =
             String.format("MATCH (source:%s {%s: $sourceUserId})-[mess:%s]-(target:%s {%s: $targetUserId})-[upl:%s]->(p:%s {%s: $targetPhotoId}) " +
+                            "SET mess.%s = $messageAt " +
                             "MERGE (source)-[msg:%s]->(p) " +
                             "ON CREATE SET msg.%s = $msgCount " +
                             "ON MATCH SET msg.%s = msg.%s + $msgCount",
                     PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.MESSAGE.name(), PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), PHOTO_ID.getPropertyName(),
+                    MSG_AT.getPropertyName(),
                     Relationships.MESSAGE.name(),
                     MSG_COUNT.getPropertyName(),
                     MSG_COUNT.getPropertyName(), MSG_COUNT.getPropertyName());
@@ -276,7 +301,7 @@ public class ActionsUtils {
                     MessageEvent messageEvent = new MessageEvent(event.getUserId(), event.getTargetUserId(),
                             event.getText(), event.getUnixTime(), event.getMessageAt());
 
-                    //if message already exist just send it
+                    //if message already exist just update time and send it
                     if (existRelationshipsBetweenProfiles.contains(Relationships.MESSAGE)) {
                         log.debug("MESSAGE already exist between source userId {} and target userId {}, send message",
                                 event.getUserId(), event.getTargetUserId());
@@ -314,6 +339,7 @@ public class ActionsUtils {
                     }
 
                     //match here, but it's already message !!!
+                    //todo:don't forget that it's the same match, m.b. need to implement some kind of notification later
                     StatementResult result = tx.run(CREATE_MESSAGE_AFTER_LIKE_QUERY, parameters);
                     SummaryCounters counters = result.summary().counters();
                     if (counters.relationshipsCreated() > 0) {

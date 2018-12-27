@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
+import static com.ringoid.MessageProperties.MSG_AT;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.PersonProperties.USER_STATUS;
 import static com.ringoid.PhotoProperties.PHOTO_ID;
@@ -36,21 +37,21 @@ public class Messages {
 
     private static final String MESSAGES_QUERY =
             String.format(
-                    "MATCH (sourceUser:%s {%s:$sourceUserId})-[:%s]-(targetUser)-[uplRel:%s]->(trPhoto:%s) " +//1
+                    "MATCH (sourceUser:%s {%s:$sourceUserId})-[msg:%s]-(targetUser)-[uplRel:%s]->(trPhoto:%s) " +//1
 
                             "WHERE sourceUser.%s <> targetUser.%s " +//2
                             "AND targetUser.%s <> $hiddenUserStatus " +//3
-                            "WITH sourceUser, targetUser, uplRel, uplRel.%s as photoUploadedTime, trPhoto " +//4
+                            "WITH sourceUser, targetUser, msg.%s as lastMessageTime, uplRel, uplRel.%s as photoUploadedTime, trPhoto " +//4
 
-                            "OPTIONAL MATCH (trPhoto)<-[anyView]-(sourceUser) WITH sourceUser, targetUser, trPhoto, photoUploadedTime, count(anyView) as viewPhotoCountBySource " +//5
-                            "OPTIONAL MATCH (trPhoto)<-[lrl:%s]-(:%s) RETURN targetUser.%s AS %s, trPhoto.%s AS %s, viewPhotoCountBySource, count(lrl) as targetPhotoWasLiked, photoUploadedTime " +//6
-                            "ORDER BY viewPhotoCountBySource ASC, targetPhotoWasLiked DESC, photoUploadedTime DESC",//7
+                            "OPTIONAL MATCH (trPhoto)<-[anyView]-(sourceUser) WITH sourceUser, targetUser, lastMessageTime, trPhoto, photoUploadedTime, count(anyView) as viewPhotoCountBySource " +//5
+                            "OPTIONAL MATCH (trPhoto)<-[lrl:%s]-(:%s) RETURN targetUser.%s AS %s, trPhoto.%s AS %s, lastMessageTime, viewPhotoCountBySource, count(lrl) as targetPhotoWasLiked, photoUploadedTime " +//6
+                            "ORDER BY lastMessageTime DESC, viewPhotoCountBySource ASC, targetPhotoWasLiked DESC, photoUploadedTime DESC",//7
 
                     PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.MESSAGE.name(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//1
 
                     USER_ID.getPropertyName(), USER_ID.getPropertyName(),//2
                     USER_STATUS.getPropertyName(),//3
-                    PHOTO_UPLOADED.getPropertyName(),//4
+                    MSG_AT.getPropertyName(), PHOTO_UPLOADED.getPropertyName(),//4
 
                     Relationships.LIKE.name(), PERSON.getLabelName(), USER_ID.getPropertyName(), TARGET_USER_ID, PHOTO_ID.getPropertyName(), TARGET_PHOTO_ID //6
             );
