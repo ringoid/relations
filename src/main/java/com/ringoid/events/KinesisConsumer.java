@@ -5,6 +5,8 @@ import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.KinesisEvent;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.ringoid.events.actions.ActionsUtils;
@@ -56,6 +58,9 @@ public class KinesisConsumer {
     private final Gson gson;
     private final AmazonKinesis kinesis;
     private final String internalStreamName;
+    private final AmazonSQS sqs;
+    private final String botSqsQueueUrl;
+    private final boolean botEnabled;
 
     public KinesisConsumer() {
         String neo4jUri = System.getenv("NEO4J_URI");
@@ -65,6 +70,10 @@ public class KinesisConsumer {
 
         internalStreamName = System.getenv("INTERNAL_STREAM_NAME");
 
+        botSqsQueueUrl = System.getenv("BOT_SQS_QUEUE_URL");
+
+        botEnabled = Boolean.valueOf(System.getenv("BOTS_ENABLED"));
+
         driver = GraphDatabase.driver(neo4jUri, AuthTokens.basic(userName, password),
                 Config.build().withMaxTransactionRetryTime(10, TimeUnit.SECONDS).toConfig());
 
@@ -73,6 +82,9 @@ public class KinesisConsumer {
 
         AmazonKinesisClientBuilder clientBuilder = AmazonKinesisClientBuilder.standard().withRegion(Regions.EU_WEST_1);
         kinesis = clientBuilder.build();
+
+        AmazonSQSClientBuilder sqsClientBuilder = AmazonSQSClientBuilder.standard().withRegion(Regions.EU_WEST_1);
+        sqs = sqsClientBuilder.build();
     }
 
     public void handler(KinesisEvent event, Context context) {
@@ -102,7 +114,7 @@ public class KinesisConsumer {
                 AuthUtils.deleteUser(userCallDeleteHimselfEvent, driver);
             } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_LIKE_PHOTO.name())) {
                 UserLikePhotoEvent userLikePhotoEvent = gson.fromJson(s, UserLikePhotoEvent.class);
-                ActionsUtils.likePhoto(userLikePhotoEvent, driver, kinesis, internalStreamName, gson);
+                ActionsUtils.likePhoto(userLikePhotoEvent, driver, kinesis, internalStreamName, gson, sqs, botSqsQueueUrl, botEnabled);
             } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_VIEW_PHOTO.name())) {
                 UserViewPhotoEvent userViewPhotoEvent = gson.fromJson(s, UserViewPhotoEvent.class);
                 ActionsUtils.viewPhoto(userViewPhotoEvent, driver);
@@ -111,7 +123,7 @@ public class KinesisConsumer {
                 ActionsUtils.block(userBlockOtherEvent, driver, kinesis, internalStreamName, gson);
             } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_MESSAGE.name())) {
                 UserMessageEvent userMessage = gson.fromJson(s, UserMessageEvent.class);
-                ActionsUtils.message(userMessage, driver, kinesis, internalStreamName, gson);
+                ActionsUtils.message(userMessage, driver, kinesis, internalStreamName, gson, sqs, botSqsQueueUrl, botEnabled);
             } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_UNLIKE_PHOTO.name())) {
                 UserUnlikePhotoEvent userUnlikePhotoEvent = gson.fromJson(s, UserUnlikePhotoEvent.class);
                 ActionsUtils.unlike(userUnlikePhotoEvent, driver);

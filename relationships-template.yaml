@@ -13,7 +13,7 @@ Mappings:
   Neo4jMap:
     Neo4jUri:
       stage: "bolt://34.254.188.103:7687"
-      test: "bolt://54.154.53.16:7687"
+      test: "bolt://18.203.172.129:7687"
       prod: "neo4j uri put HERE"
     Neo4jUser:
       stage: neo4j
@@ -50,6 +50,18 @@ Mappings:
       stage: stage-internal-clean-db-relationships
       prod: prod-internal-clean-db-relationships
 
+  BotSqsResourcesName:
+    BotSqsQueue:
+      test: test-bots-sqs-queue
+      stage: stage-bots-sqs-queue
+      prod: prod-bots-sqs-queue
+
+  BotEnabledMap:
+    BotEnableValue:
+      test: true
+      stage: true
+      prod: false
+
 Parameters:
   Env:
     Type: String
@@ -75,6 +87,8 @@ Globals:
             NEO4J_URI: !FindInMap [Neo4jMap, Neo4jUri, !Ref Env]
             NEO4J_USER: !FindInMap [Neo4jMap, Neo4jUser, !Ref Env]
             NEO4J_PASSWORD: !FindInMap [Neo4jMap, Neo4jPass, !Ref Env]
+            BOTS_ENABLED: !FindInMap [BotEnabledMap, BotEnableValue, !Ref Env]
+            BOT_SQS_QUEUE_URL: !Ref BotSqsQueue
         Tags:
           Company: Ringoid
           Service: relationships
@@ -99,6 +113,7 @@ Resources:
       Description: Consumer for Kinesis stream
       Policies:
         - AmazonKinesisFullAccess
+        - AmazonSQSFullAccess
       Events:
         CommonEventStreamEvent:
           Type: Kinesis
@@ -141,6 +156,13 @@ Resources:
       Handler: "com.ringoid.api.lmm.Messages::handler"
       Description: Messages Feed function
 
+  #----------------- Bots section ------------------------
+  BotSqsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !FindInMap [BotSqsResourcesName, BotSqsQueue, !Ref Env]
+      VisibilityTimeout: 900
+  #----------------- End Bots section ------------------------
 
 Outputs:
   NewFacesFunctionExport:
@@ -159,8 +181,11 @@ Outputs:
     Value: !FindInMap [FunctionName, MessagesFunction, !Ref Env]
     Export:
       Name: !Join [ "-", [ !Ref Env, MessagesFunctionExport] ]
-
   InternalCleanDbRelationshipsFunctionExport:
     Value: !FindInMap [FunctionName, InternalCleanDbRelationshipsFunction, !Ref Env]
     Export:
       Name: !Join [ "-", [ !Ref Env, InternalCleanDbRelationshipsFunctionExport] ]
+  BotSqsQueueArnExport:
+    Value: !GetAtt BotSqsQueue.Arn
+    Export:
+      Name: !Join [ "-", [ !Ref Env, BotSqsQueueArnExport] ]

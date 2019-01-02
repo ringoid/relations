@@ -14,6 +14,7 @@ dependencies {
             'com.amazonaws:aws-lambda-java-core:1.2.0',
             'com.amazonaws:aws-lambda-java-events:2.2.2',
             'com.amazonaws:aws-java-sdk-kinesis:1.11.163',
+            'com.amazonaws:aws-java-sdk-sqs:1.11.163',
             'org.neo4j.driver:neo4j-java-driver:1.4.4',
             'io.symphonia:lambda-logging:1.0.0',
             'com.google.code.gson:gson:2.8.2'

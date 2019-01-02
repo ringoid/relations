@@ -12,6 +12,21 @@ public class UserLikePhotoEvent extends BaseEvent {
     private String internalServiceSource;
     private int unixTime;
 
+    public UserLikePhotoEvent botUserLikePhotoEvent() {
+        UserLikePhotoEvent botEvent = new UserLikePhotoEvent();
+        botEvent.setUserId(userId);
+        botEvent.setOriginPhotoId(originPhotoId);
+        botEvent.setTargetUserId(targetUserId);
+        botEvent.setLikeCount(likeCount);
+        botEvent.setLikedAt(likedAt);
+        botEvent.setSource(source);
+        botEvent.setInternalServiceSource(internalServiceSource);
+        botEvent.setUnixTime(unixTime);
+
+        botEvent.setEventType("BOT_" + eventType);
+        return botEvent;
+    }
+
     public String getUserId() {
         return userId;
     }

@@ -2,6 +2,7 @@ package com.ringoid.events.actions;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.PutRecordRequest;
+import com.amazonaws.services.sqs.AmazonSQS;
 import com.google.gson.Gson;
 import com.ringoid.Relationships;
 import com.ringoid.ViewRelationshipSource;
@@ -259,7 +260,8 @@ public class ActionsUtils {
     }
 
     public static void message(UserMessageEvent event, Driver driver,
-                               AmazonKinesis kinesis, String streamName, Gson gson) {
+                               AmazonKinesis kinesis, String streamName, Gson gson,
+                               AmazonSQS sqs, String sqsUrl, boolean botEnabled) {
         log.debug("message user event {} for userId {}", event, event.getUserId());
         final Map<String, Object> parameters = new HashMap<>();
         parameters.put("sourceUserId", event.getUserId());
@@ -301,7 +303,7 @@ public class ActionsUtils {
                     MessageEvent messageEvent = new MessageEvent(event.getUserId(), event.getTargetUserId(),
                             event.getText(), event.getUnixTime(), event.getMessageAt());
 
-                    //if message already exist just update time and send it
+                    //if message between profiles already exist just update time and send it
                     if (existRelationshipsBetweenProfiles.contains(Relationships.MESSAGE)) {
                         log.debug("MESSAGE already exist between source userId {} and target userId {}, send message",
                                 event.getUserId(), event.getTargetUserId());
@@ -310,6 +312,10 @@ public class ActionsUtils {
                         log.info("{} message relationships were created for source userId {} to target userId {} and target photoId {}",
                                 counters.relationshipsCreated(), event.getUserId(), event.getTargetUserId(), event.getOriginPhotoId());
                         sendEventIntoInternalQueue(messageEvent, kinesis, streamName, event.getUserId(), gson);
+
+                        //send bot event
+                        sendBotEvent(event.botEvent(), sqs, sqsUrl, botEnabled, gson);
+
                         return 1;
                     }
 
@@ -319,6 +325,10 @@ public class ActionsUtils {
                         log.info("{} message relationships were created for source userId {} to target userId {} and target photoId {}",
                                 counters.relationshipsCreated(), event.getUserId(), event.getTargetUserId(), event.getOriginPhotoId());
                         sendEventIntoInternalQueue(messageEvent, kinesis, streamName, event.getUserId(), gson);
+
+                        //send bot event
+                        sendBotEvent(event.botEvent(), sqs, sqsUrl, botEnabled, gson);
+
                         return 1;
                     }
 
@@ -344,6 +354,9 @@ public class ActionsUtils {
                     SummaryCounters counters = result.summary().counters();
                     if (counters.relationshipsCreated() > 0) {
                         sendEventIntoInternalQueue(messageEvent, kinesis, streamName, event.getUserId(), gson);
+
+                        //send bot event
+                        sendBotEvent(event.botEvent(), sqs, sqsUrl, botEnabled, gson);
                     }
                     log.info("{} message relationships were created between source profile userId {}, target profile userId {} and target photoId {}",
                             counters.relationshipsCreated(), event.getUserId(), event.getTargetUserId(), event.getOriginPhotoId());
@@ -537,7 +550,8 @@ public class ActionsUtils {
     }
 
     public static void likePhoto(UserLikePhotoEvent event, Driver driver,
-                                 AmazonKinesis kinesis, String streamName, Gson gson) {
+                                 AmazonKinesis kinesis, String streamName, Gson gson,
+                                 AmazonSQS sqs, String sqsUrl, boolean botEnabled) {
         log.debug("like photo event {}", event);
 
         final Map<String, Object> parameters = new HashMap<>();
@@ -590,6 +604,9 @@ public class ActionsUtils {
 
                     PhotoLikeEvent likeEvent = new PhotoLikeEvent(event.getTargetUserId(), event.getOriginPhotoId());
                     sendEventIntoInternalQueue(likeEvent, kinesis, streamName, event.getTargetUserId(), gson);
+
+                    //send bot event
+                    sendBotEvent(event.botUserLikePhotoEvent(), sqs, sqsUrl, botEnabled, gson);
 
                     //now check which type of relationships we should create between profiles
                     //if there is a match already or a message then we should return
@@ -683,6 +700,16 @@ public class ActionsUtils {
         putRecordRequest.setPartitionKey(partitionKey);
         kinesis.putRecord(putRecordRequest);
         log.debug("successfully send event {} into internal queue", event);
+    }
+
+    private static void sendBotEvent(Object event, AmazonSQS sqs, String sqsUrl, boolean botEnabled, Gson gson) {
+        log.debug("try to send bot event {}, botEnabled {}", event, botEnabled);
+        if (!botEnabled) {
+            return;
+        }
+        log.debug("send bot event {} into sqs queue", event);
+        sqs.sendMessage(sqsUrl, gson.toJson(event));
+        log.debug("successfully send bot event {} into sqs queue", event);
     }
 
 }

@@ -11,6 +11,20 @@ public class UserMessageEvent extends BaseEvent {
     private String source;
     private int unixTime;
 
+    public UserMessageEvent botEvent() {
+        UserMessageEvent botEvent = new UserMessageEvent();
+        botEvent.setUserId(userId);
+        botEvent.setOriginPhotoId(originPhotoId);
+        botEvent.setTargetUserId(targetUserId);
+        botEvent.setText(text);
+        botEvent.setMessageAt(messageAt);
+        botEvent.setSource(source);
+        botEvent.setUnixTime(unixTime);
+        botEvent.setEventType("BOT_" + eventType);
+
+        return botEvent;
+    }
+
     public String getUserId() {
         return userId;
     }
