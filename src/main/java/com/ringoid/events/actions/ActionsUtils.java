@@ -61,11 +61,13 @@ public class ActionsUtils {
             String.format("MATCH (sourceUser:%s {%s: $sourceUserId}), (p:%s {%s: $photoId}) " +
                             "WHERE NOT (sourceUser)-[:%s]->(p) " +
                             "MERGE (sourceUser)-[photoRel:%s]->(p) " +
-                            "ON CREATE SET photoRel.%s = $likeCount, photoRel.%s = $likedAt",
+                            "ON CREATE SET photoRel.%s = $likeCount, photoRel.%s = $likedAt " +
+                            "ON MATCH SET photoRel.%s = photoRel.%s + $likeCount",
                     PERSON.getLabelName(), USER_ID.getPropertyName(), PHOTO.getLabelName(), PHOTO_ID.getPropertyName(),
                     Relationships.UPLOAD_PHOTO.name(),
                     Relationships.LIKE.name(),
-                    LIKE_COUNT.getPropertyName(), LIKED_AT.getPropertyName());
+                    LIKE_COUNT.getPropertyName(), LIKED_AT.getPropertyName(),
+                    LIKE_COUNT.getPropertyName(), LIKE_COUNT.getPropertyName());
 
     private static final String LIKED_PROFILE_QUERY =
             String.format("MATCH (sourceUser:%s {%s: $sourceUserId}), (targetUser:%s {%s: $targetUserId}) " +
@@ -95,7 +97,7 @@ public class ActionsUtils {
                     PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.LIKE.name(), PERSON.getLabelName(), USER_ID.getPropertyName()
             );
 
-    private static final String CREATE_MATCH_QUERY =
+    private static final String CREATE_MATCH_AFTER_LIKE_QUERY =
             String.format("MATCH (source:%s {%s: $sourceUserId})<-[like:%s]-(target:%s {%s: $targetUserId}) " +
                             "DELETE like MERGE (source)-[:%s]-(target)",
                     PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.LIKE.name(), PERSON.getLabelName(), USER_ID.getPropertyName(),
@@ -647,7 +649,7 @@ public class ActionsUtils {
                                 event.getTargetUserId(), event.getUserId());
 
                         //match here !!!
-                        result = tx.run(CREATE_MATCH_QUERY, parameters);
+                        result = tx.run(CREATE_MATCH_AFTER_LIKE_QUERY, parameters);
                         counters = result.summary().counters();
                         if (counters.relationshipsCreated() > 0) {
                             //todo:send match

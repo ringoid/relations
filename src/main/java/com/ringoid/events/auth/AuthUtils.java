@@ -64,18 +64,23 @@ public class AuthUtils {
 
     private static final String UPDATE_USER_ONLINE_TIME =
             String.format("MERGE (n:%s {%s: $userIdValue}) " +
-                            "ON MATCH SET " +
-                            "n.%s = $onlineUserTime",
+                            "ON CREATE SET n.%s = $onlineUserTime " +
+                            "ON MATCH SET n.%s = $onlineUserTime",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
+                    LAST_ONLINE_TIME.getPropertyName(),
                     LAST_ONLINE_TIME.getPropertyName());
 
     private static String deleteQuery(UserStatus userStatus, Map<String, Object> parameters) {
         switch (userStatus) {
             case ACTIVE: {
-                //match (p:Person {user_id:1000})-[:UPLOAD]->(ph:Photo) detach delete ph,p
+                //match (n:Person {user_id:"1"}) optional match (n)-[:UPLOAD_PHOTO]->(ph:Photo) detach delete n,ph
                 return String.format(
-                        "MATCH (n:%s {%s: $userIdValue})-[:%s]->(ph:%s) DETACH DELETE ph,n",
-                        PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName());
+                        "MATCH (n:%s {%s: $userIdValue}) " +//1
+                                "OPTIONAL MATCH (n)-[:%s]->(ph:%s) " +//2
+                                "DETACH DELETE n, ph",
+                        PERSON.getLabelName(), USER_ID.getPropertyName(),//1
+                        Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName()//2
+                );
             }
             case HIDDEN: {
                 //match (p:Person {user_id:1000}) SET p.user_status = hidden
