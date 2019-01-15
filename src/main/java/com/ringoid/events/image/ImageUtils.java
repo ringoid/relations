@@ -24,16 +24,17 @@ public class ImageUtils {
     private static final Logger log = LoggerFactory.getLogger(AuthUtils.class);
 
     private static final String UPLOAD_PHOTO =
-            String.format("MATCH (n:%s {%s: $userIdValue}) " +
-                            "MERGE (n)-[:%s {%s: $uploadedAtValue}]->(p:%s {%s: $photoIdValue})",
-                    PERSON.getLabelName(), USER_ID.getPropertyName(),
-                    Relationships.UPLOAD_PHOTO.name(), PHOTO_UPLOADED.getPropertyName(),
-                    PHOTO.getLabelName(), PHOTO_ID.getPropertyName());
+            String.format("MATCH (n:%s {%s: $userIdValue}) " +//1
+                            "MERGE (p:%s {%s: $photoIdValue}) " +//2
+                            "MERGE (n)-[rel:%s]->(p) " +//3
+                            "ON CREATE SET rel.%s = $uploadedAtValue " +//4
+                            "ON MATCH SET rel.%s = $uploadedAtValue",//5
 
-    private static final String DELETE_PHOTO =
-            String.format("MATCH (p:%s {%s: $photoIdValue}) " +
-                            "DETACH DELETE p",
-                    PHOTO.getLabelName(), PHOTO_ID.getPropertyName());
+                    PERSON.getLabelName(), USER_ID.getPropertyName(),//1
+                    PHOTO.getLabelName(), PHOTO_ID.getPropertyName(),//2
+                    Relationships.UPLOAD_PHOTO.name(),//3
+                    PHOTO_UPLOADED.getPropertyName(),//4
+                    PHOTO_UPLOADED.getPropertyName());//5
 
     private static String deletePhotoQuery(boolean userTakePartInReport) {
         if (!userTakePartInReport) {
