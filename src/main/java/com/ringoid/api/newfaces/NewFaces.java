@@ -3,7 +3,9 @@ package com.ringoid.api.newfaces;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.ringoid.Relationships;
 import com.ringoid.UserStatus;
+import com.ringoid.api.LMMResponse;
 import com.ringoid.api.ProfileResponse;
+import com.ringoid.common.Utils;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -96,9 +98,18 @@ public class NewFaces {
         parameters.put("limit", request.getLimit());
         parameters.put("hiddenUserStatus", UserStatus.HIDDEN.getValue());
 
+        NewFacesResponse response = new NewFacesResponse();
+
+        int lastActionTime = Utils.lastActionTime(parameters, driver);
+        response.setLastActionTime(lastActionTime);
+
+        if (request.getRequestedLastActionTime() > lastActionTime) {
+            log.debug("requested last action time > actual, return empty response");
+            return response;
+        }
+
         List<Map<String, List<String>>> faces = newFaces(parameters);
 
-        NewFacesResponse response = new NewFacesResponse();
         List<ProfileResponse> newFaces = new ArrayList<>();
         response.setNewFaces(newFaces);
 
