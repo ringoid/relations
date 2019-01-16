@@ -7,7 +7,7 @@ import java.util.List;
 public class ProfileWasReturnToNewFacesEvent extends BaseEvent {
     private String userId;
     private List<String> targetUserIds;
-    private int timeToDelete;
+    private long timeToDelete;
 
     public String getUserId() {
         return userId;
@@ -25,11 +25,11 @@ public class ProfileWasReturnToNewFacesEvent extends BaseEvent {
         this.targetUserIds = targetUserIds;
     }
 
-    public int getTimeToDelete() {
+    public long getTimeToDelete() {
         return timeToDelete;
     }
 
-    public void setTimeToDelete(int timeToDelete) {
+    public void setTimeToDelete(long timeToDelete) {
         this.timeToDelete = timeToDelete;
     }
 

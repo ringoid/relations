@@ -6,10 +6,10 @@ public class UserUnlikePhotoEvent extends BaseEvent {
     private String userId;
     private String originPhotoId;
     private String targetUserId;
-    private int unLikedAt;
+    private long unLikedAt;
     private String source;
     private String internalServiceSource;
-    private int unixTime;
+    private long unixTime;
 
     public String getUserId() {
         return userId;
@@ -35,11 +35,11 @@ public class UserUnlikePhotoEvent extends BaseEvent {
         this.targetUserId = targetUserId;
     }
 
-    public int getUnLikedAt() {
+    public long getUnLikedAt() {
         return unLikedAt;
     }
 
-    public void setUnLikedAt(int unLikedAt) {
+    public void setUnLikedAt(long unLikedAt) {
         this.unLikedAt = unLikedAt;
     }
 
@@ -59,11 +59,11 @@ public class UserUnlikePhotoEvent extends BaseEvent {
         this.internalServiceSource = internalServiceSource;
     }
 
-    public int getUnixTime() {
+    public long getUnixTime() {
         return unixTime;
     }
 
-    public void setUnixTime(int unixTime) {
+    public void setUnixTime(long unixTime) {
         this.unixTime = unixTime;
     }
 

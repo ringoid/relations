@@ -3,13 +3,13 @@ package com.ringoid.api.newfaces;
 public class NewFacesRequest {
     private String userId;
     private int limit;
-    private int requestedLastActionTime;
+    private long requestedLastActionTime;
 
-    public int getRequestedLastActionTime() {
+    public long getRequestedLastActionTime() {
         return requestedLastActionTime;
     }
 
-    public void setRequestedLastActionTime(int requestedLastActionTime) {
+    public void setRequestedLastActionTime(long requestedLastActionTime) {
         this.requestedLastActionTime = requestedLastActionTime;
     }
 

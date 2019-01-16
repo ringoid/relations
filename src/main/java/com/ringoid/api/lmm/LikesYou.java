@@ -130,7 +130,7 @@ public class LikesYou {
         parameters.put("sourceUserId", request.getUserId());
         parameters.put("hiddenUserStatus", UserStatus.HIDDEN.getValue());
 
-        int lastActionTime = Utils.lastActionTime(parameters, driver);
+        long lastActionTime = Utils.lastActionTime(parameters, driver);
         LMMResponse response = new LMMResponse();
         response.setLastActionTime(lastActionTime);
 

@@ -6,11 +6,11 @@ public class UserLikePhotoEvent extends BaseEvent {
     private String userId;
     private String originPhotoId;
     private String targetUserId;
-    private int likeCount;
-    private int likedAt;
+    private long likeCount;
+    private long likedAt;
     private String source;
     private String internalServiceSource;
-    private int unixTime;
+    private long unixTime;
 
     public UserLikePhotoEvent botUserLikePhotoEvent() {
         UserLikePhotoEvent botEvent = new UserLikePhotoEvent();
@@ -43,11 +43,11 @@ public class UserLikePhotoEvent extends BaseEvent {
         this.originPhotoId = originPhotoId;
     }
 
-    public int getLikeCount() {
+    public long getLikeCount() {
         return likeCount;
     }
 
-    public void setLikeCount(int likeCount) {
+    public void setLikeCount(long likeCount) {
         this.likeCount = likeCount;
     }
 
@@ -67,19 +67,19 @@ public class UserLikePhotoEvent extends BaseEvent {
         this.internalServiceSource = internalServiceSource;
     }
 
-    public int getUnixTime() {
+    public long getUnixTime() {
         return unixTime;
     }
 
-    public void setUnixTime(int unixTime) {
+    public void setUnixTime(long unixTime) {
         this.unixTime = unixTime;
     }
 
-    public int getLikedAt() {
+    public long getLikedAt() {
         return likedAt;
     }
 
-    public void setLikedAt(int likedAt) {
+    public void setLikedAt(long likedAt) {
         this.likedAt = likedAt;
     }
 

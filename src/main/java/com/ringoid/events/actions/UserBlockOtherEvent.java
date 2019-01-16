@@ -7,11 +7,11 @@ public class UserBlockOtherEvent extends BaseEvent {
     private String targetUserId;
     private String targetPhotoId;
     private String originPhotoId;
-    private int blockedAt;
-    private int blockReasonNum;
+    private long blockedAt;
+    private long blockReasonNum;
     private String source;
     private String internalServiceSource;
-    private int unixTime;
+    private long unixTime;
 
     public String getUserId() {
         return userId;
@@ -29,11 +29,11 @@ public class UserBlockOtherEvent extends BaseEvent {
         this.targetUserId = targetUserId;
     }
 
-    public int getBlockedAt() {
+    public long getBlockedAt() {
         return blockedAt;
     }
 
-    public void setBlockedAt(int blockedAt) {
+    public void setBlockedAt(long blockedAt) {
         this.blockedAt = blockedAt;
     }
 
@@ -53,19 +53,19 @@ public class UserBlockOtherEvent extends BaseEvent {
         this.internalServiceSource = internalServiceSource;
     }
 
-    public int getUnixTime() {
+    public long getUnixTime() {
         return unixTime;
     }
 
-    public void setUnixTime(int unixTime) {
+    public void setUnixTime(long unixTime) {
         this.unixTime = unixTime;
     }
 
-    public int getBlockReasonNum() {
+    public long getBlockReasonNum() {
         return blockReasonNum;
     }
 
-    public void setBlockReasonNum(int blockReasonNum) {
+    public void setBlockReasonNum(long blockReasonNum) {
         this.blockReasonNum = blockReasonNum;
     }
 

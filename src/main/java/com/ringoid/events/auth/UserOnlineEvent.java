@@ -4,7 +4,7 @@ import com.ringoid.events.BaseEvent;
 
 public class UserOnlineEvent extends BaseEvent {
     private String userId;
-    private int unixTime;
+    private long unixTime;
 
     public String getUserId() {
         return userId;
@@ -14,11 +14,11 @@ public class UserOnlineEvent extends BaseEvent {
         this.userId = userId;
     }
 
-    public int getUnixTime() {
+    public long getUnixTime() {
         return unixTime;
     }
 
-    public void setUnixTime(int unixTime) {
+    public void setUnixTime(long unixTime) {
         this.unixTime = unixTime;
     }
 

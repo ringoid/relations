@@ -5,7 +5,7 @@ import com.ringoid.events.BaseEvent;
 public class UserUploadedPhotoEvent extends BaseEvent {
     private String userId;
     private String photoId;
-    private int unixTime;
+    private long unixTime;
 
     public String getUserId() {
         return userId;
@@ -23,11 +23,11 @@ public class UserUploadedPhotoEvent extends BaseEvent {
         this.photoId = photoId;
     }
 
-    public int getUnixTime() {
+    public long getUnixTime() {
         return unixTime;
     }
 
-    public void setUnixTime(int unixTime) {
+    public void setUnixTime(long unixTime) {
         this.unixTime = unixTime;
     }
 

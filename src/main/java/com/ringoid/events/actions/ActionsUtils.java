@@ -120,14 +120,6 @@ public class ActionsUtils {
                     MSG_COUNT.getPropertyName(),
                     MSG_COUNT.getPropertyName(), MSG_COUNT.getPropertyName());
 
-//    private static final String UPDATE_MESSAGE_TIME_AT_QUERY =
-//            String.format(
-//                    "MATCH (source:%s {%s: $sourceUserId})-[mat:%s]-(target:%s {%s: $targetUserId}) " +
-//                            "SET mat.%s = $messageAt",
-//                    PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.MATCH.name(), PERSON.getLabelName(), USER_ID.getPropertyName(),
-//                    MSG_AT.getPropertyName()
-//            );
-
     private static final String CREATE_MESSAGE_AFTER_MATCH_QUERY =
             String.format("MATCH (source:%s {%s: $sourceUserId})-[mat:%s]-(target:%s {%s: $targetUserId})-[upl:%s]->(p:%s {%s: $targetPhotoId}) " +
                             "DELETE mat MERGE (source)-[msg:%s]-(target) " +
@@ -251,7 +243,6 @@ public class ActionsUtils {
                         "ON CREATE SET profileRel.%s = $viewAt",
                 PERSON.getLabelName(), USER_ID.getPropertyName(), PHOTO.getLabelName(), PHOTO_ID.getPropertyName(), PERSON.getLabelName(), USER_ID.getPropertyName(),
                 USER_ID.getPropertyName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(),
-
 
                 targetPhotoRelationship.name(),
                 VIEW_COUNT.getPropertyName(), VIEW_TIME_IN_SEC.getPropertyName(), VIEW_AT.getPropertyName(),

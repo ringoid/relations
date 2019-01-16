@@ -6,7 +6,7 @@ public class UserProfileCreatedEvent extends BaseEvent {
     private String userId;
     private String sex;
     private int yearOfBirth;
-    private int unixTime;
+    private long unixTime;
 
     public String getUserId() {
         return userId;
@@ -32,11 +32,11 @@ public class UserProfileCreatedEvent extends BaseEvent {
         this.yearOfBirth = yearOfBirth;
     }
 
-    public int getUnixTime() {
+    public long getUnixTime() {
         return unixTime;
     }
 
-    public void setUnixTime(int unixTime) {
+    public void setUnixTime(long unixTime) {
         this.unixTime = unixTime;
     }
 

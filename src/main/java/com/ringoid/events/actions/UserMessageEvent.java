@@ -7,9 +7,9 @@ public class UserMessageEvent extends BaseEvent {
     private String originPhotoId;
     private String targetUserId;
     private String text;
-    private int messageAt;
+    private long messageAt;
     private String source;
-    private int unixTime;
+    private long unixTime;
 
     public UserMessageEvent botEvent() {
         UserMessageEvent botEvent = new UserMessageEvent();
@@ -57,19 +57,19 @@ public class UserMessageEvent extends BaseEvent {
         this.source = source;
     }
 
-    public int getUnixTime() {
+    public long getUnixTime() {
         return unixTime;
     }
 
-    public void setUnixTime(int unixTime) {
+    public void setUnixTime(long unixTime) {
         this.unixTime = unixTime;
     }
 
-    public int getMessageAt() {
+    public long getMessageAt() {
         return messageAt;
     }
 
-    public void setMessageAt(int messageAt) {
+    public void setMessageAt(long messageAt) {
         this.messageAt = messageAt;
     }
 

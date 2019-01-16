@@ -56,13 +56,13 @@ public class Utils {
         return num > 0;
     }
 
-    public static int lastActionTime(Map<String, Object> parameters, Transaction tx) {
+    public static long lastActionTime(Map<String, Object> parameters, Transaction tx) {
         log.debug("last action time fot parameters {}", parameters);
         StatementResult result = tx.run(GET_LAST_ACTION_TIME_QUERY, parameters);
         List<Record> list = result.list();
-        int ownLastActionTime = 0;
+        long ownLastActionTime = 0L;
         for (Record each : list) {
-            ownLastActionTime = each.get(OWN_LAST_ACTION_TIME).asInt();
+            ownLastActionTime = each.get(OWN_LAST_ACTION_TIME).asLong();
         }
         return ownLastActionTime;
     }
@@ -111,6 +111,7 @@ public class Utils {
                     }
                     log.info("{} photo were found for {} request {} for userId {}",
                             photoCounter, logInfoRequestType, parameters, parameters.get("sourceUserId"));
+                    log.debug("{}", query);
                     return 1;
                 }
             });
@@ -127,12 +128,12 @@ public class Utils {
         return resultMap;
     }
 
-    public static int lastActionTime(Map<String, Object> parameters, Driver driver) {
-        int lastActionTime;
+    public static long lastActionTime(Map<String, Object> parameters, Driver driver) {
+        long lastActionTime;
         try (Session session = driver.session()) {
-            lastActionTime = session.readTransaction(new TransactionWork<Integer>() {
+            lastActionTime = session.readTransaction(new TransactionWork<Long>() {
                 @Override
-                public Integer execute(Transaction tx) {
+                public Long execute(Transaction tx) {
                     return Utils.lastActionTime(parameters, tx);
                 }
             });

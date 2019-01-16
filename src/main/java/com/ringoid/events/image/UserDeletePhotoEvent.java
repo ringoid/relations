@@ -5,7 +5,7 @@ import com.ringoid.events.BaseEvent;
 public class UserDeletePhotoEvent extends BaseEvent {
     private String userId;
     private String photoId;
-    private int unixTime;
+    private long unixTime;
     private boolean userTakePartInReport;
 
     public String getPhotoId() {
@@ -32,11 +32,11 @@ public class UserDeletePhotoEvent extends BaseEvent {
         this.userId = userId;
     }
 
-    public int getUnixTime() {
+    public long getUnixTime() {
         return unixTime;
     }
 
-    public void setUnixTime(int unixTime) {
+    public void setUnixTime(long unixTime) {
         this.unixTime = unixTime;
     }
 

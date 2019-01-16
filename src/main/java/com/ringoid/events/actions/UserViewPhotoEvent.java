@@ -6,12 +6,12 @@ public class UserViewPhotoEvent extends BaseEvent {
     private String userId;
     private String originPhotoId;
     private String targetUserId;
-    private int viewCount;
-    private int viewTimeSec;
-    private int viewAt;
+    private long viewCount;
+    private long viewTimeSec;
+    private long viewAt;
     private String source;
     private String internalServiceSource;
-    private int unixTime;
+    private long unixTime;
 
     public String getUserId() {
         return userId;
@@ -29,19 +29,19 @@ public class UserViewPhotoEvent extends BaseEvent {
         this.originPhotoId = originPhotoId;
     }
 
-    public int getViewCount() {
+    public long getViewCount() {
         return viewCount;
     }
 
-    public void setViewCount(int viewCount) {
+    public void setViewCount(long viewCount) {
         this.viewCount = viewCount;
     }
 
-    public int getViewTimeSec() {
+    public long getViewTimeSec() {
         return viewTimeSec;
     }
 
-    public void setViewTimeSec(int viewTimeSec) {
+    public void setViewTimeSec(long viewTimeSec) {
         this.viewTimeSec = viewTimeSec;
     }
 
@@ -61,19 +61,19 @@ public class UserViewPhotoEvent extends BaseEvent {
         this.internalServiceSource = internalServiceSource;
     }
 
-    public int getUnixTime() {
+    public long getUnixTime() {
         return unixTime;
     }
 
-    public void setUnixTime(int unixTime) {
+    public void setUnixTime(long unixTime) {
         this.unixTime = unixTime;
     }
 
-    public int getViewAt() {
+    public long getViewAt() {
         return viewAt;
     }
 
-    public void setViewAt(int viewAt) {
+    public void setViewAt(long viewAt) {
         this.viewAt = viewAt;
     }
 

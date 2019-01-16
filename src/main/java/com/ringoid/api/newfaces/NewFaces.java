@@ -3,7 +3,6 @@ package com.ringoid.api.newfaces;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.ringoid.Relationships;
 import com.ringoid.UserStatus;
-import com.ringoid.api.LMMResponse;
 import com.ringoid.api.ProfileResponse;
 import com.ringoid.common.Utils;
 import org.neo4j.driver.v1.AuthTokens;
@@ -100,7 +99,7 @@ public class NewFaces {
 
         NewFacesResponse response = new NewFacesResponse();
 
-        int lastActionTime = Utils.lastActionTime(parameters, driver);
+        long lastActionTime = Utils.lastActionTime(parameters, driver);
         response.setLastActionTime(lastActionTime);
 
         if (request.getRequestedLastActionTime() > lastActionTime) {
@@ -151,6 +150,7 @@ public class NewFaces {
                     }
                     log.info("{} photo were found for new faces request {} for userId {}",
                             photoCounter, parameters, parameters.get("sourceUserId"));
+                    log.debug("{}",NEW_FACES_REQUEST);
                     return 1;
                 }
             });

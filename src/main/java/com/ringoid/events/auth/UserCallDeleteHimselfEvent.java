@@ -4,7 +4,7 @@ import com.ringoid.events.BaseEvent;
 
 public class UserCallDeleteHimselfEvent extends BaseEvent {
     private String userId;
-    private int unixTime;
+    private long unixTime;
     private String userReportStatus;// CLEAN || TAKE_PART_IN_REPORT
 
     public String getUserId() {
@@ -15,11 +15,11 @@ public class UserCallDeleteHimselfEvent extends BaseEvent {
         this.userId = userId;
     }
 
-    public int getUnixTime() {
+    public long getUnixTime() {
         return unixTime;
     }
 
-    public void setUnixTime(int unixTime) {
+    public void setUnixTime(long unixTime) {
         this.unixTime = unixTime;
     }
 

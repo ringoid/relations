@@ -3,7 +3,7 @@ package com.ringoid.api;
 public class LMMRequest {
     private String userId;
     private boolean requestNewPart;
-    private int requestedLastActionTime;
+    private long requestedLastActionTime;
 
     public String getUserId() {
         return userId;
@@ -21,11 +21,11 @@ public class LMMRequest {
         this.requestNewPart = requestNewPart;
     }
 
-    public int getRequestedLastActionTime() {
+    public long getRequestedLastActionTime() {
         return requestedLastActionTime;
     }
 
-    public void setRequestedLastActionTime(int requestedLastActionTime) {
+    public void setRequestedLastActionTime(long requestedLastActionTime) {
         this.requestedLastActionTime = requestedLastActionTime;
     }
 
