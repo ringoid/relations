@@ -20,8 +20,6 @@ import com.ringoid.events.auth.UserCallDeleteHimselfEvent;
 import com.ringoid.events.auth.UserOnlineEvent;
 import com.ringoid.events.auth.UserProfileCreatedEvent;
 import com.ringoid.events.auth.UserSettingsUpdatedEvent;
-import com.ringoid.events.feeds.FeedsUtils;
-import com.ringoid.events.feeds.ProfileWasReturnToNewFacesEvent;
 import com.ringoid.events.image.ImageUtils;
 import com.ringoid.events.image.UserDeletePhotoEvent;
 import com.ringoid.events.image.UserUploadedPhotoEvent;
@@ -47,7 +45,6 @@ import static com.ringoid.events.EventTypes.AUTH_USER_CALL_DELETE_HIMSELF;
 import static com.ringoid.events.EventTypes.AUTH_USER_ONLINE;
 import static com.ringoid.events.EventTypes.AUTH_USER_PROFILE_CREATED;
 import static com.ringoid.events.EventTypes.AUTH_USER_SETTINGS_UPDATED;
-import static com.ringoid.events.EventTypes.FEEDS_NEW_FACES_SEEN_PROFILES;
 import static com.ringoid.events.EventTypes.IMAGE_USER_DELETE_PHOTO;
 import static com.ringoid.events.EventTypes.IMAGE_USER_UPLOAD_PHOTO;
 
@@ -128,9 +125,6 @@ public class KinesisConsumer {
                 } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_UNLIKE_PHOTO.name())) {
                     UserUnlikePhotoEvent userUnlikePhotoEvent = gson.fromJson(s, UserUnlikePhotoEvent.class);
                     ActionsUtils.unlike(userUnlikePhotoEvent, driver);
-                } else if (Objects.equals(baseEvent.getEventType(), FEEDS_NEW_FACES_SEEN_PROFILES.name())) {
-                    ProfileWasReturnToNewFacesEvent profileWasReturnToNewFacesEvent = gson.fromJson(s, ProfileWasReturnToNewFacesEvent.class);
-                    FeedsUtils.markAlreadySeenProfiles(profileWasReturnToNewFacesEvent, driver);
                 } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_OPEN_CHAT.name())) {
                     //todo:implement later if we will need it
                 }

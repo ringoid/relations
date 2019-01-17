@@ -291,7 +291,6 @@ public class ActionsUtils {
                     existRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_LIKES_YOU);
                     existRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_MATCHES);
                     existRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_MESSAGES);
-                    existRelationshipsBetweenProfiles.remove(Relationships.WAS_RETURN_TO_NEW_FACES);
 
                     MessageEvent messageEvent = new MessageEvent(event.getUserId(), event.getTargetUserId(),
                             event.getText(), event.getUnixTime(), event.getMessageAt());
@@ -575,7 +574,6 @@ public class ActionsUtils {
                     existRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_LIKES_YOU);
                     existRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_MATCHES);
                     existRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_MESSAGES);
-                    existRelationshipsBetweenProfiles.remove(Relationships.WAS_RETURN_TO_NEW_FACES);
 
                     if (existRelationshipsBetweenProfiles.contains(Relationships.BLOCK)) {
                         log.warn("BLOCK exist between source userId {} and target userId {}, can not like photo {}",
