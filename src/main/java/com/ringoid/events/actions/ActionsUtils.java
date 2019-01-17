@@ -492,7 +492,7 @@ public class ActionsUtils {
         parameters.put("photoId", event.getOriginPhotoId());
         parameters.put("targetUserId", event.getTargetUserId());
         parameters.put("viewCount", event.getViewCount());
-        parameters.put("viewTimeSec", event.getViewTimeSec());
+        parameters.put("viewTimeSec", event.getViewTimeMillis());
         parameters.put("viewAt", event.getViewAt());
         parameters.put("lastActionTime", event.getViewAt());
 
