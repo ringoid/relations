@@ -27,6 +27,7 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,11 +88,11 @@ public class KinesisConsumer {
     public void handler(KinesisEvent event, Context context) {
         log.debug("handle event {}", event);
         for (KinesisEvent.KinesisEventRecord each : event.getRecords()) {
-            ByteBuffer buff = each.getKinesis().getData();
-            String s = StandardCharsets.UTF_8.decode(buff).toString();
-            log.debug("handle record string representation {}", s);
-            BaseEvent baseEvent = gson.fromJson(s, BaseEvent.class);
             try {
+                ByteBuffer buff = each.getKinesis().getData();
+                String s = StandardCharsets.UTF_8.decode(buff).toString();
+                log.debug("handle record string representation {}", s);
+                BaseEvent baseEvent = gson.fromJson(s, BaseEvent.class);
                 if (Objects.equals(baseEvent.getEventType(), AUTH_USER_PROFILE_CREATED.name())) {
                     UserProfileCreatedEvent createProfileEvent = gson.fromJson(s, UserProfileCreatedEvent.class);
                     AuthUtils.createProfile(createProfileEvent, driver);
@@ -128,9 +129,11 @@ public class KinesisConsumer {
                 } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_OPEN_CHAT.name())) {
                     //todo:implement later if we will need it
                 }
+            } catch (Neo4jException neo4jEx) {
+                throw neo4jEx;
             } catch (Exception e) {
                 //todo:add alarm or something like that
-                log.error("error handle {} event from the stream, skip it", s);
+                log.error("error handle {} event from the stream, skip it", each);
             }
         }
         log.info("successfully handle event {}", event);
