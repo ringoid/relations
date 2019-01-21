@@ -1,7 +1,10 @@
 package com.ringoid.events.auth;
 
+import com.amazonaws.services.kinesis.AmazonKinesis;
+import com.google.gson.Gson;
 import com.ringoid.Relationships;
 import com.ringoid.UserStatus;
+import com.ringoid.common.Utils;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
@@ -95,7 +98,8 @@ public class AuthUtils {
         }
     }
 
-    public static void deleteUser(UserCallDeleteHimselfEvent event, Driver driver) {
+    public static void deleteUser(UserCallDeleteHimselfEvent event, Driver driver,
+                                  AmazonKinesis kinesis, String streamName, Gson gson) {
         log.debug("delete user {}", event);
         final Map<String, Object> parameters = new HashMap<>();
         parameters.put("userIdValue", event.getUserId());
@@ -115,6 +119,8 @@ public class AuthUtils {
                     SummaryCounters counters = result.summary().counters();
                     log.info("{} relationships were deleted, {} nodes where deleted where drop userId {}",
                             counters.relationshipsDeleted(), counters.nodesDeleted(), event.getUserId());
+                    //send event to internal queue
+                    Utils.sendEventIntoInternalQueue(event, kinesis, streamName, event.getUserId(), gson);
                     return 1;
                 }
             });

@@ -27,7 +27,6 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,53 +87,53 @@ public class KinesisConsumer {
     public void handler(KinesisEvent event, Context context) {
         log.debug("handle event {}", event);
         for (KinesisEvent.KinesisEventRecord each : event.getRecords()) {
-            try {
-                ByteBuffer buff = each.getKinesis().getData();
-                String s = StandardCharsets.UTF_8.decode(buff).toString();
-                log.debug("handle record string representation {}", s);
-                BaseEvent baseEvent = gson.fromJson(s, BaseEvent.class);
-                if (Objects.equals(baseEvent.getEventType(), AUTH_USER_PROFILE_CREATED.name())) {
-                    UserProfileCreatedEvent createProfileEvent = gson.fromJson(s, UserProfileCreatedEvent.class);
-                    AuthUtils.createProfile(createProfileEvent, driver);
-                } else if (Objects.equals(baseEvent.getEventType(), AUTH_USER_SETTINGS_UPDATED.name())) {
-                    UserSettingsUpdatedEvent updatedEvent = gson.fromJson(s, UserSettingsUpdatedEvent.class);
-                    AuthUtils.updateSettings(updatedEvent, driver);
-                } else if (Objects.equals(baseEvent.getEventType(), IMAGE_USER_UPLOAD_PHOTO.name())) {
-                    UserUploadedPhotoEvent uploadedPhotoEvent = gson.fromJson(s, UserUploadedPhotoEvent.class);
-                    ImageUtils.uploadPhoto(uploadedPhotoEvent, driver);
-                } else if (Objects.equals(baseEvent.getEventType(), IMAGE_USER_DELETE_PHOTO.name())) {
-                    UserDeletePhotoEvent deletePhotoEvent = gson.fromJson(s, UserDeletePhotoEvent.class);
-                    ImageUtils.deletePhoto(deletePhotoEvent, driver);
-                } else if (Objects.equals(baseEvent.getEventType(), AUTH_USER_ONLINE.name())) {
-                    UserOnlineEvent userOnlineEvent = gson.fromJson(s, UserOnlineEvent.class);
-                    AuthUtils.updateLastOnlineTime(userOnlineEvent, driver);
-                } else if (Objects.equals(baseEvent.getEventType(), AUTH_USER_CALL_DELETE_HIMSELF.name())) {
-                    UserCallDeleteHimselfEvent userCallDeleteHimselfEvent = gson.fromJson(s, UserCallDeleteHimselfEvent.class);
-                    AuthUtils.deleteUser(userCallDeleteHimselfEvent, driver);
-                } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_LIKE_PHOTO.name())) {
-                    UserLikePhotoEvent userLikePhotoEvent = gson.fromJson(s, UserLikePhotoEvent.class);
-                    ActionsUtils.likePhoto(userLikePhotoEvent, driver, kinesis, internalStreamName, gson, sqs, botSqsQueueUrl, botEnabled);
-                } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_VIEW_PHOTO.name())) {
-                    UserViewPhotoEvent userViewPhotoEvent = gson.fromJson(s, UserViewPhotoEvent.class);
-                    ActionsUtils.viewPhoto(userViewPhotoEvent, driver);
-                } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_BLOCK_OTHER.name())) {
-                    UserBlockOtherEvent userBlockOtherEvent = gson.fromJson(s, UserBlockOtherEvent.class);
-                    ActionsUtils.block(userBlockOtherEvent, driver, kinesis, internalStreamName, gson);
-                } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_MESSAGE.name())) {
-                    UserMessageEvent userMessage = gson.fromJson(s, UserMessageEvent.class);
-                    ActionsUtils.message(userMessage, driver, kinesis, internalStreamName, gson, sqs, botSqsQueueUrl, botEnabled);
-                } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_UNLIKE_PHOTO.name())) {
-                    UserUnlikePhotoEvent userUnlikePhotoEvent = gson.fromJson(s, UserUnlikePhotoEvent.class);
-                    ActionsUtils.unlike(userUnlikePhotoEvent, driver);
-                } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_OPEN_CHAT.name())) {
-                    //todo:implement later if we will need it
-                }
-            } catch (Neo4jException neo4jEx) {
-                throw neo4jEx;
-            } catch (Exception e) {
-                //todo:add alarm or something like that
-                log.error("error handle {} event from the stream, skip it", each);
+//            try {
+            ByteBuffer buff = each.getKinesis().getData();
+            String s = StandardCharsets.UTF_8.decode(buff).toString();
+            log.debug("handle record string representation {}", s);
+            BaseEvent baseEvent = gson.fromJson(s, BaseEvent.class);
+            if (Objects.equals(baseEvent.getEventType(), AUTH_USER_PROFILE_CREATED.name())) {
+                UserProfileCreatedEvent createProfileEvent = gson.fromJson(s, UserProfileCreatedEvent.class);
+                AuthUtils.createProfile(createProfileEvent, driver);
+            } else if (Objects.equals(baseEvent.getEventType(), AUTH_USER_SETTINGS_UPDATED.name())) {
+                UserSettingsUpdatedEvent updatedEvent = gson.fromJson(s, UserSettingsUpdatedEvent.class);
+                AuthUtils.updateSettings(updatedEvent, driver);
+            } else if (Objects.equals(baseEvent.getEventType(), IMAGE_USER_UPLOAD_PHOTO.name())) {
+                UserUploadedPhotoEvent uploadedPhotoEvent = gson.fromJson(s, UserUploadedPhotoEvent.class);
+                ImageUtils.uploadPhoto(uploadedPhotoEvent, driver);
+            } else if (Objects.equals(baseEvent.getEventType(), IMAGE_USER_DELETE_PHOTO.name())) {
+                UserDeletePhotoEvent deletePhotoEvent = gson.fromJson(s, UserDeletePhotoEvent.class);
+                ImageUtils.deletePhoto(deletePhotoEvent, driver);
+            } else if (Objects.equals(baseEvent.getEventType(), AUTH_USER_ONLINE.name())) {
+                UserOnlineEvent userOnlineEvent = gson.fromJson(s, UserOnlineEvent.class);
+                AuthUtils.updateLastOnlineTime(userOnlineEvent, driver);
+            } else if (Objects.equals(baseEvent.getEventType(), AUTH_USER_CALL_DELETE_HIMSELF.name())) {
+                UserCallDeleteHimselfEvent userCallDeleteHimselfEvent = gson.fromJson(s, UserCallDeleteHimselfEvent.class);
+                AuthUtils.deleteUser(userCallDeleteHimselfEvent, driver, kinesis, internalStreamName, gson);
+            } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_LIKE_PHOTO.name())) {
+                UserLikePhotoEvent userLikePhotoEvent = gson.fromJson(s, UserLikePhotoEvent.class);
+                ActionsUtils.likePhoto(userLikePhotoEvent, driver, kinesis, internalStreamName, gson, sqs, botSqsQueueUrl, botEnabled);
+            } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_VIEW_PHOTO.name())) {
+                UserViewPhotoEvent userViewPhotoEvent = gson.fromJson(s, UserViewPhotoEvent.class);
+                ActionsUtils.viewPhoto(userViewPhotoEvent, driver);
+            } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_BLOCK_OTHER.name())) {
+                UserBlockOtherEvent userBlockOtherEvent = gson.fromJson(s, UserBlockOtherEvent.class);
+                ActionsUtils.block(userBlockOtherEvent, driver, kinesis, internalStreamName, gson);
+            } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_MESSAGE.name())) {
+                UserMessageEvent userMessage = gson.fromJson(s, UserMessageEvent.class);
+                ActionsUtils.message(userMessage, driver, kinesis, internalStreamName, gson, sqs, botSqsQueueUrl, botEnabled);
+            } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_UNLIKE_PHOTO.name())) {
+                UserUnlikePhotoEvent userUnlikePhotoEvent = gson.fromJson(s, UserUnlikePhotoEvent.class);
+                ActionsUtils.unlike(userUnlikePhotoEvent, driver);
+            } else if (Objects.equals(baseEvent.getEventType(), ACTION_USER_OPEN_CHAT.name())) {
+                //todo:implement later if we will need it
             }
+//            } catch (Neo4jException neo4jEx) {
+//                throw neo4jEx;
+//            } catch (Exception e) {
+//                //todo:add alarm or something like that
+//                log.error("error handle {} event from the stream, skip it", each);
+//            }
         }
         log.info("successfully handle event {}", event);
     }
