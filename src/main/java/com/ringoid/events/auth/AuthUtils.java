@@ -5,7 +5,9 @@ import com.google.gson.Gson;
 import com.ringoid.Relationships;
 import com.ringoid.UserStatus;
 import com.ringoid.common.Utils;
+import com.ringoid.events.internal.events.DeleteUserConversationEvent;
 import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
@@ -14,7 +16,9 @@ import org.neo4j.driver.v1.summary.SummaryCounters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -33,6 +37,8 @@ import static com.ringoid.UserStatus.HIDDEN;
 
 public class AuthUtils {
     private static final Logger log = LoggerFactory.getLogger(AuthUtils.class);
+
+    private static final String USER_ID_PROPERTY = "userIdProperty";
 
     private static final String CREATE_PROFILE =
             String.format("MERGE (n:%s {%s: $userIdValue}) " +
@@ -73,6 +79,13 @@ public class AuthUtils {
                     LAST_ONLINE_TIME.getPropertyName(),
                     LAST_ONLINE_TIME.getPropertyName());
 
+    private static final String GET_ALL_CONVERSATIONS =
+            String.format("MATCH (source:%s {%s:$userIdValue})-[:%s]-(targetUser:%s) " +
+                            "RETURN targetUser.%s AS %s",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.MESSAGE.name(), PERSON.getLabelName(),
+                    USER_ID.getPropertyName(), USER_ID_PROPERTY
+            );
+
     private static String deleteQuery(UserStatus userStatus, Map<String, Object> parameters) {
         switch (userStatus) {
             case ACTIVE: {
@@ -110,17 +123,31 @@ public class AuthUtils {
                 @Override
                 public Integer execute(Transaction tx) {
                     String query;
+                    List<String> targetIds = new ArrayList<>();
                     if (Objects.equals(event.getUserReportStatus(), "TAKE_PART_IN_REPORT")) {
                         query = deleteQuery(HIDDEN, parameters);
                     } else {
+                        //we can collect all conversation ids for further deleting
+                        StatementResult result = tx.run(GET_ALL_CONVERSATIONS, parameters);
+                        List<Record> recordList = result.list();
+                        for (Record each : recordList) {
+                            String targetId = each.get(USER_ID_PROPERTY).asString();
+                            targetIds.add(targetId);
+                        }
+                        log.info("found {} target ids for deleting conversation", targetIds.size());
+
                         query = deleteQuery(ACTIVE, parameters);
                     }
                     StatementResult result = tx.run(query, parameters);
                     SummaryCounters counters = result.summary().counters();
                     log.info("{} relationships were deleted, {} nodes where deleted where drop userId {}",
                             counters.relationshipsDeleted(), counters.nodesDeleted(), event.getUserId());
-                    //send event to internal queue
+                    //send events to internal queue
                     Utils.sendEventIntoInternalQueue(event, kinesis, streamName, event.getUserId(), gson);
+                    for (String each : targetIds) {
+                        DeleteUserConversationEvent deleteUserConversationEvent = new DeleteUserConversationEvent(event.getUserId(), each);
+                        Utils.sendEventIntoInternalQueue(deleteUserConversationEvent, kinesis, streamName, event.getUserId(), gson);
+                    }
                     return 1;
                 }
             });

@@ -19,6 +19,7 @@ public enum EventTypes {
 
     INTERNAL_PHOTO_LIKE_EVENT, //this event goes outside to image service
     INTERNAL_USER_SEND_MESSAGE_EVENT, //this event goes to messages service
+    INTERNAL_DELETE_USER_CONVERSATION_EVENT,//this event goes to message service
 
     FEEDS_NEW_FACES_SEEN_PROFILES
 }

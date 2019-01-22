@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import com.ringoid.Relationships;
 import com.ringoid.ViewRelationshipSource;
 import com.ringoid.common.Utils;
+import com.ringoid.events.internal.events.DeleteUserConversationEvent;
 import com.ringoid.events.internal.events.MessageEvent;
 import com.ringoid.events.internal.events.PhotoLikeEvent;
 import org.neo4j.driver.v1.Driver;
@@ -474,7 +475,11 @@ public class ActionsUtils {
                     //currently users couldn't block itself concurrently (only first block will be applied
                     if (event.getBlockReasonNum() > REPORT_REASON_TRESHOLD && counters.relationshipsCreated() > 0) {
                         Utils.sendEventIntoInternalQueue(event, kinesis, streamName, event.getTargetUserId(), gson);
+                        return 1;
                     }
+                    //if it's just block - we can delete the conversation
+                    DeleteUserConversationEvent deleteUserConversationEvent = new DeleteUserConversationEvent(event.getUserId(), event.getTargetUserId());
+                    Utils.sendEventIntoInternalQueue(deleteUserConversationEvent, kinesis, streamName, deleteUserConversationEvent.getUserId(), gson);
                     return 1;
                 }
             });
