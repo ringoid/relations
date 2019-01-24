@@ -1,6 +1,12 @@
 package com.ringoid.api.newfaces;
 
 import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.secretsmanager.AWSSecretsManager;
+import com.amazonaws.services.secretsmanager.AWSSecretsManagerClientBuilder;
+import com.amazonaws.services.secretsmanager.model.GetSecretValueRequest;
+import com.amazonaws.services.secretsmanager.model.GetSecretValueResult;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.ringoid.Relationships;
 import com.ringoid.UserStatus;
 import com.ringoid.api.ProfileResponse;
@@ -17,6 +23,7 @@ import org.neo4j.driver.v1.TransactionWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -81,13 +88,45 @@ public class NewFaces {
             );
 
     public NewFaces() {
-        String neo4jUri = System.getenv("NEO4J_URI");
-        //todo:read these value from Security Storage
-        String userName = System.getenv("NEO4J_USER");
-        String password = System.getenv("NEO4J_PASSWORD");
+        GsonBuilder builder = new GsonBuilder();
+        Gson gson = builder.create();
 
-        driver = GraphDatabase.driver(neo4jUri, AuthTokens.basic(userName, password),
-                Config.build().withMaxTransactionRetryTime(10, TimeUnit.SECONDS).toConfig());
+        String env = System.getenv("ENV");
+        String userName = System.getenv("NEO4J_USER");
+        String neo4jUris = System.getenv("NEO4J_URIS");
+
+        // Create a Secrets Manager client
+        AWSSecretsManager client = AWSSecretsManagerClientBuilder.standard()
+                .withRegion("eu-west-1")
+                .build();
+
+        GetSecretValueRequest getSecretValueRequest = new GetSecretValueRequest()
+                .withSecretId(env + "/Neo4j/Password");
+        GetSecretValueResult getSecretValueResult = null;
+
+        try {
+            getSecretValueResult = client.getSecretValue(getSecretValueRequest);
+        } catch (Exception e) {
+            log.error("error fetching secret", e);
+            throw e;
+        }
+
+        String secret = getSecretValueResult.getSecretString();
+        HashMap<String, String> map = gson.fromJson(secret, (new HashMap<String, String>()).getClass());
+        String password = map.get("password");
+
+        String[] arr = neo4jUris.split("&");
+        if (arr.length > 1) {
+            List<URI> uris = new ArrayList<>();
+            for (String each : arr) {
+                uris.add(URI.create("bolt+routing://" + each + ":7687"));
+            }
+            driver = GraphDatabase.routingDriver(uris, AuthTokens.basic(userName, password),
+                    Config.build().withMaxTransactionRetryTime(10, TimeUnit.SECONDS).toConfig());
+        } else {
+            driver = GraphDatabase.driver("bolt://" + arr[0] + ":7687", AuthTokens.basic(userName, password),
+                    Config.build().withMaxTransactionRetryTime(10, TimeUnit.SECONDS).toConfig());
+        }
     }
 
     public NewFacesResponse handler(NewFacesRequest request, Context context) {
@@ -150,7 +189,7 @@ public class NewFaces {
                     }
                     log.info("{} photo were found for new faces request {} for userId {}",
                             photoCounter, parameters, parameters.get("sourceUserId"));
-                    log.debug("{}",NEW_FACES_REQUEST);
+                    log.debug("{}", NEW_FACES_REQUEST);
                     return 1;
                 }
             });
