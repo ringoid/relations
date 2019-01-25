@@ -13,6 +13,9 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.ringoid.Labels;
+import com.ringoid.PersonProperties;
+import com.ringoid.PhotoProperties;
 import com.ringoid.events.actions.ActionsUtils;
 import com.ringoid.events.actions.UserBlockOtherEvent;
 import com.ringoid.events.actions.UserLikePhotoEvent;
@@ -31,6 +34,7 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,7 +127,26 @@ public class KinesisConsumer {
         sqs = sqsClientBuilder.build();
     }
 
+    private void createIndexes(Driver driver) {
+        String createIndexQuery = "CREATE INDEX ON :%s(%s)";
+        String userIdPersonIndexQuery = String.format(
+                createIndexQuery, Labels.PERSON.getLabelName(), PersonProperties.USER_ID.getPropertyName()
+        );
+        String sexPersonIndexQuery = String.format(
+                createIndexQuery, Labels.PERSON.getLabelName(), PersonProperties.SEX.getPropertyName()
+        );
+        String photoIdPhotoIndexQuery = String.format(
+                createIndexQuery, Labels.PHOTO.getLabelName(), PhotoProperties.PHOTO_ID.getPropertyName()
+        );
+        try (Session session = driver.session()) {
+            session.run(userIdPersonIndexQuery);
+            session.run(sexPersonIndexQuery);
+            session.run(photoIdPhotoIndexQuery);
+        }
+    }
+
     public void handler(KinesisEvent event, Context context) {
+        createIndexes(driver);
         log.debug("handle event {}", event);
         for (KinesisEvent.KinesisEventRecord each : event.getRecords()) {
 //            try {
