@@ -8,7 +8,6 @@ import com.amazonaws.services.secretsmanager.model.GetSecretValueResult;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.ringoid.Relationships;
-import com.ringoid.UserStatus;
 import com.ringoid.api.ProfileResponse;
 import com.ringoid.common.Utils;
 import org.neo4j.driver.v1.AuthTokens;
@@ -30,12 +29,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static com.ringoid.Labels.HIDDEN;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
-import static com.ringoid.PersonProperties.USER_STATUS;
 
 public class NewFaces {
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -45,23 +44,13 @@ public class NewFaces {
     private static final String TARGET_USER_ID = "targetUserId";
     private static final String TARGET_PHOTO_ID = "targetPhotoId";
 
-    //original query (without sex):
-    //match (sourceUser:Person {user_id:10}) with sourceUser
-    //match (n:Person)-[upl:UPLOAD]->(ph:Photo)
-    //where sourceUser.user_id <> n.user_id
-    //and (not (sourceUser)-[]->(n)) and (not (n)-[:LIKE|VIEW_IN_LIKES_YOU|VIEW_IN_MATCHES|VIEW_IN_MESSAGES|BLOCK|MATCH|MESSAGE]->(sourceUser)) with n, ph, upl
-    //optional match (ph)<-[ll:LIKE]-(:Person) with n, count(ll) as likes order by likes desc
-    //match (n)-[uplRel:UPLOAD]->(photo:Photo) with n, likes, count(uplRel) as photos, n.was_online as wasOnline
-    //order by likes desc, photos desc, wasOnline desc limit 10
-    //match (n)-[uplRel:UPLOAD]->(photo:Photo) with n, photo, likes, photos, wasOnline
-    //optional match (:Person)-[uploadRel:UPLOAD]->(photo)<-[l:LIKE]-(:Person) return n.user_id as userId, photo.photo_id as photoId, count(l) as eachPhotoLikes, likes, photos, wasOnline, uploadRel.photo_uploaded_at as photoUploadedAt order by likes desc, photos desc, wasOnline desc, eachPhotoLikes desc, photoUploadedAt desc
     private final static String NEW_FACES_REQUEST =
             String.format(
                     "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                             "MATCH (n:%s)-[upl:%s]->(ph:%s) " +//2
                             "WHERE sourceUser.%s <> n.%s " +//3
                             "AND sourceUser.%s <> n.%s " +//3.5
-                            "AND n.%s <> $hiddenUserStatus " +//3.6
+                            "AND (NOT '%s' in labels(n)) " +//3.6
                             "AND (NOT (n)<-[]-(sourceUser)) " +//4
                             "AND (NOT (n)-[:%s|%s|%s|%s|%s|%s|%s]->(sourceUser)) WITH n, ph, upl " +//4.1
                             "OPTIONAL MATCH (ph)<-[ll:%s]-(:%s) WITH n, count(ll) AS likes ORDER BY likes DESC " +//5
@@ -77,7 +66,7 @@ public class NewFaces {
                     PERSON.getLabelName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//2
                     USER_ID.getPropertyName(), USER_ID.getPropertyName(),//3
                     SEX.getPropertyName(), SEX.getPropertyName(),//3.5
-                    USER_STATUS.getPropertyName(), //3.6
+                    HIDDEN.getLabelName(), //3.6
                     Relationships.LIKE.name(), Relationships.VIEW_IN_LIKES_YOU.name(), Relationships.VIEW_IN_MATCHES.name(), Relationships.VIEW_IN_MESSAGES.name(), Relationships.BLOCK.name(), Relationships.MATCH.name(), Relationships.MESSAGE.name(),//4.1
                     Relationships.LIKE.name(), PERSON.getLabelName(),//5
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), LAST_ONLINE_TIME.getPropertyName(),//6
@@ -134,7 +123,6 @@ public class NewFaces {
         final Map<String, Object> parameters = new HashMap<>();
         parameters.put("sourceUserId", request.getUserId());
         parameters.put("limit", request.getLimit());
-        parameters.put("hiddenUserStatus", UserStatus.HIDDEN.getValue());
 
         NewFacesResponse response = new NewFacesResponse();
 

@@ -27,11 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static com.ringoid.Labels.HIDDEN;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.MessageProperties.MSG_AT;
 import static com.ringoid.PersonProperties.USER_ID;
-import static com.ringoid.PersonProperties.USER_STATUS;
 import static com.ringoid.PhotoProperties.PHOTO_ID;
 import static com.ringoid.PhotoProperties.PHOTO_UPLOADED;
 
@@ -48,7 +48,7 @@ public class Messages {
                     "MATCH (sourceUser:%s {%s:$sourceUserId})-[msg:%s]-(targetUser)-[uplRel:%s]->(trPhoto:%s) " +//1
 
                             "WHERE sourceUser.%s <> targetUser.%s " +//2
-                            "AND targetUser.%s <> $hiddenUserStatus " +//3
+                            "AND (NOT '%s' in labels(targetUser)) " +//3
                             "WITH sourceUser, targetUser, msg.%s as lastMessageTime, uplRel, uplRel.%s as photoUploadedTime, trPhoto " +//4
 
                             "OPTIONAL MATCH (trPhoto)<-[anyView]-(sourceUser) WITH sourceUser, targetUser, lastMessageTime, trPhoto, photoUploadedTime, count(anyView) as viewPhotoCountBySource " +//5
@@ -58,7 +58,7 @@ public class Messages {
                     PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.MESSAGE.name(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//1
 
                     USER_ID.getPropertyName(), USER_ID.getPropertyName(),//2
-                    USER_STATUS.getPropertyName(),//3
+                    HIDDEN.getLabelName(),//3
                     MSG_AT.getPropertyName(), PHOTO_UPLOADED.getPropertyName(),//4
 
                     Relationships.LIKE.name(), PERSON.getLabelName(), USER_ID.getPropertyName(), TARGET_USER_ID, PHOTO_ID.getPropertyName(), TARGET_PHOTO_ID //6
@@ -111,7 +111,6 @@ public class Messages {
         log.debug("handle messages you request {}", request);
         final Map<String, Object> parameters = new HashMap<>();
         parameters.put("sourceUserId", request.getUserId());
-        parameters.put("hiddenUserStatus", UserStatus.HIDDEN.getValue());
 
         long lastActionTime = Utils.lastActionTime(parameters, driver);
         LMMResponse response = new LMMResponse();

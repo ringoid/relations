@@ -135,13 +135,21 @@ public class KinesisConsumer {
         String sexPersonIndexQuery = String.format(
                 createIndexQuery, Labels.PERSON.getLabelName(), PersonProperties.SEX.getPropertyName()
         );
+        String moderatePersonIndexQuery = String.format(
+                createIndexQuery, Labels.PERSON.getLabelName(), PersonProperties.NEED_TO_MODERATE.getPropertyName()
+        );
         String photoIdPhotoIndexQuery = String.format(
                 createIndexQuery, Labels.PHOTO.getLabelName(), PhotoProperties.PHOTO_ID.getPropertyName()
+        );
+        String moderatePhotoIndexQuery = String.format(
+                createIndexQuery, Labels.PHOTO.getLabelName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName()
         );
         try (Session session = driver.session()) {
             session.run(userIdPersonIndexQuery);
             session.run(sexPersonIndexQuery);
+            session.run(moderatePersonIndexQuery);
             session.run(photoIdPhotoIndexQuery);
+            session.run(moderatePhotoIndexQuery);
         }
     }
 

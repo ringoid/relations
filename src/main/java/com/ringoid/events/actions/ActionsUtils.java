@@ -45,7 +45,7 @@ import static com.ringoid.common.Utils.doWeHaveBlock;
 public class ActionsUtils {
     private static final Logger log = LoggerFactory.getLogger(ActionsUtils.class);
 
-    private static final int REPORT_REASON_TRESHOLD = 19;
+    private static final int REPORT_REASON_TRESHOLD = 9;
     private static final String RELATIONSHIP_TYPE = "relationShipType";
     private static final String START_NODE_USER_ID = "startNodeUserId";
     private static final String END_NODE_USER_ID = "endNodeUserId";
@@ -229,6 +229,10 @@ public class ActionsUtils {
                 break;
             case MESSAGES:
                 targetProfileRelationship = Relationships.VIEW_IN_MESSAGES;
+                break;
+            case CHAT:
+                //todo:discuss this
+                targetProfileRelationship = Relationships.VIEW;
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported source " + source.getValue());
@@ -474,9 +478,11 @@ public class ActionsUtils {
 
                     //currently users couldn't block itself concurrently (only first block will be applied
                     if (event.getBlockReasonNum() > REPORT_REASON_TRESHOLD && counters.relationshipsCreated() > 0) {
+                        Utils.markPersonForModeration(event.getTargetUserId(), tx);
                         Utils.sendEventIntoInternalQueue(event, kinesis, streamName, event.getTargetUserId(), gson);
                         return 1;
                     }
+
                     //if it's just block - we can delete the conversation
                     DeleteUserConversationEvent deleteUserConversationEvent = new DeleteUserConversationEvent(event.getUserId(), event.getTargetUserId());
                     Utils.sendEventIntoInternalQueue(deleteUserConversationEvent, kinesis, streamName, deleteUserConversationEvent.getUserId(), gson);

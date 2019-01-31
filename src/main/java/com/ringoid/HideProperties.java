@@ -1,12 +1,12 @@
 package com.ringoid;
 
-public enum BlockProperties {
-    BLOCK_AT("block_at"),
-    BLOCK_REASON_NUM("reason");
+public enum HideProperties {
+    HIDE_AT("hide_at"),
+    HIDE_REASON("reason");
 
     private String propertyName;
 
-    BlockProperties(String propertyName) {
+    HideProperties(String propertyName) {
         this.propertyName = propertyName;
     }
 

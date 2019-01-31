@@ -2,7 +2,8 @@ package com.ringoid;
 
 public enum Labels {
     PERSON("Person"),
-    PHOTO("Photo");
+    PHOTO("Photo"),
+    HIDDEN("Hidden");
 
     private final String labelName;
 

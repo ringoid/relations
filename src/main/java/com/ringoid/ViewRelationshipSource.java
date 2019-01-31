@@ -4,7 +4,8 @@ public enum ViewRelationshipSource {
     NEW_FACES("new_faces"),
     WHO_LIKED_ME("who_liked_me"),
     MATCHES("matches"),
-    MESSAGES("messages");
+    MESSAGES("messages"),
+    CHAT("chat");
 
     private String value;
 
@@ -26,6 +27,8 @@ public enum ViewRelationshipSource {
                 return MATCHES;
             case "messages":
                 return MESSAGES;
+            case "chat":
+                return CHAT;
             default:
                 throw new IllegalArgumentException("Unsupported view source type " + str);
         }

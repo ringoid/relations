@@ -45,6 +45,10 @@ Mappings:
       test: test-internal-clean-db-relationships
       stage: stage-internal-clean-db-relationships
       prod: prod-internal-clean-db-relationships
+    ModerationFunction:
+      test: test-moderation-relationships
+      stage: stage-moderation-relationships
+      prod: prod-moderation-relationships
 
   BotSqsResourcesName:
     BotSqsQueue:
@@ -158,6 +162,16 @@ Resources:
       FunctionName: !FindInMap [FunctionName, MessagesFunction, !Ref Env]
       Handler: "com.ringoid.api.lmm.Messages::handler"
       Description: Messages Feed function
+      Policies:
+        - SecretsManagerReadWrite
+
+  ModerationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: build/distributions/relationships-1.0-SNAPSHOT.zip
+      FunctionName: !FindInMap [FunctionName, ModerationFunction, !Ref Env]
+      Handler: "com.ringoid.api.moderation.Moderation::handler"
+      Description: Moderation function
       Policies:
         - SecretsManagerReadWrite
 

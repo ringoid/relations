@@ -2,6 +2,7 @@ package com.ringoid.events.auth;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.google.gson.Gson;
+import com.ringoid.Labels;
 import com.ringoid.Relationships;
 import com.ringoid.UserStatus;
 import com.ringoid.common.Utils;
@@ -30,7 +31,6 @@ import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.SAFE_DISTANCE_IN_METER;
 import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
-import static com.ringoid.PersonProperties.USER_STATUS;
 import static com.ringoid.PersonProperties.YEAR;
 import static com.ringoid.UserStatus.ACTIVE;
 import static com.ringoid.UserStatus.HIDDEN;
@@ -47,18 +47,16 @@ public class AuthUtils {
                             "n.%s = $yearValue, " +
                             "n.%s = $createdValue, " +
                             "n.%s = 0, " +
-                            "n.%s = $onlineUserTime, " +
-                            "n.%s = $activeUserStatus " +
+                            "n.%s = $onlineUserTime " +
                             "ON MATCH SET " +
                             "n.%s = $sexValue, " +
                             "n.%s = $yearValue, " +
                             "n.%s = $createdValue, " +
                             "n.%s = 0, " +
-                            "n.%s = $onlineUserTime, " +
-                            "n.%s = $activeUserStatus",
+                            "n.%s = $onlineUserTime",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
-                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(), USER_STATUS.getPropertyName(),
-                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(), USER_STATUS.getPropertyName());
+                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(),
+                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LAST_ONLINE_TIME.getPropertyName());
 
     private static final String UPDATE_SETTINGS =
             String.format("MERGE (n:%s {%s: $userIdValue}) " +
@@ -99,10 +97,10 @@ public class AuthUtils {
                 );
             }
             case HIDDEN: {
-                //match (p:Person {user_id:1000}) SET p.user_status = hidden
+                //match (p:Person {user_id:1000}) SET p:Hidden
                 return String.format(
-                        "MATCH (n:%s {%s: $userIdValue}) SET n.%s = $hiddenUserStatus",
-                        PERSON.getLabelName(), USER_ID.getPropertyName(), USER_STATUS.getPropertyName());
+                        "MATCH (n:%s {%s: $userIdValue}) SET n:%s",
+                        PERSON.getLabelName(), USER_ID.getPropertyName(), Labels.HIDDEN.getLabelName());
             }
             default: {
                 log.error("unsupported user status {} with delete user request with params {}", userStatus, parameters);
@@ -116,7 +114,6 @@ public class AuthUtils {
         log.debug("delete user {}", event);
         final Map<String, Object> parameters = new HashMap<>();
         parameters.put("userIdValue", event.getUserId());
-        parameters.put("hiddenUserStatus", HIDDEN.getValue());
 
         try (Session session = driver.session()) {
             session.writeTransaction(new TransactionWork<Integer>() {
@@ -167,7 +164,6 @@ public class AuthUtils {
         parameters.put("yearValue", event.getYearOfBirth());
         parameters.put("createdValue", event.getUnixTime());
         parameters.put("onlineUserTime", event.getUnixTime());
-        parameters.put("activeUserStatus", UserStatus.ACTIVE.getValue());
 
         try (Session session = driver.session()) {
             session.writeTransaction(new TransactionWork<Integer>() {

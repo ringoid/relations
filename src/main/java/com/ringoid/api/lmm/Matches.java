@@ -27,12 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static com.ringoid.Labels.HIDDEN;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.USER_ID;
-import static com.ringoid.PersonProperties.USER_STATUS;
 import static com.ringoid.PhotoProperties.PHOTO_ID;
 import static com.ringoid.PhotoProperties.PHOTO_UPLOADED;
 
@@ -45,32 +45,13 @@ public class Matches {
     private static final String TARGET_PHOTO_ID = "targetPhotoId";
     private static final String OWN_LAST_ACTION_TIME = "lastActionTime";
 
-    //    match (sourceUser:Person {user_id:"56adeed94278b1f7fb5dc33a6153d8b86758aef4"})-[:MATCH]-(targetUser)-[:UPLOAD_PHOTO]->(ph:Photo)
-//    where sourceUser.user_id <> targetUser.user_id
-//
-//    AND (NOT (sourceUser)-[:VIEW_IN_MATCHES]->(targetUser))
-//    AND targetUser.user_status <> "hidden"
-//    with sourceUser, targetUser, ph
-//    optional match (ph)<-[sourceLike:LIKE]-(sourceUser)
-//    with sourceUser, targetUser, count(sourceLike) as likesThatSourceMakes
-//    match (sourceUser)-[:MATCH]-(targetUser)-[:UPLOAD_PHOTO]->(ph:Photo)
-//    with sourceUser, targetUser,likesThatSourceMakes, ph
-//
-//    optional match (ph)<-[ll:LIKE]-(:Person) with sourceUser, targetUser, count(ll) as likesThatUserHas, likesThatSourceMakes
-//    match (targetUser)-[upl:UPLOAD_PHOTO]->(photo:Photo) with sourceUser, targetUser, likesThatUserHas, count(upl) as uploads, likesThatSourceMakes
-//    match (sourceUser)-[:UPLOAD_PHOTO]->(sPh:Photo)<-[rrr:LIKE]-(targetUser)
-//    with sourceUser, targetUser, targetUser.was_online as onlineTime, likesThatUserHas, uploads, count(rrr) as howManyBackLikes, likesThatSourceMakes
-//    match (targetUser)-[uplRel:UPLOAD_PHOTO]->(trPhoto:Photo) with sourceUser, targetUser, onlineTime, likesThatUserHas, howManyBackLikes, trPhoto, uplRel.photo_uploaded_at as photoUploadedTime, uploads, likesThatSourceMakes
-//    optional match (trPhoto)<-[anyView]-(sourceUser) with sourceUser, targetUser, onlineTime, likesThatUserHas, howManyBackLikes, uploads, trPhoto, photoUploadedTime, count(anyView) as viewPhotoCountBySource, likesThatSourceMakes
-//    optional match (trPhoto)<-[lrl:LIKE]-(:Person) return sourceUser.last_action_time as lastActionTime, targetUser.user_id, likesThatUserHas, uploads, howManyBackLikes, onlineTime, viewPhotoCountBySource, count(lrl) as targetPhotoWasLiked, photoUploadedTime, trPhoto.photo_id as photoId, likesThatSourceMakes
-//    order by likesThatSourceMakes DESC, likesThatUserHas DESC, uploads DESC, howManyBackLikes DESC, onlineTime DESC, viewPhotoCountBySource ASC, targetPhotoWasLiked DESC, photoUploadedTime DESC
     private static final String MATCHES_NEW_PART =
             String.format(
                     "MATCH (sourceUser:%s {%s:$sourceUserId})-[:%s]-(targetUser)-[:%s]->(ph:%s) " +//1
                             "WHERE sourceUser.%s <> targetUser.%s " +//2
 
                             "AND (NOT (sourceUser)-[:%s]->(targetUser)) " +//3
-                            "AND targetUser.%s <> $hiddenUserStatus " +//3.1
+                            "AND (NOT '%s' in labels(targetUser)) " +//3.1
 
                             "WITH sourceUser, targetUser, ph " +//4
 
@@ -92,7 +73,7 @@ public class Matches {
                     USER_ID.getPropertyName(), USER_ID.getPropertyName(),//2
 
                     Relationships.VIEW_IN_MATCHES.name(),//3
-                    USER_STATUS.getPropertyName(),//3.1
+                    HIDDEN.getLabelName(),//3.1
 
                     Relationships.LIKE.name(), //4.1
                     Relationships.MATCH.name(), Relationships.UPLOAD_PHOTO.name(), //4.3
@@ -112,7 +93,7 @@ public class Matches {
                             "WHERE sourceUser.%s <> targetUser.%s " +//2
 
                             "AND (sourceUser)-[:%s]->(targetUser) " +//3
-                            "AND targetUser.%s <> $hiddenUserStatus " +//3.1
+                            "AND (NOT '%s' in labels(targetUser)) " +//3.1
 
                             "WITH sourceUser, targetUser, ph " +//4
 
@@ -134,7 +115,7 @@ public class Matches {
                     USER_ID.getPropertyName(), USER_ID.getPropertyName(),//2
 
                     Relationships.VIEW_IN_MATCHES.name(),//3
-                    USER_STATUS.getPropertyName(),//3.1
+                    HIDDEN.getLabelName(),//3.1
 
                     Relationships.LIKE.name(), //4.1
                     Relationships.MATCH.name(), Relationships.UPLOAD_PHOTO.name(), //4.3
@@ -193,7 +174,6 @@ public class Matches {
         log.debug("handle matches you request {}", request);
         final Map<String, Object> parameters = new HashMap<>();
         parameters.put("sourceUserId", request.getUserId());
-        parameters.put("hiddenUserStatus", UserStatus.HIDDEN.getValue());
 
         long lastActionTime = Utils.lastActionTime(parameters, driver);
         LMMResponse response = new LMMResponse();

@@ -2,7 +2,7 @@ package com.ringoid;
 
 public enum Relationships {
     UPLOAD_PHOTO,
-    DELETE_PHOTO,
+    HIDE_PHOTO,
     LIKE,
     VIEW,
     VIEW_IN_LIKES_YOU,
@@ -17,8 +17,8 @@ public enum Relationships {
         switch (str.toUpperCase()) {
             case "UPLOAD_PHOTO":
                 return UPLOAD_PHOTO;
-            case "DELETE_PHOTO":
-                return DELETE_PHOTO;
+            case "HIDE_PHOTO":
+                return HIDE_PHOTO;
             case "LIKE":
                 return LIKE;
             case "VIEW":

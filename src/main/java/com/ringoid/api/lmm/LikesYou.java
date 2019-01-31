@@ -8,7 +8,6 @@ import com.amazonaws.services.secretsmanager.model.GetSecretValueResult;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.ringoid.Relationships;
-import com.ringoid.UserStatus;
 import com.ringoid.api.LMMRequest;
 import com.ringoid.api.LMMResponse;
 import com.ringoid.api.ProfileResponse;
@@ -27,12 +26,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static com.ringoid.Labels.HIDDEN;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.USER_ID;
-import static com.ringoid.PersonProperties.USER_STATUS;
 import static com.ringoid.PhotoProperties.PHOTO_ID;
 import static com.ringoid.PhotoProperties.PHOTO_UPLOADED;
 
@@ -45,25 +44,13 @@ public class LikesYou {
     private static final String TARGET_PHOTO_ID = "targetPhotoId";
     private static final String OWN_LAST_ACTION_TIME = "lastActionTime";
 
-    //    match (sourceUser:Person {user_id:1})<-[:LIKE]-(targetUser)-[:UPLOAD]->(ph:Photo) where sourceUser.user_id <>
-    //    targetUser.user_id
-    //    AND (NOT (sourceUser)-[:VIEW_IN_LIKED]->(targetUser))
-    //    with sourceUser, targetUser, ph
-    //    optional match (ph)<-[ll:LIKE]-(:Person) with sourceUser, targetUser, count(ll) as likesThatUserHas
-    //    match (targetUser)-[upl:UPLOAD]->(photo:Photo) with sourceUser, targetUser, likesThatUserHas, count(upl) as uploads
-    //    match (sourceUser)-[:UPLOAD]->(sPh:Photo)<-[rrr:LIKE]-(targetUser)
-    //    with sourceUser, targetUser, targetUser.was_online as onlineTime, likesThatUserHas, uploads, count(rrr) as howManyBackLikes
-    //    match (targetUser)-[uplRel:UPLOAD]->(trPhoto:Photo) with sourceUser, targetUser, onlineTime, likesThatUserHas, howManyBackLikes, trPhoto, uplRel.photo_uploaded_at as photoUploadedTime, uploads
-    //    optional match (trPhoto)<-[anyView]-(sourceUser) with sourceUser, targetUser, onlineTime, likesThatUserHas, howManyBackLikes, uploads, trPhoto, photoUploadedTime, count(anyView) as viewPhotoCountBySource
-    //    optional match (trPhoto)<-[lrl:LIKE]-(:Person) return sourceUser.last_action_time as lastActionTime, targetUser.user_id, likesThatUserHas, uploads, howManyBackLikes, onlineTime, viewPhotoCountBySource, count(lrl) as targetPhotoWasLiked, photoUploadedTime, trPhoto.photo_id as photoId
-    //    order by likesThatUserHas DESC, uploads DESC, howManyBackLikes DESC, onlineTime DESC, viewPhotoCountBySource ASC, targetPhotoWasLiked DESC, photoUploadedTime DESC
     private static final String LIKES_YOU_NEW_PART =
             String.format(
                     "MATCH (sourceUser:%s {%s:$sourceUserId})<-[:%s]-(targetUser)-[:%s]->(ph:%s) " +//1
                             "WHERE sourceUser.%s <> targetUser.%s " +//2
 
                             "AND (NOT (sourceUser)-[:%s]->(targetUser)) " +//3
-                            "AND targetUser.%s <> $hiddenUserStatus " +//3.1
+                            "AND (NOT '%s' in labels(targetUser)) " +//3.1
                             "WITH sourceUser, targetUser, ph " +//4
 
                             "OPTIONAL MATCH (ph)<-[ll:%s]-(:%s) WITH sourceUser, targetUser, count(ll) as likesThatUserHas " +//5
@@ -79,7 +66,7 @@ public class LikesYou {
                     USER_ID.getPropertyName(), USER_ID.getPropertyName(),//2
 
                     Relationships.VIEW_IN_LIKES_YOU.name(),//3
-                    USER_STATUS.getPropertyName(),//3.1
+                    HIDDEN.getLabelName(),//3.1
                     Relationships.LIKE.name(), PERSON.getLabelName(),//5
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//6
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), Relationships.LIKE.name(),//7
@@ -95,7 +82,7 @@ public class LikesYou {
                             "WHERE sourceUser.%s <> targetUser.%s " +//2
 
                             "AND (sourceUser)-[:%s]->(targetUser) " +//3
-                            "AND targetUser.%s <> $hiddenUserStatus " +//3.1
+                            "AND (NOT '%s' in labels(targetUser)) " +//3.1
 
                             "WITH sourceUser, targetUser, ph " +//4
 
@@ -112,7 +99,7 @@ public class LikesYou {
                     USER_ID.getPropertyName(), USER_ID.getPropertyName(),//2
 
                     Relationships.VIEW_IN_LIKES_YOU.name(),//3
-                    USER_STATUS.getPropertyName(),//3.1
+                    HIDDEN.getLabelName(),//3.1
 
                     Relationships.LIKE.name(), PERSON.getLabelName(),//5
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//6
@@ -168,7 +155,6 @@ public class LikesYou {
         log.debug("handle likes you request {}", request);
         final Map<String, Object> parameters = new HashMap<>();
         parameters.put("sourceUserId", request.getUserId());
-        parameters.put("hiddenUserStatus", UserStatus.HIDDEN.getValue());
 
         long lastActionTime = Utils.lastActionTime(parameters, driver);
         LMMResponse response = new LMMResponse();

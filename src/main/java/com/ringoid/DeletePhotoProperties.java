@@ -1,7 +1,7 @@
 package com.ringoid;
 
 public enum DeletePhotoProperties {
-    DELETE_AT("delete_at");
+    HIDE_AT("hide_at");
 
     private String propertyName;
 

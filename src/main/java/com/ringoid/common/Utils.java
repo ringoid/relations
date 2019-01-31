@@ -3,6 +3,7 @@ package com.ringoid.common;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.PutRecordRequest;
 import com.google.gson.Gson;
+import com.ringoid.PersonProperties;
 import com.ringoid.Relationships;
 import com.ringoid.api.ProfileResponse;
 import org.neo4j.driver.v1.Driver;
@@ -46,6 +47,13 @@ public class Utils {
             );
 
 
+    private static final String MARK_PERSON_FOR_MODERATION_QUERY =
+            String.format("MATCH (target:%s {%s: $targetUserId}) " +
+                            "SET target.%s = $moderateStatus",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(),
+                    PersonProperties.NEED_TO_MODERATE.getPropertyName()
+            );
+
     public static boolean doWeHaveBlock(String userId, String otherUserId, Transaction tx) {
         log.debug("do we have a block between userId {} and other userId {}", userId, otherUserId);
         final Map<String, Object> parameters = new HashMap<>();
@@ -58,6 +66,14 @@ public class Utils {
         log.debug("{} block relationships exist between userId {} and other userId {}",
                 num, userId, otherUserId);
         return num > 0;
+    }
+
+    public static void markPersonForModeration(String userId, Transaction tx) {
+        log.debug("mark Person for moderation, userId {}", userId);
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("targetUserId", userId);
+        parameters.put("moderateStatus", true);
+        tx.run(MARK_PERSON_FOR_MODERATION_QUERY, parameters);
     }
 
     public static long lastActionTime(Map<String, Object> parameters, Transaction tx) {
@@ -149,8 +165,8 @@ public class Utils {
     }
 
     public static void sendEventIntoInternalQueue(Object event,
-                                                   AmazonKinesis kinesis, String streamName, String partitionKey,
-                                                   Gson gson) {
+                                                  AmazonKinesis kinesis, String streamName, String partitionKey,
+                                                  Gson gson) {
         log.debug("send event {} into internal kinesis queue", event);
         PutRecordRequest putRecordRequest = new PutRecordRequest();
         putRecordRequest.setStreamName(streamName);
