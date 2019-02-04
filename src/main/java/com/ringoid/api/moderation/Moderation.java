@@ -1,5 +1,8 @@
 package com.ringoid.api.moderation;
 
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.kinesis.AmazonKinesis;
+import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.secretsmanager.AWSSecretsManager;
 import com.amazonaws.services.secretsmanager.AWSSecretsManagerClientBuilder;
@@ -11,6 +14,8 @@ import com.ringoid.HideProperties;
 import com.ringoid.PersonProperties;
 import com.ringoid.PhotoProperties;
 import com.ringoid.Relationships;
+import com.ringoid.common.Utils;
+import com.ringoid.events.internal.events.HidePhotoEvent;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -49,7 +54,34 @@ public class Moderation {
     private static final String IS_IT_HIDDEN_PROPERTY = "isItHidden";
     private static final String HOW_MANY_BLOCK_PROPERTY = "howManyBlocks";
     private static final String HOW_MANY_LIKE_PROPERTY = "howManyLikes";
+    private static final String LIST_BLOCK_REASONS = "reasons";
     private static final String NEW_ONE_PROPERTY = "newOne";
+
+    private final AmazonKinesis kinesis;
+    private final String internalStreamName;
+    private final Gson gson;
+
+    private final static String WITHOUT_REPORTED =
+            String.format(
+                    "MATCH (ph:%s)<-[relP:%s|%s]-(targetUser:%s) " +//1
+                            "WHERE targetUser.%s = true AND (NOT '%s' in labels(targetUser)) " +//2
+                            "AND NOT ( (targetUser)<-[:%s]-(:%s) ) " +//3
+                            "AND (NOT exists(targetUser.%s) OR targetUser.%s < $lastModerationTime) " +//4
+                            "WITH DISTINCT targetUser LIMIT $limit " +//5
+                            "MATCH (ph:%s)<-[relP:%s|%s]-(targetUser) WITH targetUser, relP, ph " +//5.1
+                            "OPTIONAL MATCH (ph)<-[ll:%s]-() " +//8
+                            "RETURN targetUser.%s AS %s, ph.%s AS %s, type(relP)='%s' AS %s, count(ll) AS %s, ph.%s as %s " +//9
+                            "ORDER BY %s DESC, %s DESC",
+
+                    PHOTO.getLabelName(), Relationships.UPLOAD_PHOTO.name(), Relationships.HIDE_PHOTO.name(), PERSON.getLabelName(),//1
+                    PersonProperties.NEED_TO_MODERATE.getPropertyName(), HIDDEN.getLabelName(),//2
+                    Relationships.BLOCK.name(), PERSON.getLabelName(),//3
+                    MODERATION_STARTED_AT.getPropertyName(), MODERATION_STARTED_AT.getPropertyName(),//4
+                    PHOTO.getLabelName(), Relationships.UPLOAD_PHOTO.name(), Relationships.HIDE_PHOTO.name(),//5.1
+                    Relationships.LIKE.name(),//8
+                    USER_ID.getPropertyName(), USER_ID_PROPERY, PHOTO_ID.getPropertyName(), PHOTO_ID_PROPERTY, Relationships.HIDE_PHOTO.name(), IS_IT_HIDDEN_PROPERTY, HOW_MANY_LIKE_PROPERTY, PhotoProperties.NEED_TO_MODERATE.getPropertyName(), NEW_ONE_PROPERTY,//9
+                    IS_IT_HIDDEN_PROPERTY, HOW_MANY_LIKE_PROPERTY
+            );
 
     private final static String REPORTED =
             String.format(
@@ -62,7 +94,7 @@ public class Moderation {
                             "OPTIONAL MATCH (ph)<-[br:%s]-() " +//6
                             "WITH targetUser, ph, relP, br " +//7
                             "OPTIONAL MATCH (ph)<-[ll:%s]-() " +//8
-                            "RETURN targetUser.%s AS %s, ph.%s AS %s, type(relP)='%s' AS %s, count(br) AS %s, count(ll) AS %s, ph.%s as %s " +//9
+                            "RETURN targetUser.%s AS %s, ph.%s AS %s, type(relP)='%s' AS %s, count(br) AS %s, collect(br.%s) as %s, count(ll) AS %s, ph.%s as %s " +//9
                             "ORDER BY %s DESC, %s DESC, %s DESC",
 
                     PHOTO.getLabelName(), Relationships.UPLOAD_PHOTO.name(), Relationships.HIDE_PHOTO.name(), PERSON.getLabelName(), Relationships.BLOCK.name(), PERSON.getLabelName(),//1
@@ -72,7 +104,7 @@ public class Moderation {
                     PHOTO.getLabelName(), Relationships.UPLOAD_PHOTO.name(), Relationships.HIDE_PHOTO.name(),//5.1
                     Relationships.BLOCK.name(),//6
                     Relationships.LIKE.name(),//8
-                    USER_ID.getPropertyName(), USER_ID_PROPERY, PHOTO_ID.getPropertyName(), PHOTO_ID_PROPERTY, Relationships.HIDE_PHOTO.name(), IS_IT_HIDDEN_PROPERTY, HOW_MANY_BLOCK_PROPERTY, HOW_MANY_LIKE_PROPERTY, PhotoProperties.NEED_TO_MODERATE.getPropertyName(), NEW_ONE_PROPERTY,//9
+                    USER_ID.getPropertyName(), USER_ID_PROPERY, PHOTO_ID.getPropertyName(), PHOTO_ID_PROPERTY, Relationships.HIDE_PHOTO.name(), IS_IT_HIDDEN_PROPERTY, HOW_MANY_BLOCK_PROPERTY, BLOCK_REASON_NUM.getPropertyName(), LIST_BLOCK_REASONS, HOW_MANY_LIKE_PROPERTY, PhotoProperties.NEED_TO_MODERATE.getPropertyName(), NEW_ONE_PROPERTY,//9
                     IS_IT_HIDDEN_PROPERTY, HOW_MANY_BLOCK_PROPERTY, HOW_MANY_LIKE_PROPERTY
             );
 
@@ -118,7 +150,7 @@ public class Moderation {
 
     public Moderation() {
         GsonBuilder builder = new GsonBuilder();
-        Gson gson = builder.create();
+        gson = builder.create();
 
         String env = System.getenv("ENV");
         String userName = System.getenv("NEO4J_USER");
@@ -156,6 +188,11 @@ public class Moderation {
             driver = GraphDatabase.driver("bolt://" + arr[0] + ":7687", AuthTokens.basic(userName, password),
                     Config.build().withMaxTransactionRetryTime(10, TimeUnit.SECONDS).toConfig());
         }
+
+        internalStreamName = System.getenv("INTERNAL_STREAM_NAME");
+
+        AmazonKinesisClientBuilder clientBuilder = AmazonKinesisClientBuilder.standard().withRegion(Regions.EU_WEST_1);
+        kinesis = clientBuilder.build();
     }
 
     public ModerationResponse handler(ModerationRequest request, Context context) {
@@ -172,14 +209,21 @@ public class Moderation {
                 response.setProfiles(result);
                 return response;
             }
+            case "unReported": {
+                List<ProfileObj> result = unReported(parameters);
+                markPersonInModerationProccess(result);
+                response.setProfiles(result);
+                return response;
+            }
             case "hide": {
                 hidePhoto(request.getProfilePhotoMap());
                 return response;
             }
-            case "unhide": {
-                unHidePhoto(request.getProfilePhotoMap());
-                return response;
-            }
+            //todo:mb later, now it's too complicated
+//            case "unhide": {
+//                unHidePhoto(request.getProfilePhotoMap());
+//                return response;
+//            }
             case "complete": {
                 complete(request.getProfilePhotoMap());
                 return response;
@@ -248,6 +292,9 @@ public class Moderation {
                         parameters.put("targetPhotoId", photoId);
                         parameters.put("moderator", "moderator");
                         tx.run(query, parameters);
+                        //send events to internal queue
+                        HidePhotoEvent event = new HidePhotoEvent(eachUserId, photoId);
+                        Utils.sendEventIntoInternalQueue(event, kinesis, internalStreamName, event.getUserId(), gson);
                     }
                     return 1;
                 }
@@ -284,12 +331,60 @@ public class Moderation {
                         photoObj.setPhotoReported(each.get(HOW_MANY_BLOCK_PROPERTY).asInt() > 0);
                         photoObj.setLikes(each.get(HOW_MANY_LIKE_PROPERTY).asInt());
                         photoObj.setWasModeratedBefore(!each.get(NEW_ONE_PROPERTY).asBoolean());
+                        photoObj.setBlockReasons(each.get(LIST_BLOCK_REASONS).asList());
                         photos.add(photoObj);
                         listMap.put(userId, photos);
                     }
 
                     log.info("{} profiles were found for reported moderation request", userOrder.size());
                     log.debug("{}", REPORTED);
+                    return 1;
+                }
+            });
+        } catch (Throwable throwable) {
+            log.error("error reported request", throwable);
+            throw throwable;
+        }
+
+        List<ProfileObj> finalResult = new ArrayList<>();
+        for (String each : userOrder) {
+            List<PhotoObj> photoObjList = listMap.get(each);
+            ProfileObj profileObj = new ProfileObj();
+            profileObj.setUserId(each);
+            profileObj.setPhotos(photoObjList);
+            finalResult.add(profileObj);
+        }
+
+        return finalResult;
+    }
+
+    private List<ProfileObj> unReported(Map<String, Object> parameters) {
+        Map<String, List<PhotoObj>> listMap = new HashMap<>();
+        List<String> userOrder = new ArrayList<>();
+        try (Session session = driver.session()) {
+            session.readTransaction(new TransactionWork<Integer>() {
+                @Override
+                public Integer execute(Transaction tx) {
+                    StatementResult result = tx.run(WITHOUT_REPORTED, parameters);
+                    List<Record> list = result.list();
+                    for (Record each : list) {
+                        String userId = each.get(USER_ID_PROPERY).asString();
+                        List<PhotoObj> photos = listMap.get(userId);
+                        if (Objects.isNull(photos)) {
+                            userOrder.add(userId);
+                            photos = new ArrayList<>();
+                        }
+                        PhotoObj photoObj = new PhotoObj();
+                        photoObj.setPhotoId(each.get(PHOTO_ID_PROPERTY).asString());
+                        photoObj.setPhotoHidden(each.get(IS_IT_HIDDEN_PROPERTY).asBoolean());
+                        photoObj.setLikes(each.get(HOW_MANY_LIKE_PROPERTY).asInt());
+                        photoObj.setWasModeratedBefore(!each.get(NEW_ONE_PROPERTY).asBoolean());
+                        photos.add(photoObj);
+                        listMap.put(userId, photos);
+                    }
+
+                    log.info("{} profiles were found for without reported moderation request", userOrder.size());
+                    log.debug("{}", WITHOUT_REPORTED);
                     return 1;
                 }
             });

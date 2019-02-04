@@ -1,10 +1,13 @@
 package com.ringoid.api.moderation;
 
+import java.util.List;
+
 public class PhotoObj {
     private String photoId;
     private boolean photoHidden;
     private boolean photoReported;
     private boolean wasModeratedBefore;
+    private List<Object> blockReasons;
     private int likes;
     private long updatedAt;
 
@@ -59,6 +62,14 @@ public class PhotoObj {
         this.updatedAt = updatedAt;
     }
 
+    public List<Object> getBlockReasons() {
+        return blockReasons;
+    }
+
+    public void setBlockReasons(List<Object> blockReasons) {
+        this.blockReasons = blockReasons;
+    }
+
     @Override
     public String toString() {
         return "PhotoObj{" +
@@ -66,6 +77,7 @@ public class PhotoObj {
                 ", photoHidden=" + photoHidden +
                 ", photoReported=" + photoReported +
                 ", wasModeratedBefore=" + wasModeratedBefore +
+                ", blockReasons=" + blockReasons +
                 ", likes=" + likes +
                 ", updatedAt=" + updatedAt +
                 '}';
