@@ -5,6 +5,7 @@ import com.ringoid.events.BaseEvent;
 public class UserUploadedPhotoEvent extends BaseEvent {
     private String userId;
     private String photoId;
+    private String photoKey;
     private long unixTime;
 
     public String getUserId() {
@@ -31,12 +32,22 @@ public class UserUploadedPhotoEvent extends BaseEvent {
         this.unixTime = unixTime;
     }
 
+    public String getPhotoKey() {
+        return photoKey;
+    }
+
+    public void setPhotoKey(String photoKey) {
+        this.photoKey = photoKey;
+    }
+
     @Override
     public String toString() {
         return "UserUploadedPhotoEvent{" +
                 "userId='" + userId + '\'' +
                 ", photoId='" + photoId + '\'' +
+                ", photoKey='" + photoKey + '\'' +
                 ", unixTime=" + unixTime +
+                ", eventType='" + eventType + '\'' +
                 '}';
     }
 }

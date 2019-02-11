@@ -43,6 +43,7 @@ import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.PersonProperties.MODERATION_STARTED_AT;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.PhotoProperties.PHOTO_ID;
+import static com.ringoid.PhotoProperties.PHOTO_S3_KEY;
 
 public class Moderation {
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -56,6 +57,7 @@ public class Moderation {
     private static final String HOW_MANY_LIKE_PROPERTY = "howManyLikes";
     private static final String LIST_BLOCK_REASONS = "reasons";
     private static final String NEW_ONE_PROPERTY = "newOne";
+    private static final String S3_PHOTO_KEY = "s3PhotoKey";
 
     private final AmazonKinesis kinesis;
     private final String internalStreamName;
@@ -70,7 +72,7 @@ public class Moderation {
                             "WITH DISTINCT targetUser LIMIT $limit " +//5
                             "MATCH (ph:%s)<-[relP:%s|%s]-(targetUser) WITH targetUser, relP, ph " +//5.1
                             "OPTIONAL MATCH (ph)<-[ll:%s]-() " +//8
-                            "RETURN targetUser.%s AS %s, ph.%s AS %s, type(relP)='%s' AS %s, count(ll) AS %s, ph.%s as %s " +//9
+                            "RETURN targetUser.%s AS %s, ph.%s AS %s, ph.%s AS %s, type(relP)='%s' AS %s, count(ll) AS %s, ph.%s as %s " +//9
                             "ORDER BY %s DESC, %s DESC",
 
                     PHOTO.getLabelName(), Relationships.UPLOAD_PHOTO.name(), Relationships.HIDE_PHOTO.name(), PERSON.getLabelName(),//1
@@ -79,7 +81,7 @@ public class Moderation {
                     MODERATION_STARTED_AT.getPropertyName(), MODERATION_STARTED_AT.getPropertyName(),//4
                     PHOTO.getLabelName(), Relationships.UPLOAD_PHOTO.name(), Relationships.HIDE_PHOTO.name(),//5.1
                     Relationships.LIKE.name(),//8
-                    USER_ID.getPropertyName(), USER_ID_PROPERY, PHOTO_ID.getPropertyName(), PHOTO_ID_PROPERTY, Relationships.HIDE_PHOTO.name(), IS_IT_HIDDEN_PROPERTY, HOW_MANY_LIKE_PROPERTY, PhotoProperties.NEED_TO_MODERATE.getPropertyName(), NEW_ONE_PROPERTY,//9
+                    USER_ID.getPropertyName(), USER_ID_PROPERY, PHOTO_ID.getPropertyName(), PHOTO_ID_PROPERTY, PHOTO_S3_KEY.getPropertyName(), S3_PHOTO_KEY, Relationships.HIDE_PHOTO.name(), IS_IT_HIDDEN_PROPERTY, HOW_MANY_LIKE_PROPERTY, PhotoProperties.NEED_TO_MODERATE.getPropertyName(), NEW_ONE_PROPERTY,//9
                     IS_IT_HIDDEN_PROPERTY, HOW_MANY_LIKE_PROPERTY
             );
 
@@ -94,7 +96,7 @@ public class Moderation {
                             "OPTIONAL MATCH (ph)<-[br:%s]-() " +//6
                             "WITH targetUser, ph, relP, br " +//7
                             "OPTIONAL MATCH (ph)<-[ll:%s]-() " +//8
-                            "RETURN targetUser.%s AS %s, ph.%s AS %s, type(relP)='%s' AS %s, count(br) AS %s, collect(br.%s) as %s, count(ll) AS %s, ph.%s as %s " +//9
+                            "RETURN targetUser.%s AS %s, ph.%s AS %s, ph.%s AS %s, type(relP)='%s' AS %s, count(br) AS %s, collect(br.%s) as %s, count(ll) AS %s, ph.%s as %s " +//9
                             "ORDER BY %s DESC, %s DESC, %s DESC",
 
                     PHOTO.getLabelName(), Relationships.UPLOAD_PHOTO.name(), Relationships.HIDE_PHOTO.name(), PERSON.getLabelName(), Relationships.BLOCK.name(), PERSON.getLabelName(),//1
@@ -104,7 +106,7 @@ public class Moderation {
                     PHOTO.getLabelName(), Relationships.UPLOAD_PHOTO.name(), Relationships.HIDE_PHOTO.name(),//5.1
                     Relationships.BLOCK.name(),//6
                     Relationships.LIKE.name(),//8
-                    USER_ID.getPropertyName(), USER_ID_PROPERY, PHOTO_ID.getPropertyName(), PHOTO_ID_PROPERTY, Relationships.HIDE_PHOTO.name(), IS_IT_HIDDEN_PROPERTY, HOW_MANY_BLOCK_PROPERTY, BLOCK_REASON_NUM.getPropertyName(), LIST_BLOCK_REASONS, HOW_MANY_LIKE_PROPERTY, PhotoProperties.NEED_TO_MODERATE.getPropertyName(), NEW_ONE_PROPERTY,//9
+                    USER_ID.getPropertyName(), USER_ID_PROPERY, PHOTO_ID.getPropertyName(), PHOTO_ID_PROPERTY, PHOTO_ID_PROPERTY, PHOTO_S3_KEY.getPropertyName(), Relationships.HIDE_PHOTO.name(), IS_IT_HIDDEN_PROPERTY, HOW_MANY_BLOCK_PROPERTY, BLOCK_REASON_NUM.getPropertyName(), LIST_BLOCK_REASONS, HOW_MANY_LIKE_PROPERTY, PhotoProperties.NEED_TO_MODERATE.getPropertyName(), NEW_ONE_PROPERTY,//9
                     IS_IT_HIDDEN_PROPERTY, HOW_MANY_BLOCK_PROPERTY, HOW_MANY_LIKE_PROPERTY
             );
 
@@ -205,7 +207,7 @@ public class Moderation {
         switch (request.getQueryType()) {
             case "reported": {
                 List<ProfileObj> result = reported(parameters);
-                markPersonInModerationProccess(result);
+//                markPersonInModerationProccess(result);
                 response.setProfiles(result);
                 return response;
             }
@@ -332,6 +334,7 @@ public class Moderation {
                         photoObj.setLikes(each.get(HOW_MANY_LIKE_PROPERTY).asInt());
                         photoObj.setWasModeratedBefore(!each.get(NEW_ONE_PROPERTY).asBoolean());
                         photoObj.setBlockReasons(each.get(LIST_BLOCK_REASONS).asList());
+                        photoObj.setS3Key(each.get(S3_PHOTO_KEY).asString());
                         photos.add(photoObj);
                         listMap.put(userId, photos);
                     }
@@ -379,6 +382,7 @@ public class Moderation {
                         photoObj.setPhotoHidden(each.get(IS_IT_HIDDEN_PROPERTY).asBoolean());
                         photoObj.setLikes(each.get(HOW_MANY_LIKE_PROPERTY).asInt());
                         photoObj.setWasModeratedBefore(!each.get(NEW_ONE_PROPERTY).asBoolean());
+                        photoObj.setS3Key(each.get(S3_PHOTO_KEY).asString());
                         photos.add(photoObj);
                         listMap.put(userId, photos);
                     }

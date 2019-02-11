@@ -10,6 +10,7 @@ public class PhotoObj {
     private List<Object> blockReasons;
     private int likes;
     private long updatedAt;
+    private String s3Key;
 
     public PhotoObj() {
     }
@@ -70,6 +71,14 @@ public class PhotoObj {
         this.blockReasons = blockReasons;
     }
 
+    public String getS3Key() {
+        return s3Key;
+    }
+
+    public void setS3Key(String s3Key) {
+        this.s3Key = s3Key;
+    }
+
     @Override
     public String toString() {
         return "PhotoObj{" +
@@ -80,6 +89,7 @@ public class PhotoObj {
                 ", blockReasons=" + blockReasons +
                 ", likes=" + likes +
                 ", updatedAt=" + updatedAt +
+                ", s3Key='" + s3Key + '\'' +
                 '}';
     }
 }
