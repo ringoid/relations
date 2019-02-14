@@ -155,7 +155,7 @@ public class KinesisConsumer {
 
     public void handler(KinesisEvent event, Context context) {
         createIndexes(driver);
-        log.debug("handle event {}", event);
+        log.debug("handle {} records from the stream", event.getRecords().size());
         for (KinesisEvent.KinesisEventRecord each : event.getRecords()) {
 //            try {
             ByteBuffer buff = each.getKinesis().getData();
@@ -205,7 +205,7 @@ public class KinesisConsumer {
 //                log.error("error handle {} event from the stream, skip it", each);
 //            }
         }
-        log.info("successfully handle event {}", event);
+        log.debug("successfully handle {} records from the stream", event.getRecords().size());
     }
 
 }

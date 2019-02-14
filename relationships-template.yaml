@@ -12,8 +12,9 @@ Mappings:
 
   Neo4jMap:
     Neo4jUris:
+      test: "34.247.196.198&34.251.180.118&63.34.9.239"
       stage: "34.254.188.103"
-      test: "34.243.28.144"
+      testold: "34.243.28.144"
       prod: "34.244.112.46&34.252.154.250&63.34.22.195"
     Neo4jUser:
       stage: neo4j
@@ -74,7 +75,7 @@ Parameters:
 
 Globals:
     Function:
-        Timeout: 300
+        Timeout: 900
         MemorySize: 1024
         Runtime: java8
         Environment:
@@ -106,6 +107,7 @@ Resources:
   KinesisConsumerFunction:
     Type: AWS::Serverless::Function
     Properties:
+      MemorySize: 3008
       CodeUri: build/distributions/relationships-1.0-SNAPSHOT.zip
       FunctionName: !FindInMap [FunctionName, KinesisConsumerFunction, !Ref Env]
       Handler: "com.ringoid.events.KinesisConsumer::handler"
@@ -122,7 +124,7 @@ Resources:
               Fn::ImportValue:
                 !Join [ "-", [ !Ref Env, CommonEventStreamExport] ]
             StartingPosition: TRIM_HORIZON
-            BatchSize: 10
+            BatchSize: 2000
 
   NewFacesFunction:
     Type: AWS::Serverless::Function
