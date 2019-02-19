@@ -1,5 +1,8 @@
 package com.ringoid.events;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties
 public class BaseEvent {
     protected String eventType;
 

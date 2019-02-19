@@ -1,7 +1,9 @@
 package com.ringoid.events.image;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.ringoid.events.BaseEvent;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UserDeletePhotoEvent extends BaseEvent {
     private String userId;
     private String photoId;

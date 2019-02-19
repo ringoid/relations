@@ -1,7 +1,9 @@
 package com.ringoid.events.auth;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.ringoid.events.BaseEvent;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UserCallDeleteHimselfEvent extends BaseEvent {
     private String userId;
     private long unixTime;

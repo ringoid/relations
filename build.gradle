@@ -17,6 +17,22 @@ dependencies {
             'com.amazonaws:aws-java-sdk-sqs:1.11.487',
             'com.amazonaws:aws-java-sdk-secretsmanager:1.11.487',
             'org.neo4j.driver:neo4j-java-driver:1.4.4',
+
+            'com.graphaware.neo4j:api:3.5.2.53',
+            'com.graphaware.neo4j:server:3.5.2.53',
+            'com.graphaware.neo4j:runtime:3.5.2.53',
+            'com.graphaware.neo4j:tx-api:3.5.2.53',
+            'org.springframework:spring-webmvc:4.3.13.RELEASE',
+
+//            'com.graphaware.neo4j:common:3.5.2.53',
+//            'com.graphaware.neo4j:runtime:3.5.2.53',
+//            'com.graphaware.neo4j:runtime-api:3.5.2.53',
+//            'com.graphaware.neo4j:writer:3.5.2.53',
+//            'com.graphaware.neo4j:writer-api:3.5.2.53',
+//            'com.graphaware.neo4j:tests:3.5.2.53',
+//            'com.graphaware.neo4j:tx-api:3.5.2.53',
+//            'com.graphaware.neo4j:tx-executor:3.5.2.53',
+
             'io.symphonia:lambda-logging:1.0.0',
             'com.google.code.gson:gson:2.8.2'
     )

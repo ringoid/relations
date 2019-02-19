@@ -1,8 +1,10 @@
 package com.ringoid.events.auth;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.ringoid.events.BaseEvent;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UserSettingsUpdatedEvent extends BaseEvent {
     private String userId;
     private int safeDistanceInMeter;    // 0 (default for men) || 10 (default for women)

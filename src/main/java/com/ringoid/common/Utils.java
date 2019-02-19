@@ -12,6 +12,8 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +55,16 @@ public class Utils {
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
                     PersonProperties.NEED_TO_MODERATE.getPropertyName()
             );
+
+    public static boolean doWeHaveBlockInternaly(String userId, String otherUserId, GraphDatabaseService database) {
+//        log.debug("do we have a block between userId {} and other userId {}", userId, otherUserId);
+        final Map<String, Object> parameters = new HashMap<>();
+        parameters.put("sourceUserId", userId);
+        parameters.put("targetUserId", otherUserId);
+        Result result = database.execute(DO_WE_HAVE_BLOCK_QUERY, parameters);
+        int num = (Integer) result.next().get(NUM);
+        return num > 0;
+    }
 
     public static boolean doWeHaveBlock(String userId, String otherUserId, Transaction tx) {
         log.debug("do we have a block between userId {} and other userId {}", userId, otherUserId);
