@@ -99,18 +99,18 @@ Resources:
   InternalCleanDbRelationshipsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: build/distributions/relationships-1.0-SNAPSHOT.zip
+      CodeUri: relations-service/build/distributions/relations-service-1.0-SNAPSHOT.zip
       FunctionName: !FindInMap [FunctionName, InternalCleanDbRelationshipsFunction, !Ref Env]
-      Handler: "com.ringoid.internal.Clean::handler"
+      Handler: "com.com.ringoid.internal.Clean::handler"
       Description: Internal Clean DB for relationships
 
   KinesisConsumerFunction:
     Type: AWS::Serverless::Function
     Properties:
       MemorySize: 3008
-      CodeUri: build/distributions/relationships-1.0-SNAPSHOT.zip
+      CodeUri: relations-service/build/distributions/relations-service-1.0-SNAPSHOT.zip
       FunctionName: !FindInMap [FunctionName, KinesisConsumerFunction, !Ref Env]
-      Handler: "com.ringoid.events.KinesisConsumerInternaly::handler"
+      Handler: "com.com.ringoid.events.KinesisConsumer::handler"
       Description: Consumer for Kinesis stream
       Policies:
         - AmazonKinesisFullAccess
@@ -129,9 +129,9 @@ Resources:
   NewFacesFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: build/distributions/relationships-1.0-SNAPSHOT.zip
+      CodeUri: relations-service/build/distributions/relations-service-1.0-SNAPSHOT.zip
       FunctionName: !FindInMap [FunctionName, NewFacesFunction, !Ref Env]
-      Handler: "com.ringoid.api.newfaces.NewFaces::handler"
+      Handler: "com.com.ringoid.api.newfaces.NewFaces::handler"
       Description: New Faces Feed function
       Policies:
         - SecretsManagerReadWrite
@@ -140,9 +140,9 @@ Resources:
   LikesYouFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: build/distributions/relationships-1.0-SNAPSHOT.zip
+      CodeUri: relations-service/build/distributions/relations-service-1.0-SNAPSHOT.zip
       FunctionName: !FindInMap [FunctionName, LikesYouFunction, !Ref Env]
-      Handler: "com.ringoid.api.lmm.LikesYou::handler"
+      Handler: "com.com.ringoid.api.lmm.LikesYou::handler"
       Description: Likes You Feed function
       Policies:
         - SecretsManagerReadWrite
@@ -150,9 +150,9 @@ Resources:
   MatchesFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: build/distributions/relationships-1.0-SNAPSHOT.zip
+      CodeUri: relations-service/build/distributions/relations-service-1.0-SNAPSHOT.zip
       FunctionName: !FindInMap [FunctionName, MatchesFunction, !Ref Env]
-      Handler: "com.ringoid.api.lmm.Matches::handler"
+      Handler: "com.com.ringoid.api.lmm.Matches::handler"
       Description: Matches Feed function
       Policies:
         - SecretsManagerReadWrite
@@ -160,9 +160,9 @@ Resources:
   MessagesFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: build/distributions/relationships-1.0-SNAPSHOT.zip
+      CodeUri: relations-service/build/distributions/relations-service-1.0-SNAPSHOT.zip
       FunctionName: !FindInMap [FunctionName, MessagesFunction, !Ref Env]
-      Handler: "com.ringoid.api.lmm.Messages::handler"
+      Handler: "com.com.ringoid.api.lmm.Messages::handler"
       Description: Messages Feed function
       Policies:
         - SecretsManagerReadWrite
@@ -170,9 +170,9 @@ Resources:
   ModerationFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: build/distributions/relationships-1.0-SNAPSHOT.zip
+      CodeUri: relations-service/build/distributions/relations-service-1.0-SNAPSHOT.zip
       FunctionName: !FindInMap [FunctionName, ModerationFunction, !Ref Env]
-      Handler: "com.ringoid.api.moderation.Moderation::handler"
+      Handler: "com.com.ringoid.api.moderation.Moderation::handler"
       Description: Moderation function
       Policies:
         - SecretsManagerReadWrite

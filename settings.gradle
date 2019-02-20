@@ -1,2 +1,5 @@
 rootProject.name = 'relationships'
+include 'relations-service'
+include 'neo4j-extension'
+include 'common'
 
