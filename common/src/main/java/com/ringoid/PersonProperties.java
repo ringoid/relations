@@ -8,6 +8,7 @@ public enum PersonProperties {
     SAFE_DISTANCE_IN_METER("safe_distance_in_meter"),
     LAST_ONLINE_TIME("last_online_time"),
     LAST_ACTION_TIME("last_action_time"),
+    LIKE_COUNTER("like_counter"),
     NEED_TO_MODERATE("need_to_moderate"),
     MODERATION_STARTED_AT("moderation_started_at");
 

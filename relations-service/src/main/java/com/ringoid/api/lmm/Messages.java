@@ -32,16 +32,11 @@ import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.MessageProperties.MSG_AT;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.PhotoProperties.PHOTO_ID;
-import static com.ringoid.PhotoProperties.PHOTO_UPLOADED;
+import static com.ringoid.PhotoProperties.PHOTO_UPLOADED_AT;
 
 public class Messages {
-    private final Logger log = LoggerFactory.getLogger(getClass());
-
-    private final Driver driver;
-
     private static final String TARGET_USER_ID = "targetUserId";
     private static final String TARGET_PHOTO_ID = "targetPhotoId";
-
     private static final String MESSAGES_QUERY =
             String.format(
                     "MATCH (sourceUser:%s {%s:$sourceUserId})-[msg:%s]-(targetUser)-[uplRel:%s]->(trPhoto:%s) " +//1
@@ -58,10 +53,12 @@ public class Messages {
 
                     USER_ID.getPropertyName(), USER_ID.getPropertyName(),//2
                     HIDDEN.getLabelName(),//3
-                    MSG_AT.getPropertyName(), PHOTO_UPLOADED.getPropertyName(),//4
+                    MSG_AT.getPropertyName(), PHOTO_UPLOADED_AT.getPropertyName(),//4
 
                     Relationships.LIKE.name(), PERSON.getLabelName(), USER_ID.getPropertyName(), TARGET_USER_ID, PHOTO_ID.getPropertyName(), TARGET_PHOTO_ID //6
             );
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    private final Driver driver;
 
 
     public Messages() {

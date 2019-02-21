@@ -3,8 +3,6 @@ package com.ringoid.common;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.PutRecordRequest;
 import com.google.gson.Gson;
-import com.ringoid.PersonProperties;
-import com.ringoid.Relationships;
 import com.ringoid.api.ProfileResponse;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Record;
@@ -12,8 +10,6 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -37,13 +37,8 @@ import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
 
 public class NewFaces {
-    private final Logger log = LoggerFactory.getLogger(getClass());
-
-    private final Driver driver;
-
     private static final String TARGET_USER_ID = "targetUserId";
     private static final String TARGET_PHOTO_ID = "targetPhotoId";
-
     private final static String NEW_FACES_REQUEST =
             String.format(
                     "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
@@ -75,6 +70,8 @@ public class NewFaces {
                     Relationships.UPLOAD_PHOTO.name(),//8.2
                     TARGET_USER_ID, TARGET_PHOTO_ID//9
             );
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    private final Driver driver;
 
     public NewFaces() {
         GsonBuilder builder = new GsonBuilder();

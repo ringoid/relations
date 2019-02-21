@@ -46,10 +46,6 @@ import static com.ringoid.PhotoProperties.PHOTO_ID;
 import static com.ringoid.PhotoProperties.PHOTO_S3_KEY;
 
 public class Moderation {
-    private final Logger log = LoggerFactory.getLogger(getClass());
-
-    private final Driver driver;
-
     private static final String USER_ID_PROPERY = "userId";
     private static final String PHOTO_ID_PROPERTY = "photoId";
     private static final String IS_IT_HIDDEN_PROPERTY = "isItHidden";
@@ -58,11 +54,6 @@ public class Moderation {
     private static final String LIST_BLOCK_REASONS = "reasons";
     private static final String NEW_ONE_PROPERTY = "newOne";
     private static final String S3_PHOTO_KEY = "s3PhotoKey";
-
-    private final AmazonKinesis kinesis;
-    private final String internalStreamName;
-    private final Gson gson;
-
     private final static String WITHOUT_REPORTED =
             String.format(
                     "MATCH (ph:%s)<-[relP:%s|%s]-(targetUser:%s) " +//1
@@ -84,7 +75,6 @@ public class Moderation {
                     USER_ID.getPropertyName(), USER_ID_PROPERY, PHOTO_ID.getPropertyName(), PHOTO_ID_PROPERTY, PHOTO_S3_KEY.getPropertyName(), S3_PHOTO_KEY, Relationships.HIDE_PHOTO.name(), IS_IT_HIDDEN_PROPERTY, HOW_MANY_LIKE_PROPERTY, PhotoProperties.NEED_TO_MODERATE.getPropertyName(), NEW_ONE_PROPERTY,//9
                     IS_IT_HIDDEN_PROPERTY, HOW_MANY_LIKE_PROPERTY
             );
-
     private final static String REPORTED =
             String.format(
                     "MATCH (ph:%s)<-[relP:%s|%s]-(targetUser:%s)<-[r:%s]-(n:%s) " +//1
@@ -109,13 +99,11 @@ public class Moderation {
                     USER_ID.getPropertyName(), USER_ID_PROPERY, PHOTO_ID.getPropertyName(), PHOTO_ID_PROPERTY, PHOTO_ID_PROPERTY, PHOTO_S3_KEY.getPropertyName(), Relationships.HIDE_PHOTO.name(), IS_IT_HIDDEN_PROPERTY, HOW_MANY_BLOCK_PROPERTY, BLOCK_REASON_NUM.getPropertyName(), LIST_BLOCK_REASONS, HOW_MANY_LIKE_PROPERTY, PhotoProperties.NEED_TO_MODERATE.getPropertyName(), NEW_ONE_PROPERTY,//9
                     IS_IT_HIDDEN_PROPERTY, HOW_MANY_BLOCK_PROPERTY, HOW_MANY_LIKE_PROPERTY
             );
-
     private final static String MARK_THAT_MODERATION_IN_PROGRESS =
             String.format(
                     "MATCH (n:%s {%s:$targetUserId}) SET n.%s = $startModerationTime",
                     PERSON.getLabelName(), USER_ID.getPropertyName(), MODERATION_STARTED_AT.getPropertyName()
             );
-
     private final static String HIDE_PHOTO =
             String.format(
                     "MATCH (n:%s {%s:$targetUserId})-[upl:%s]->(ph:%s {%s:$targetPhotoId}) " +//1
@@ -128,7 +116,6 @@ public class Moderation {
                     HideProperties.HIDE_AT.getPropertyName(), HideProperties.HIDE_REASON.getPropertyName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName(),//4
                     HideProperties.HIDE_AT.getPropertyName(), HideProperties.HIDE_REASON.getPropertyName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName()//5
             );
-
     private final static String UNHIDE_PHOTO =
             String.format(
                     "MATCH (n:%s {%s:$targetUserId})-[upl:%s]->(ph:%s {%s:$targetPhotoId}) " +//1
@@ -138,10 +125,9 @@ public class Moderation {
                             "ON MATCH SET h.%s = $time, ph.%s = false",//5
                     PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.HIDE_PHOTO.name(), PHOTO.getLabelName(), PHOTO_ID.getPropertyName(),//1
                     Relationships.UPLOAD_PHOTO.name(),//3
-                    PhotoProperties.PHOTO_UPLOADED.getPropertyName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName(),//4
-                    PhotoProperties.PHOTO_UPLOADED.getPropertyName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName()//5
+                    PhotoProperties.PHOTO_UPLOADED_AT.getPropertyName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName(),//4
+                    PhotoProperties.PHOTO_UPLOADED_AT.getPropertyName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName()//5
             );
-
     private final static String COMPLETE =
             String.format(
                     "MATCH (n:%s {%s:$targetUserId})-[:%s|%s]->(ph:%s) " +//1
@@ -149,6 +135,11 @@ public class Moderation {
                     PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), Relationships.HIDE_PHOTO.name(), PHOTO.getLabelName(),//1
                     PersonProperties.NEED_TO_MODERATE.getPropertyName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName()
             );
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    private final Driver driver;
+    private final AmazonKinesis kinesis;
+    private final String internalStreamName;
+    private final Gson gson;
 
     public Moderation() {
         GsonBuilder builder = new GsonBuilder();

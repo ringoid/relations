@@ -33,17 +33,12 @@ import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.PhotoProperties.PHOTO_ID;
-import static com.ringoid.PhotoProperties.PHOTO_UPLOADED;
+import static com.ringoid.PhotoProperties.PHOTO_UPLOADED_AT;
 
 public class LikesYou {
-    private final Logger log = LoggerFactory.getLogger(getClass());
-
-    private final Driver driver;
-
     private static final String TARGET_USER_ID = "targetUserId";
     private static final String TARGET_PHOTO_ID = "targetPhotoId";
     private static final String OWN_LAST_ACTION_TIME = "lastActionTime";
-
     private static final String LIKES_YOU_NEW_PART =
             String.format(
                     "MATCH (sourceUser:%s {%s:$sourceUserId})<-[:%s]-(targetUser)-[:%s]->(ph:%s) " +//1
@@ -71,11 +66,9 @@ public class LikesYou {
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//6
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), Relationships.LIKE.name(),//7
                     LAST_ONLINE_TIME.getPropertyName(),//8
-                    Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), PHOTO_UPLOADED.getPropertyName(),//9
+                    Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), PHOTO_UPLOADED_AT.getPropertyName(),//9
                     Relationships.LIKE.name(), PERSON.getLabelName(), LAST_ACTION_TIME.getPropertyName(), OWN_LAST_ACTION_TIME, USER_ID.getPropertyName(), TARGET_USER_ID, PHOTO_ID.getPropertyName(), TARGET_PHOTO_ID //11
             );
-
-
     private static final String LIKES_YOU_OLD_PART =
             String.format(
                     "MATCH (sourceUser:%s {%s:$sourceUserId})<-[:%s]-(targetUser)-[:%s]->(ph:%s) " +//1
@@ -105,9 +98,11 @@ public class LikesYou {
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//6
                     Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), Relationships.LIKE.name(),//7
                     LAST_ONLINE_TIME.getPropertyName(),//8
-                    Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), PHOTO_UPLOADED.getPropertyName(),//9
+                    Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), PHOTO_UPLOADED_AT.getPropertyName(),//9
                     Relationships.LIKE.name(), PERSON.getLabelName(), LAST_ACTION_TIME.getPropertyName(), OWN_LAST_ACTION_TIME, USER_ID.getPropertyName(), TARGET_USER_ID, PHOTO_ID.getPropertyName(), TARGET_PHOTO_ID //11
             );
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    private final Driver driver;
 
     public LikesYou() {
         GsonBuilder builder = new GsonBuilder();

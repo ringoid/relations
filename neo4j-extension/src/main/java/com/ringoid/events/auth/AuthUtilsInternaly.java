@@ -17,6 +17,7 @@ import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.PersonProperties.CREATED;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
+import static com.ringoid.PersonProperties.LIKE_COUNTER;
 import static com.ringoid.PersonProperties.SAFE_DISTANCE_IN_METER;
 import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
@@ -34,6 +35,7 @@ public class AuthUtilsInternaly {
                             "n.%s = $yearValue, " +
                             "n.%s = $createdValue, " +
                             "n.%s = 0, " +
+                            "n.%s = 0, " +
                             "n.%s = $onlineUserTime " +
                             "ON MATCH SET " +
                             "n.%s = $sexValue, " +
@@ -42,7 +44,7 @@ public class AuthUtilsInternaly {
                             "n.%s = 0, " +
                             "n.%s = $onlineUserTime",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
-                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(),
+                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LIKE_COUNTER.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(),
                     SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LAST_ONLINE_TIME.getPropertyName());
 
     private static final String UPDATE_SETTINGS =

@@ -13,10 +13,6 @@ public enum ViewRelationshipSource {
         this.value = value;
     }
 
-    public String getValue() {
-        return value;
-    }
-
     public static ViewRelationshipSource fromString(String str) {
         switch (str.toLowerCase()) {
             case "new_faces":
@@ -32,5 +28,9 @@ public enum ViewRelationshipSource {
             default:
                 throw new IllegalArgumentException("Unsupported view source type " + str);
         }
+    }
+
+    public String getValue() {
+        return value;
     }
 }

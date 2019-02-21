@@ -2,7 +2,18 @@ package com.ringoid.graphaware;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ringoid.events.actions.ActionsUtilsInternaly;
+import com.ringoid.Labels;
+import com.ringoid.PersonProperties;
+import com.ringoid.PhotoProperties;
+import com.ringoid.api.LMMRequest;
+import com.ringoid.api.LMMResponse;
+import com.ringoid.api.LikesYou;
+import com.ringoid.api.Matches;
+import com.ringoid.api.Messages;
+import com.ringoid.api.NewFaces;
+import com.ringoid.api.NewFacesRequest;
+import com.ringoid.api.NewFacesResponse;
+import com.ringoid.events.actions.ActionsUtils;
 import com.ringoid.events.actions.UserBlockOtherEvent;
 import com.ringoid.events.actions.UserLikePhotoEvent;
 import com.ringoid.events.actions.UserMessageEvent;
@@ -17,7 +28,10 @@ import com.ringoid.events.image.ImageUtilsInternaly;
 import com.ringoid.events.image.UserDeletePhotoEvent;
 import com.ringoid.events.image.UserUploadedPhotoEvent;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -48,12 +62,69 @@ import static com.ringoid.events.EventTypes.IMAGE_USER_UPLOAD_PHOTO;
 @Controller
 public class ActionController {
 
-    private final GraphDatabaseService database;
     private static final int TX_MAX = 500;
+    private final GraphDatabaseService database;
 
     @Autowired
     public ActionController(GraphDatabaseService database) {
         this.database = database;
+    }
+
+    @RequestMapping(value = "/hello", method = RequestMethod.GET)
+    @ResponseBody
+    public String hello() {
+        return "Hello World!";
+    }
+
+    @RequestMapping(value = "/create_indexes", method = RequestMethod.GET)
+    @ResponseBody
+    public String createIndexesApi() {
+        createIndexes(database);
+        return "OK";
+    }
+
+    @RequestMapping(value = "/likes_you", method = RequestMethod.GET)
+    @ResponseBody
+    public String likesYou(@RequestBody String body) throws IOException {
+        long start = System.currentTimeMillis();
+        ObjectMapper objectMapper = new ObjectMapper();
+        LMMRequest request = objectMapper.readValue(body, LMMRequest.class);
+        LMMResponse response = LikesYou.likesYou(request, database);
+        System.out.println("handle likes_you in " + (System.currentTimeMillis() - start) + " millis");
+        return objectMapper.writeValueAsString(response);
+    }
+
+    @RequestMapping(value = "/matches", method = RequestMethod.GET)
+    @ResponseBody
+    public String matches(@RequestBody String body) throws IOException {
+        long start = System.currentTimeMillis();
+        ObjectMapper objectMapper = new ObjectMapper();
+        LMMRequest request = objectMapper.readValue(body, LMMRequest.class);
+        LMMResponse response = Matches.matches(request, database);
+        System.out.println("handle matches in " + (System.currentTimeMillis() - start) + " millis");
+        return objectMapper.writeValueAsString(response);
+    }
+
+    @RequestMapping(value = "/messages", method = RequestMethod.GET)
+    @ResponseBody
+    public String messages(@RequestBody String body) throws IOException {
+        long start = System.currentTimeMillis();
+        ObjectMapper objectMapper = new ObjectMapper();
+        LMMRequest request = objectMapper.readValue(body, LMMRequest.class);
+        LMMResponse response = Messages.messages(request, database);
+        System.out.println("handle messages in " + (System.currentTimeMillis() - start) + " millis");
+        return objectMapper.writeValueAsString(response);
+    }
+
+    @RequestMapping(value = "/new_faces", method = RequestMethod.GET)
+    @ResponseBody
+    public String newFaces(@RequestBody String body) throws IOException {
+        long start = System.currentTimeMillis();
+        ObjectMapper objectMapper = new ObjectMapper();
+        NewFacesRequest request = objectMapper.readValue(body, NewFacesRequest.class);
+        NewFacesResponse response = NewFaces.newFaces(request, database);
+        System.out.println("handle new_faces in " + (System.currentTimeMillis() - start) + " millis");
+        return objectMapper.writeValueAsString(response);
     }
 
     @RequestMapping(value = "/actions", method = RequestMethod.POST)
@@ -63,6 +134,9 @@ public class ActionController {
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode node = objectMapper.readTree(body);
         Iterator<JsonNode> it = node.get("events").elements();
+
+        createIndexes(database);
+
         Transaction tx = database.beginTx();
         int actionCounter = 0;
         try {
@@ -91,19 +165,24 @@ public class ActionController {
                     AuthUtilsInternaly.deleteUserInternaly(event, database);
                 } else if (Objects.equals(eventType, ACTION_USER_LIKE_PHOTO.name())) {
                     UserLikePhotoEvent event = objectMapper.readValue(each.traverse(), UserLikePhotoEvent.class);
-                    ActionsUtilsInternaly.likePhotoInternaly(event, database);
+//                    ActionsUtils.likePhotoInternaly(event, database);
+                    ActionsUtils.likePhoto(event, database);
                 } else if (Objects.equals(eventType, ACTION_USER_VIEW_PHOTO.name())) {
                     UserViewPhotoEvent event = objectMapper.readValue(each.traverse(), UserViewPhotoEvent.class);
-                    ActionsUtilsInternaly.viewPhotoInternaly(event, database);
+//                    ActionsUtils.viewPhotoInternaly(event, database);
+                    ActionsUtils.viewPhoto(event, database);
                 } else if (Objects.equals(eventType, ACTION_USER_BLOCK_OTHER.name())) {
                     UserBlockOtherEvent event = objectMapper.readValue(each.traverse(), UserBlockOtherEvent.class);
-                    ActionsUtilsInternaly.blockInternaly(event, database);
+//                    ActionsUtils.blockInternaly(event, database);
+                    ActionsUtils.block(event, database);
                 } else if (Objects.equals(eventType, ACTION_USER_MESSAGE.name())) {
                     UserMessageEvent event = objectMapper.readValue(each.traverse(), UserMessageEvent.class);
-                    ActionsUtilsInternaly.messageInternal(event, database);
+//                    ActionsUtils.messageInternal(event, database);
+                    ActionsUtils.message(event, database);
                 } else if (Objects.equals(eventType, ACTION_USER_UNLIKE_PHOTO.name())) {
                     UserUnlikePhotoEvent event = objectMapper.readValue(each.traverse(), UserUnlikePhotoEvent.class);
-                    ActionsUtilsInternaly.unlikeInternal(event, database);
+//                    ActionsUtils.unlikeInternal(event, database);
+                    ActionsUtils.unlike(event, database);
                 } else if (Objects.equals(eventType, ACTION_USER_OPEN_CHAT.name())) {
                     //todo:implement in next version
                 }
@@ -128,4 +207,35 @@ public class ActionController {
         return "OK";
     }
 
+    private void createIndexes(GraphDatabaseService database) {
+        createIndex(Labels.PERSON.getLabelName(), PersonProperties.USER_ID.getPropertyName(), database);
+        createIndex(Labels.PERSON.getLabelName(), PersonProperties.SEX.getPropertyName(), database);
+        createIndex(Labels.PERSON.getLabelName(), PersonProperties.NEED_TO_MODERATE.getPropertyName(), database);
+        createIndex(Labels.PERSON.getLabelName(), PersonProperties.LIKE_COUNTER.getPropertyName(), database);
+        createIndex(Labels.PHOTO.getLabelName(), PhotoProperties.PHOTO_ID.getPropertyName(), database);
+        createIndex(Labels.PHOTO.getLabelName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName(), database);
+    }
+
+    private void createIndex(String label, String property, GraphDatabaseService database) {
+        Transaction tx = database.beginTx();
+        try {
+            Schema schema = database.schema();
+            for (IndexDefinition each : schema.getIndexes(Label.label(label))) {
+                for (String eachProperty : each.getPropertyKeys()) {
+                    if (Objects.equals(property, eachProperty)) {
+                        return;
+                    }
+                }
+            }
+
+            schema.indexFor(Label.label(label))
+                    .on(property)
+                    .create();
+
+            tx.success();
+
+        } finally {
+            tx.close();
+        }
+    }
 }

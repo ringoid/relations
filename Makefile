@@ -2,25 +2,41 @@ stage-all: clean stage-deploy
 test-all: clean test-deploy
 prod-all: clean prod-deploy
 
-build:
+build-go:
+	@echo '--- Build Go modules ---'
+	GOOS=linux go build kinesis-consumer/handle_stream.go
+	GOOS=linux go build new-faces/new_faces.go
+	GOOS=linux go build likes-you/likes_you.go
+	GOOS=linux go build match-you/match.go
+	GOOS=linux go build message-you/messages.go
+
+zip-go: build-go
+	@echo '--- Zip Go modules ---'
+	zip handle_stream.zip ./handle_stream
+	zip new_faces.zip ./new_faces
+	zip likes_you.zip ./likes_you
+	zip match.zip ./match
+	zip messages.zip ./messages
+
+buildgradle:
 	@echo '--- Building kinesis-consumer-relationships function ---'
 	gradle build
 
-test-deploy: clean build
+test-deploy: zip-go buildgradle
 	@echo '--- Build lambda test ---'
 	@echo 'Package template'
 	sam package --template-file relationships-template.yaml --s3-bucket ringoid-cloudformation-template --output-template-file relationships-template-packaged.yaml
 	@echo 'Deploy relationships-image-stack'
 	sam deploy --template-file relationships-template-packaged.yaml --s3-bucket ringoid-cloudformation-template --stack-name test-relationships-stack --capabilities CAPABILITY_IAM --parameter-overrides Env=test --no-fail-on-empty-changeset
 
-stage-deploy: clean build
+stage-deploy: zip-go buildgradle
 	@echo '--- Build lambda stage ---'
 	@echo 'Package template'
 	sam package --template-file relationships-template.yaml --s3-bucket ringoid-cloudformation-template --output-template-file relationships-template-packaged.yaml
 	@echo 'Deploy relationships-image-stack'
 	sam deploy --template-file relationships-template-packaged.yaml --s3-bucket ringoid-cloudformation-template --stack-name stage-relationships-stack --capabilities CAPABILITY_IAM --parameter-overrides Env=stage --no-fail-on-empty-changeset
 
-prod-deploy: clean build
+prod-deploy: zip-go buildgradle
 	@echo '--- Build lambda prod ---'
 	@echo 'Package template'
 	sam package --template-file relationships-template.yaml --s3-bucket ringoid-cloudformation-template --output-template-file relationships-template-packaged.yaml
@@ -30,4 +46,14 @@ prod-deploy: clean build
 clean:
 	@echo '--- Delete old artifacts ---'
 	gradle clean
+	rm -rf handle_stream.zip
+	rm -rf handle_stream
+	rm -rf new_faces.zip
+	rm -rf new_faces
+	rm -rf likes_you.zip
+	rm -rf likes_you
+	rm -rf match.zip
+	rm -rf match
+	rm -rf messages.zip
+	rm -rf messages
 
