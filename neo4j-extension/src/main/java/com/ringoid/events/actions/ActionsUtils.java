@@ -39,7 +39,6 @@ import static com.ringoid.common.UtilsInternaly.getUploadedPhoto;
 import static com.ringoid.common.UtilsInternaly.updateLastActionTime;
 
 public class ActionsUtils {
-    private static final int REPORT_REASON_TRESHOLD = 9;
 
     public static void message(UserMessageEvent event, GraphDatabaseService database) {
         Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getUserId());
@@ -273,13 +272,9 @@ public class ActionsUtils {
 //        if (event.getBlockReasonNum() > REPORT_REASON_TRESHOLD && relCreated > 0) {
 //        todo:implement
 //            Utils.markPersonForModeration(event.getTargetUserId(), tx);
-//            Utils.sendEventIntoInternalQueue(event, kinesis, streamName, event.getTargetUserId(), gson);
 //            return;
 //        }
 //
-//        if it's just block - we can delete the conversation
-//        DeleteUserConversationEvent deleteUserConversationEvent = new DeleteUserConversationEvent(event.getUserId(), event.getTargetUserId());
-//        Utils.sendEventIntoInternalQueue(deleteUserConversationEvent, kinesis, streamName, deleteUserConversationEvent.getUserId(), gson);
 
     }
 
@@ -416,12 +411,6 @@ public class ActionsUtils {
             long photoLikeCounter = (Long) targetPhoto.getProperty(PhotoProperties.LIKE_COUNTER.getPropertyName(), 0L);
             photoLikeCounter++;
             targetPhoto.setProperty(PhotoProperties.LIKE_COUNTER.getPropertyName(), photoLikeCounter);
-
-//        todo:send invocation
-//        PhotoLikeEvent likeEvent = new PhotoLikeEvent(event.getTargetUserId(), event.getOriginPhotoId());
-//        Utils.sendEventIntoInternalQueue(likeEvent, kinesis, streamName, event.getTargetUserId(), gson);
-//        send bot event
-//        sendBotEvent(event.botUserLikePhotoEvent(), sqs, sqsUrl, botEnabled, gson);
         }
 
         Set<Relationships> existIncomingRelationshipsBetweenProfiles = getAllRelationshipTypes(sourceUser, targetUser, Direction.INCOMING);
@@ -518,15 +507,5 @@ public class ActionsUtils {
         }
 
     }
-
-//    private static void sendBotEvent(Object event, AmazonSQS sqs, String sqsUrl, boolean botEnabled, Gson gson) {
-//        log.debug("try to send bot event {}, botEnabled {}", event, botEnabled);
-//        if (!botEnabled) {
-//            return;
-//        }
-//        log.debug("send bot event {} into sqs queue", event);
-//        sqs.sendMessage(sqsUrl, gson.toJson(event));
-//        log.debug("successfully send bot event {} into sqs queue", event);
-//    }
 
 }

@@ -30,8 +30,10 @@ import com.ringoid.events.image.UserUploadedPhotoEvent;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.kernel.DeadlockDetectedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,7 +42,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 
 import static com.ringoid.events.EventTypes.ACTION_USER_BLOCK_OTHER;
@@ -62,7 +66,10 @@ import static com.ringoid.events.EventTypes.IMAGE_USER_UPLOAD_PHOTO;
 @Controller
 public class ActionController {
 
-    private static final int TX_MAX = 500;
+    private static final int BATCH_SIZE = 1000;
+    private static final int RETRIES = 5;
+    private static final int BACKOFF = 100;
+
     private final GraphDatabaseService database;
 
     @Autowired
@@ -135,76 +142,101 @@ public class ActionController {
         JsonNode node = objectMapper.readTree(body);
         Iterator<JsonNode> it = node.get("events").elements();
 
-        createIndexes(database);
+        //todo:check that we move this code
+        //createIndexes(database);
 
-        Transaction tx = database.beginTx();
         int actionCounter = 0;
         try {
-            int txCounter = 0;
+            List<JsonNode> batch = new ArrayList<>(BATCH_SIZE);
             while (it.hasNext()) {
-                JsonNode each = it.next();
-                String eventType = each.get("eventType").asText();
                 actionCounter++;
-                if (Objects.equals(eventType, AUTH_USER_ONLINE.name())) {
-                    UserOnlineEvent event = objectMapper.readValue(each.traverse(), UserOnlineEvent.class);
-                    AuthUtilsInternaly.updateLastOnlineTimeInternaly(event, database);
-                } else if (Objects.equals(eventType, AUTH_USER_PROFILE_CREATED.name())) {
-                    UserProfileCreatedEvent event = objectMapper.readValue(each.traverse(), UserProfileCreatedEvent.class);
-                    AuthUtilsInternaly.createProfileInternaly(event, database);
-                } else if (Objects.equals(eventType, AUTH_USER_SETTINGS_UPDATED.name())) {
-                    UserSettingsUpdatedEvent event = objectMapper.readValue(each.traverse(), UserSettingsUpdatedEvent.class);
-                    AuthUtilsInternaly.updateSettingsInternaly(event, database);
-                } else if (Objects.equals(eventType, IMAGE_USER_UPLOAD_PHOTO.name())) {
-                    UserUploadedPhotoEvent event = objectMapper.readValue(each.traverse(), UserUploadedPhotoEvent.class);
-                    ImageUtilsInternaly.uploadPhotoInternaly(event, database);
-                } else if (Objects.equals(eventType, IMAGE_USER_DELETE_PHOTO.name())) {
-                    UserDeletePhotoEvent event = objectMapper.readValue(each.traverse(), UserDeletePhotoEvent.class);
-                    ImageUtilsInternaly.deletePhotoInternaly(event, database);
-                } else if (Objects.equals(eventType, AUTH_USER_CALL_DELETE_HIMSELF.name())) {
-                    UserCallDeleteHimselfEvent event = objectMapper.readValue(each.traverse(), UserCallDeleteHimselfEvent.class);
-                    AuthUtilsInternaly.deleteUserInternaly(event, database);
-                } else if (Objects.equals(eventType, ACTION_USER_LIKE_PHOTO.name())) {
-                    UserLikePhotoEvent event = objectMapper.readValue(each.traverse(), UserLikePhotoEvent.class);
-//                    ActionsUtils.likePhotoInternaly(event, database);
-                    ActionsUtils.likePhoto(event, database);
-                } else if (Objects.equals(eventType, ACTION_USER_VIEW_PHOTO.name())) {
-                    UserViewPhotoEvent event = objectMapper.readValue(each.traverse(), UserViewPhotoEvent.class);
-//                    ActionsUtils.viewPhotoInternaly(event, database);
-                    ActionsUtils.viewPhoto(event, database);
-                } else if (Objects.equals(eventType, ACTION_USER_BLOCK_OTHER.name())) {
-                    UserBlockOtherEvent event = objectMapper.readValue(each.traverse(), UserBlockOtherEvent.class);
-//                    ActionsUtils.blockInternaly(event, database);
-                    ActionsUtils.block(event, database);
-                } else if (Objects.equals(eventType, ACTION_USER_MESSAGE.name())) {
-                    UserMessageEvent event = objectMapper.readValue(each.traverse(), UserMessageEvent.class);
-//                    ActionsUtils.messageInternal(event, database);
-                    ActionsUtils.message(event, database);
-                } else if (Objects.equals(eventType, ACTION_USER_UNLIKE_PHOTO.name())) {
-                    UserUnlikePhotoEvent event = objectMapper.readValue(each.traverse(), UserUnlikePhotoEvent.class);
-//                    ActionsUtils.unlikeInternal(event, database);
-                    ActionsUtils.unlike(event, database);
-                } else if (Objects.equals(eventType, ACTION_USER_OPEN_CHAT.name())) {
-                    //todo:implement in next version
-                }
-
-                txCounter++;
-                if (txCounter >= TX_MAX) {
-                    tx.success();
-                    tx.close();
-                    tx = database.beginTx();
-                    txCounter = 0;
+                JsonNode each = it.next();
+                batch.add(each);
+                if (batch.size() >= BATCH_SIZE) {
+                    handleInTrasaction(batch, objectMapper);
+                    batch.clear();
                 }
             }
 
-            tx.success();
-            System.out.println("handle " + actionCounter + " actions in " + (System.currentTimeMillis() - start) + " millis");
-        } catch (Exception e) {
-            throw e;
-        } finally {
-            tx.close();
-        }
+            if (!batch.isEmpty()) {
+                handleInTrasaction(batch, objectMapper);
+                batch.clear();
+            }
 
+            System.out.println("handle " + actionCounter + " actions in " + (System.currentTimeMillis() - start) + " millis");
+        } catch (IOException e) {
+            throw new RuntimeException(e.getCause());
+        }
         return "OK";
+    }
+
+    private void handleInTrasaction(List<JsonNode> list, ObjectMapper objectMapper) throws IOException {
+        for (int i = 0; i < RETRIES; i++) {
+            try (Transaction tx = database.beginTx()) {
+                for (JsonNode each : list) {
+                    doStuff(each, objectMapper);
+                }
+                tx.success();
+                return;
+            } catch (DeadlockDetectedException ex) {
+                System.out.println("Catch a DeadlockDetectedException");
+            }
+
+            // Wait so that we don't immediately get into the same deadlock
+            if (i < RETRIES - 1) {
+                try {
+                    Thread.sleep(BACKOFF);
+                } catch (InterruptedException e) {
+                    throw new TransactionFailureException("Interrupted", e);
+                }
+            }
+        }
+    }
+
+    private void doStuff(JsonNode each, ObjectMapper objectMapper) throws IOException {
+        String eventType = each.get("eventType").asText();
+        if (Objects.equals(eventType, AUTH_USER_ONLINE.name())) {
+            UserOnlineEvent event = objectMapper.readValue(each.traverse(), UserOnlineEvent.class);
+            AuthUtilsInternaly.updateLastOnlineTimeInternaly(event, database);
+        } else
+            if (Objects.equals(eventType, AUTH_USER_PROFILE_CREATED.name())) {
+            UserProfileCreatedEvent event = objectMapper.readValue(each.traverse(), UserProfileCreatedEvent.class);
+            AuthUtilsInternaly.createProfileInternaly(event, database);
+        } else if (Objects.equals(eventType, AUTH_USER_SETTINGS_UPDATED.name())) {
+            UserSettingsUpdatedEvent event = objectMapper.readValue(each.traverse(), UserSettingsUpdatedEvent.class);
+            AuthUtilsInternaly.updateSettingsInternaly(event, database);
+        } else if (Objects.equals(eventType, IMAGE_USER_UPLOAD_PHOTO.name())) {
+            UserUploadedPhotoEvent event = objectMapper.readValue(each.traverse(), UserUploadedPhotoEvent.class);
+            ImageUtilsInternaly.uploadPhotoInternaly(event, database);
+        } else if (Objects.equals(eventType, IMAGE_USER_DELETE_PHOTO.name())) {
+            UserDeletePhotoEvent event = objectMapper.readValue(each.traverse(), UserDeletePhotoEvent.class);
+            ImageUtilsInternaly.deletePhotoInternaly(event, database);
+        } else if (Objects.equals(eventType, AUTH_USER_CALL_DELETE_HIMSELF.name())) {
+            UserCallDeleteHimselfEvent event = objectMapper.readValue(each.traverse(), UserCallDeleteHimselfEvent.class);
+            AuthUtilsInternaly.deleteUserInternaly(event, database);
+        } else if (Objects.equals(eventType, ACTION_USER_LIKE_PHOTO.name())) {
+            UserLikePhotoEvent event = objectMapper.readValue(each.traverse(), UserLikePhotoEvent.class);
+//                    ActionsUtils.likePhotoInternaly(event, database);
+            ActionsUtils.likePhoto(event, database);
+        } else if (Objects.equals(eventType, ACTION_USER_VIEW_PHOTO.name())) {
+            UserViewPhotoEvent event = objectMapper.readValue(each.traverse(), UserViewPhotoEvent.class);
+//                    ActionsUtils.viewPhotoInternaly(event, database);
+            ActionsUtils.viewPhoto(event, database);
+        } else if (Objects.equals(eventType, ACTION_USER_BLOCK_OTHER.name())) {
+            UserBlockOtherEvent event = objectMapper.readValue(each.traverse(), UserBlockOtherEvent.class);
+//                    ActionsUtils.blockInternaly(event, database);
+            ActionsUtils.block(event, database);
+        } else if (Objects.equals(eventType, ACTION_USER_MESSAGE.name())) {
+            UserMessageEvent event = objectMapper.readValue(each.traverse(), UserMessageEvent.class);
+//                    ActionsUtils.messageInternal(event, database);
+            ActionsUtils.message(event, database);
+        } else if (Objects.equals(eventType, ACTION_USER_UNLIKE_PHOTO.name())) {
+            UserUnlikePhotoEvent event = objectMapper.readValue(each.traverse(), UserUnlikePhotoEvent.class);
+//                    ActionsUtils.unlikeInternal(event, database);
+            ActionsUtils.unlike(event, database);
+        } else if (Objects.equals(eventType, ACTION_USER_OPEN_CHAT.name())) {
+            //todo:implement in next version
+        }
     }
 
     private void createIndexes(GraphDatabaseService database) {

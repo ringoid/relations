@@ -9,6 +9,7 @@ import static com.ringoid.events.EventTypes.INTERNAL_PHOTO_LIKE_EVENT;
 public class PhotoLikeEvent extends BaseEvent {
     private String userId;
     private String originPhotoId;
+    private String sourceOfLikeUserId;
 
     public PhotoLikeEvent() {
     }
@@ -35,11 +36,20 @@ public class PhotoLikeEvent extends BaseEvent {
         this.originPhotoId = originPhotoId;
     }
 
+    public String getSourceOfLikeUserId() {
+        return sourceOfLikeUserId;
+    }
+
+    public void setSourceOfLikeUserId(String sourceOfLikeUserId) {
+        this.sourceOfLikeUserId = sourceOfLikeUserId;
+    }
+
     @Override
     public String toString() {
         return "PhotoLikeEvent{" +
                 "userId='" + userId + '\'' +
                 ", originPhotoId='" + originPhotoId + '\'' +
+                ", sourceOfLikeUserId='" + sourceOfLikeUserId + '\'' +
                 '}';
     }
 }

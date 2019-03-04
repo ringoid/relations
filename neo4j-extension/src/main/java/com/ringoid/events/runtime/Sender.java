@@ -1,0 +1,97 @@
+package com.ringoid.events.runtime;
+
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.kinesis.AmazonKinesis;
+import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
+import com.amazonaws.services.kinesis.model.PutRecordRequest;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ringoid.events.actions.UserBlockOtherEvent;
+import com.ringoid.events.actions.UserLikePhotoEvent;
+import com.ringoid.events.internal.events.DeleteUserConversationEvent;
+import com.ringoid.events.internal.events.PhotoLikeEvent;
+
+import java.nio.ByteBuffer;
+import java.util.List;
+
+import static com.ringoid.events.EventTypes.ACTION_USER_LIKE_PHOTO;
+
+public class Sender {
+    private final ObjectMapper objectMapper;
+    private final String internalStreamName;
+    private final String botSqsQueueUrl;
+    private final AmazonKinesis kinesis;
+    private final AmazonSQS sqs;
+
+    public Sender(String internalStreamName, String botSqsQueueUrl) {
+        this.objectMapper = new ObjectMapper();
+        this.internalStreamName = internalStreamName;
+        this.botSqsQueueUrl = botSqsQueueUrl;
+
+        AmazonKinesisClientBuilder clientBuilder = AmazonKinesisClientBuilder.standard().withRegion(Regions.EU_WEST_1);
+        kinesis = clientBuilder.build();
+
+        AmazonSQSClientBuilder sqsClientBuilder = AmazonSQSClientBuilder.standard().withRegion(Regions.EU_WEST_1);
+        sqs = sqsClientBuilder.build();
+    }
+
+    public void sendBlockEvents(List<UserBlockOtherEvent> events, long reportReasonMax) {
+        for (UserBlockOtherEvent event : events) {
+            if (event.getBlockReasonNum() > reportReasonMax) {
+                sendEventIntoInternalQueue(event, internalStreamName, event.getUserId());
+            } else {
+                sendDeleteConversationEvent(event);
+            }
+        }
+        //todo:implement normal logging
+        System.out.println("successfully send " + events.size() + " UserBlockOtherEvent events");
+    }
+
+    private void sendDeleteConversationEvent(UserBlockOtherEvent event) {
+        DeleteUserConversationEvent deleteUserConversationEvent = new DeleteUserConversationEvent(event.getUserId(), event.getTargetUserId());
+        sendEventIntoInternalQueue(deleteUserConversationEvent, internalStreamName, event.getUserId());
+    }
+
+    public void sendLikeEvents(List<PhotoLikeEvent> events, boolean botEnabled) {
+        for (PhotoLikeEvent event : events) {
+            sendEventIntoInternalQueue(event, internalStreamName, event.getUserId());
+            if (botEnabled) {
+                UserLikePhotoEvent botEvent = new UserLikePhotoEvent();
+                botEvent.setEventType("BOT_" + ACTION_USER_LIKE_PHOTO.name());
+                botEvent.setUserId(event.getSourceOfLikeUserId());
+                botEvent.setTargetUserId(event.getUserId());
+                botEvent.setOriginPhotoId(event.getOriginPhotoId());
+                sendBotEvent(botEvent);
+            }
+        }
+        //todo:implement normal logging
+        System.out.println("successfully send " + events.size() + " PhotoLikeEvent events");
+    }
+
+    private void sendEventIntoInternalQueue(Object event, String streamName, String partitionKey) {
+        try {
+            PutRecordRequest putRecordRequest = new PutRecordRequest();
+            putRecordRequest.setStreamName(streamName);
+            String strRep = objectMapper.writeValueAsString(event);
+            putRecordRequest.setData(ByteBuffer.wrap(strRep.getBytes()));
+            putRecordRequest.setPartitionKey(partitionKey);
+            kinesis.putRecord(putRecordRequest);
+        } catch (JsonProcessingException e) {
+            //todo:add normal logging
+            e.printStackTrace();
+        }
+    }
+
+    private void sendBotEvent(Object event) {
+        try {
+            String strRep = objectMapper.writeValueAsString(event);
+            sqs.sendMessage(botSqsQueueUrl, strRep);
+        } catch (JsonProcessingException e) {
+            //todo:add normal logging
+            e.printStackTrace();
+        }
+    }
+
+}
