@@ -10,7 +10,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ringoid.events.actions.UserBlockOtherEvent;
 import com.ringoid.events.actions.UserLikePhotoEvent;
-import com.ringoid.events.internal.events.DeleteUserConversationEvent;
+import com.ringoid.events.auth.UserCallDeleteHimselfEvent;
 import com.ringoid.events.internal.events.PhotoLikeEvent;
 
 import java.nio.ByteBuffer;
@@ -38,23 +38,27 @@ public class Sender {
     }
 
     public void sendBlockEvents(List<UserBlockOtherEvent> events, long reportReasonMax) {
+        long start = System.currentTimeMillis();
         for (UserBlockOtherEvent event : events) {
             if (event.getBlockReasonNum() > reportReasonMax) {
                 sendEventIntoInternalQueue(event, internalStreamName, event.getUserId());
-            } else {
-                sendDeleteConversationEvent(event);
             }
         }
         //todo:implement normal logging
-        System.out.println("successfully send " + events.size() + " UserBlockOtherEvent events");
+        System.out.println("(extension-report) successfully handle " + events.size() + " UserBlockOtherEvent events in " + (System.currentTimeMillis() - start) + " millis");
     }
 
-    private void sendDeleteConversationEvent(UserBlockOtherEvent event) {
-        DeleteUserConversationEvent deleteUserConversationEvent = new DeleteUserConversationEvent(event.getUserId(), event.getTargetUserId());
-        sendEventIntoInternalQueue(deleteUserConversationEvent, internalStreamName, event.getUserId());
+    public void sendUserDeleteHimself(List<UserCallDeleteHimselfEvent> events) {
+        long start = System.currentTimeMillis();
+        for (UserCallDeleteHimselfEvent event : events) {
+            sendEventIntoInternalQueue(event, internalStreamName, event.getUserId());
+        }
+        //todo:implement normal logging
+        System.out.println("(extension-report) successfully handle " + events.size() + " UserCallDeleteHimselfEvent events in " + (System.currentTimeMillis() - start) + " millis");
     }
 
     public void sendLikeEvents(List<PhotoLikeEvent> events, boolean botEnabled) {
+        long start = System.currentTimeMillis();
         for (PhotoLikeEvent event : events) {
             sendEventIntoInternalQueue(event, internalStreamName, event.getUserId());
             if (botEnabled) {
@@ -67,7 +71,7 @@ public class Sender {
             }
         }
         //todo:implement normal logging
-        System.out.println("successfully send " + events.size() + " PhotoLikeEvent events");
+        System.out.println("(extension-report) successfully handle " + events.size() + " PhotoLikeEvent events in " + (System.currentTimeMillis() - start) + " millis");
     }
 
     private void sendEventIntoInternalQueue(Object event, String streamName, String partitionKey) {

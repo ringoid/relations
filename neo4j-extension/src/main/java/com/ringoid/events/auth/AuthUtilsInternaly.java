@@ -118,7 +118,6 @@ public class AuthUtilsInternaly {
         database.execute(query, parameters);
         //todo:send notification
         //send events to internal queue
-//        Utils.sendEventIntoInternalQueue(event, kinesis, streamName, event.getUserId(), gson);
 //        for (String each : targetIds) {
 //            DeleteUserConversationEvent deleteUserConversationEvent = new DeleteUserConversationEvent(event.getUserId(), each);
 //            Utils.sendEventIntoInternalQueue(deleteUserConversationEvent, kinesis, streamName, event.getUserId(), gson);

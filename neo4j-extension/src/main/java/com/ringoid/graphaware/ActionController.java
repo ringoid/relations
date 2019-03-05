@@ -163,7 +163,7 @@ public class ActionController {
                 batch.clear();
             }
 
-            System.out.println("handle " + actionCounter + " actions in " + (System.currentTimeMillis() - start) + " millis");
+            System.out.println("(extension-report) complete handle " + actionCounter + " actions in " + (System.currentTimeMillis() - start) + " millis");
         } catch (IOException e) {
             throw new RuntimeException(e.getCause());
         }
@@ -171,12 +171,14 @@ public class ActionController {
     }
 
     private void handleInTrasaction(List<JsonNode> list, ObjectMapper objectMapper) throws IOException {
+        long start = System.currentTimeMillis();
         for (int i = 0; i < RETRIES; i++) {
             try (Transaction tx = database.beginTx()) {
                 for (JsonNode each : list) {
                     doStuff(each, objectMapper);
                 }
                 tx.success();
+                System.out.println("(extension-report) successfully handle " + list.size() + " actions in " + (System.currentTimeMillis() - start) + " millis");
                 return;
             } catch (DeadlockDetectedException ex) {
                 System.out.println("Catch a DeadlockDetectedException");
@@ -198,8 +200,7 @@ public class ActionController {
         if (Objects.equals(eventType, AUTH_USER_ONLINE.name())) {
             UserOnlineEvent event = objectMapper.readValue(each.traverse(), UserOnlineEvent.class);
             AuthUtilsInternaly.updateLastOnlineTimeInternaly(event, database);
-        } else
-            if (Objects.equals(eventType, AUTH_USER_PROFILE_CREATED.name())) {
+        } else if (Objects.equals(eventType, AUTH_USER_PROFILE_CREATED.name())) {
             UserProfileCreatedEvent event = objectMapper.readValue(each.traverse(), UserProfileCreatedEvent.class);
             AuthUtilsInternaly.createProfileInternaly(event, database);
         } else if (Objects.equals(eventType, AUTH_USER_SETTINGS_UPDATED.name())) {
