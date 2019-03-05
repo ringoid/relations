@@ -1,8 +1,11 @@
 package com.ringoid;
 
 public enum MessageProperties {
-    MSG_COUNT("msg_count"),
-    MSG_AT("msg_at");
+    MSG_ID("msg_id"),
+    MSG_SOURCE_USER_ID("msg_source_user_id"),
+    MSG_TARGET_USER_ID("msg_target_user_id"),
+    MSG_TEXT("msg_text"),
+    MSG_PHOTO_ID("msg_photo_id");
 
     private String propertyName;
 
@@ -13,4 +16,5 @@ public enum MessageProperties {
     public String getPropertyName() {
         return propertyName;
     }
+
 }

@@ -2,7 +2,9 @@ package com.ringoid.graphaware;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ringoid.ConversationProperties;
 import com.ringoid.Labels;
+import com.ringoid.MessageProperties;
 import com.ringoid.PersonProperties;
 import com.ringoid.PhotoProperties;
 import com.ringoid.api.LMMRequest;
@@ -66,7 +68,7 @@ import static com.ringoid.events.EventTypes.IMAGE_USER_UPLOAD_PHOTO;
 @Controller
 public class ActionController {
 
-    private static final int BATCH_SIZE = 1000;
+    private static final int BATCH_SIZE = 500;
     private static final int RETRIES = 5;
     private static final int BACKOFF = 100;
 
@@ -247,6 +249,8 @@ public class ActionController {
         createIndex(Labels.PERSON.getLabelName(), PersonProperties.LIKE_COUNTER.getPropertyName(), database);
         createIndex(Labels.PHOTO.getLabelName(), PhotoProperties.PHOTO_ID.getPropertyName(), database);
         createIndex(Labels.PHOTO.getLabelName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName(), database);
+        createIndex(Labels.CONVERSATION.getLabelName(), ConversationProperties.CONVERSATION_ID.getPropertyName(), database);
+        createIndex(Labels.MESSAGE.getLabelName(), MessageProperties.MSG_ID.getPropertyName(), database);
     }
 
     private void createIndex(String label, String property, GraphDatabaseService database) {

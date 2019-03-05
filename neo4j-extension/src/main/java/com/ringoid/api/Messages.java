@@ -41,6 +41,8 @@ public class Messages {
                     Profile prof = new Profile();
                     prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
                     prof.setPhotoIds(sortLmmPhotos(sourceUser, eachProfile));
+                    List<Message> msgs = Utils.messages(sourceUser, eachProfile);
+                    prof.setMessages(msgs);
                     profileList.add(prof);
                 }
                 response.setProfiles(profileList);

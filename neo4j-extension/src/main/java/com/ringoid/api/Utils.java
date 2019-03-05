@@ -1,8 +1,12 @@
 package com.ringoid.api;
 
+import com.ringoid.Labels;
 import com.ringoid.MessageProperties;
+import com.ringoid.MessageRelationshipProperties;
+import com.ringoid.PersonProperties;
 import com.ringoid.PhotoProperties;
 import com.ringoid.Relationships;
+import com.ringoid.common.UtilsInternaly;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -74,7 +78,7 @@ public class Utils {
                 for (Relationship each : messages1) {
                     Node other = each.getOtherNode(node1);
                     if (other.hasLabel(Label.label(PERSON.getLabelName())) && other.getId() == sourceUser.getId()) {
-                        lastMessageAt1 = (Long) other.getProperty(MessageProperties.MSG_AT.getPropertyName(), 0L);
+                        lastMessageAt1 = (Long) other.getProperty(MessageRelationshipProperties.MSG_AT.getPropertyName(), 0L);
                         break;
                     }
                 }
@@ -84,7 +88,7 @@ public class Utils {
                 for (Relationship each : messages2) {
                     Node other = each.getOtherNode(node2);
                     if (other.hasLabel(Label.label(PERSON.getLabelName())) && other.getId() == sourceUser.getId()) {
-                        lastMessageAt2 = (Long) other.getProperty(MessageProperties.MSG_AT.getPropertyName(), 0L);
+                        lastMessageAt2 = (Long) other.getProperty(MessageRelationshipProperties.MSG_AT.getPropertyName(), 0L);
                         break;
                     }
                 }
@@ -290,6 +294,52 @@ public class Utils {
         for (Node eachP : photos) {
             result.add((String) eachP.getProperty(PhotoProperties.PHOTO_ID.getPropertyName()));
         }
+        return result;
+    }
+
+    public static List<Message> messages(Node sourceNode, Node withHim) {
+        List<Message> result = new ArrayList<>();
+
+        Iterable<Relationship> takeParrt = sourceNode.getRelationships(
+                RelationshipType.withName(Relationships.TAKE_PART_IN_CONVERSATION.name()),
+                Direction.OUTGOING);
+        Node targetConversation = null;
+        for (Relationship out : takeParrt) {
+            Node conversationNode = out.getOtherNode(sourceNode);
+            if (conversationNode.hasLabel(Label.label(Labels.CONVERSATION.getLabelName()))) {
+                Iterable<Relationship> takeParrtIn = conversationNode.getRelationships(
+                        RelationshipType.withName(Relationships.TAKE_PART_IN_CONVERSATION.name()),
+                        Direction.INCOMING);
+                for (Relationship in : takeParrtIn) {
+                    Node otherProf = in.getOtherNode(conversationNode);
+                    if (otherProf.hasLabel(Label.label(Labels.PERSON.getLabelName())) && otherProf.getId() == withHim.getId()) {
+                        targetConversation = conversationNode;
+                        break;
+                    }
+                }
+                if (Objects.nonNull(targetConversation)) {
+                    break;
+                }
+            }
+        }
+
+        if (Objects.isNull(targetConversation)) {
+            return result;
+        }
+
+        List<Node> fullConversation = new ArrayList<>();
+        fullConversation = UtilsInternaly.getFullConversation(targetConversation, fullConversation);
+        for (Node each : fullConversation) {
+            String originSenderId = (String) sourceNode.getProperty(PersonProperties.USER_ID.getPropertyName());
+            String msgSourceUser = (String) each.getProperty(MessageProperties.MSG_SOURCE_USER_ID.getPropertyName());
+            boolean wasYouSender = Objects.equals(originSenderId, msgSourceUser);
+            String text = (String) each.getProperty(MessageProperties.MSG_TEXT.getPropertyName());
+            Message msg = new Message();
+            msg.setWasYouSender(wasYouSender);
+            msg.setText(text);
+            result.add(msg);
+        }
+
         return result;
     }
 

@@ -6,22 +6,18 @@ import com.ringoid.events.BaseEvent;
 import static com.ringoid.events.EventTypes.INTERNAL_USER_SEND_MESSAGE_EVENT;
 
 @JsonIgnoreProperties
-public class MessageEvent extends BaseEvent {
+public class MessageBotEvent extends BaseEvent {
     private String userId;
     private String targetUserId;
     private String text;
-    private long unixTime;
-    private long messageAt;
 
-    public MessageEvent() {
+    public MessageBotEvent() {
     }
 
-    public MessageEvent(String userId, String targetUserId, String text, long unixTime, long messageAt) {
+    public MessageBotEvent(String userId, String targetUserId, String text) {
         this.userId = userId;
         this.targetUserId = targetUserId;
         this.text = text;
-        this.unixTime = unixTime;
-        this.messageAt = messageAt;
         this.eventType = INTERNAL_USER_SEND_MESSAGE_EVENT.name();
     }
 
@@ -49,19 +45,4 @@ public class MessageEvent extends BaseEvent {
         this.text = text;
     }
 
-    public long getUnixTime() {
-        return unixTime;
-    }
-
-    public void setUnixTime(long unixTime) {
-        this.unixTime = unixTime;
-    }
-
-    public long getMessageAt() {
-        return messageAt;
-    }
-
-    public void setMessageAt(long messageAt) {
-        this.messageAt = messageAt;
-    }
 }

@@ -17,7 +17,6 @@ import org.neo4j.graphdb.RelationshipType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import static com.ringoid.BlockProperties.BLOCK_REASON_NUM;
 import static com.ringoid.events.EventTypes.ACTION_USER_BLOCK_OTHER;
@@ -60,7 +59,7 @@ public class BlockModule extends BaseTxDrivenModule<List<UserBlockOtherEvent>> {
     public List<UserBlockOtherEvent> beforeCommit(ImprovedTransactionData transactionData) throws DeliberateTransactionRollbackException {
         List<UserBlockOtherEvent> events = new ArrayList<>();
         for (Relationship block : transactionData.getAllCreatedRelationships()) {
-            if(block.isType(RelationshipType.withName(Relationships.BLOCK.name()))){
+            if (block.isType(RelationshipType.withName(Relationships.BLOCK.name()))) {
                 Node startNode = block.getStartNode();
                 Node endNode = block.getEndNode();
                 if (startNode.hasLabel(Label.label(Labels.PERSON.getLabelName())) &&

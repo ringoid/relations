@@ -8,6 +8,7 @@ import java.util.List;
 public class Profile {
     private String userId;
     private List<String> photoIds;
+    private List<Message> messages;
 
     public String getUserId() {
         return userId;
@@ -23,5 +24,13 @@ public class Profile {
 
     public void setPhotoIds(List<String> photoIds) {
         this.photoIds = photoIds;
+    }
+
+    public List<Message> getMessages() {
+        return messages;
+    }
+
+    public void setMessages(List<Message> messages) {
+        this.messages = messages;
     }
 }

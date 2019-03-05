@@ -1,9 +1,13 @@
 package com.ringoid.events.auth;
 
 import com.ringoid.Labels;
+import com.ringoid.PersonProperties;
 import com.ringoid.Relationships;
 import com.ringoid.UserStatus;
+import com.ringoid.common.UtilsInternaly;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
 import java.util.ArrayList;
@@ -113,15 +117,15 @@ public class AuthUtilsInternaly {
                 String targetId = (String) result.next().get(USER_ID_PROPERTY);
                 targetIds.add(targetId);
             }
+            //first delete user conversations
+            Node sourceUser = database.findNode(Label.label(Labels.PERSON.getLabelName()),
+                    PersonProperties.USER_ID.getPropertyName(),
+                    event.getUserId());
+            UtilsInternaly.deleteUserConversations(sourceUser);
+            //then delete user
             query = deleteQuery(ACTIVE, parameters);
         }
         database.execute(query, parameters);
-        //todo:send notification
-        //send events to internal queue
-//        for (String each : targetIds) {
-//            DeleteUserConversationEvent deleteUserConversationEvent = new DeleteUserConversationEvent(event.getUserId(), each);
-//            Utils.sendEventIntoInternalQueue(deleteUserConversationEvent, kinesis, streamName, event.getUserId(), gson);
-//        }
     }
 
     public static void createProfileInternaly(UserProfileCreatedEvent event, GraphDatabaseService database) {

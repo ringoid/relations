@@ -1,5 +1,9 @@
 package com.ringoid.events.actions;
 
+import com.ringoid.ConversationProperties;
+import com.ringoid.Labels;
+import com.ringoid.MessageProperties;
+import com.ringoid.PersonProperties;
 import com.ringoid.PhotoProperties;
 import com.ringoid.Relationships;
 import com.ringoid.ViewRelationshipSource;
@@ -17,24 +21,22 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.ringoid.BlockProperties.BLOCK_AT;
 import static com.ringoid.BlockProperties.BLOCK_REASON_NUM;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
-import static com.ringoid.LikeProperties.LIKED_AT;
 import static com.ringoid.LikeProperties.LIKE_COUNT;
-import static com.ringoid.MessageProperties.MSG_AT;
-import static com.ringoid.MessageProperties.MSG_COUNT;
+import static com.ringoid.MessageRelationshipProperties.MSG_AT;
+import static com.ringoid.MessageRelationshipProperties.MSG_COUNT;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.PhotoProperties.PHOTO_ID;
-import static com.ringoid.ViewProperties.VIEW_AT;
 import static com.ringoid.ViewProperties.VIEW_COUNT;
 import static com.ringoid.ViewProperties.VIEW_TIME;
 import static com.ringoid.common.UtilsInternaly.doWeHaveBlockInternaly;
 import static com.ringoid.common.UtilsInternaly.getAllRelationshipBetweenNodes;
 import static com.ringoid.common.UtilsInternaly.getAllRelationshipTypes;
-import static com.ringoid.common.UtilsInternaly.getOrCreate;
+import static com.ringoid.common.UtilsInternaly.getFullConversation;
+import static com.ringoid.common.UtilsInternaly.getOrCreateRelationship;
 import static com.ringoid.common.UtilsInternaly.getUploadedPhoto;
 import static com.ringoid.common.UtilsInternaly.updateLastActionTime;
 
@@ -65,7 +67,7 @@ public class ActionsUtils {
         //first create message rel with photo
         Optional<Node> targetPhotoOpt = getUploadedPhoto(targetUser, event.getOriginPhotoId());
         if (targetPhotoOpt.isPresent()) {
-            Relationship msgRel = getOrCreate(sourceUser, targetPhotoOpt.get(), Direction.OUTGOING, Relationships.MESSAGE.name());
+            Relationship msgRel = getOrCreateRelationship(sourceUser, targetPhotoOpt.get(), Direction.OUTGOING, Relationships.MESSAGE.name());
             int msgCount = (Integer) msgRel.getProperty(MSG_COUNT.getPropertyName(), 0);
             msgCount++;
             msgRel.setProperty(MSG_COUNT.getPropertyName(), msgCount);
@@ -77,7 +79,7 @@ public class ActionsUtils {
             //could be only match or message, not both
             if (each.isType(RelationshipType.withName(Relationships.MATCH.name()))) {
                 each.delete();
-                existingMessage = getOrCreate(sourceUser, targetUser, Direction.OUTGOING, Relationships.MESSAGE.name());
+                existingMessage = getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, Relationships.MESSAGE.name());
                 break;
             } else if (each.isType(RelationshipType.withName(Relationships.MESSAGE.name()))) {
                 existingMessage = each;
@@ -85,16 +87,48 @@ public class ActionsUtils {
             }
         }
 
-        //todo:do we need this property?
-        existingMessage.setProperty(MSG_AT.getPropertyName(), event.getMessageAt());
+        //we need this property for sorting in LMM
+        existingMessage.setProperty(MSG_AT.getPropertyName(), event.getUnixTime());
 
-//      MessageEvent messageEvent = new MessageEvent(event.getUserId(), event.getTargetUserId(),
-//                event.getText(), event.getUnixTime(), event.getMessageAt());
-//
-//        todo:implement
-//      Utils.sendEventIntoInternalQueue(messageEvent, kinesis, streamName, event.getUserId(), gson);
-//      send bot event
-//      sendBotEvent(event.botEvent(), sqs, sqsUrl, botEnabled, gson);
+        Node conversationNode = database.findNode(
+                Label.label(Labels.CONVERSATION.getLabelName()),
+                ConversationProperties.CONVERSATION_ID.getPropertyName(),
+                event.getConversationId()
+        );
+        if (Objects.isNull(conversationNode)) {
+            conversationNode = database.createNode(Label.label(Labels.CONVERSATION.getLabelName()));
+            conversationNode.setProperty(ConversationProperties.CONVERSATION_ID.getPropertyName(), event.getConversationId());
+            conversationNode.setProperty(ConversationProperties.STARTED_AT.getPropertyName(), event.getUnixTime());
+            conversationNode.setProperty(ConversationProperties.USER_ONE.getPropertyName(), event.getUserId());
+            conversationNode.setProperty(ConversationProperties.USER_TWO.getPropertyName(), event.getTargetUserId());
+        }
+
+        getOrCreateRelationship(sourceUser, conversationNode, Direction.OUTGOING, Relationships.TAKE_PART_IN_CONVERSATION.name());
+        getOrCreateRelationship(targetUser, conversationNode, Direction.OUTGOING, Relationships.TAKE_PART_IN_CONVERSATION.name());
+
+        List<Node> fullConversation = new ArrayList<>();
+        fullConversation = getFullConversation(conversationNode, fullConversation);
+        for (Node each : fullConversation) {
+            String msgId = (String) each.getProperty(MessageProperties.MSG_ID.getPropertyName());
+            if (Objects.equals(msgId, event.getMessageId())) {
+                return;
+            }
+        }
+        Node start = null;
+        if (fullConversation.isEmpty()) {
+            start = conversationNode;
+        } else {
+            start = fullConversation.get(fullConversation.size() - 1);
+        }
+
+        Node lastMessage = database.createNode(Label.label(Labels.MESSAGE.getLabelName()));
+        lastMessage.setProperty(MessageProperties.MSG_ID.getPropertyName(), event.getMessageId());
+        lastMessage.setProperty(MessageProperties.MSG_PHOTO_ID.getPropertyName(), event.getOriginPhotoId());
+        lastMessage.setProperty(MessageProperties.MSG_SOURCE_USER_ID.getPropertyName(), event.getUserId());
+        lastMessage.setProperty(MessageProperties.MSG_TARGET_USER_ID.getPropertyName(), event.getTargetUserId());
+        lastMessage.setProperty(MessageProperties.MSG_TEXT.getPropertyName(), event.getText());
+
+        getOrCreateRelationship(start, lastMessage, Direction.OUTGOING, Relationships.PASS_MESSAGE.name());
     }
 
     public static void unlike(UserUnlikePhotoEvent event, GraphDatabaseService database) {
@@ -187,9 +221,7 @@ public class ActionsUtils {
         for (Relationship like : targetUserLikesRels) {
             Node other = like.getOtherNode(targetUser);
             if (other.hasLabel(Label.label(PHOTO.getLabelName())) && photoIds.contains(other.getId())) {
-                Relationship newLike = getOrCreate(targetUser, sourceUser, Direction.OUTGOING, Relationships.LIKE.name());
-                //todo:do we need this property
-                newLike.setProperty(LIKED_AT.getPropertyName(), System.currentTimeMillis());
+                getOrCreateRelationship(targetUser, sourceUser, Direction.OUTGOING, Relationships.LIKE.name());
                 return;
             }
         }
@@ -256,26 +288,16 @@ public class ActionsUtils {
         }
 
         //create a block
-        Relationship block = getOrCreate(sourceUser, targetUser, Direction.OUTGOING, Relationships.BLOCK.name());
+        Relationship block = getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, Relationships.BLOCK.name());
         block.setProperty(BLOCK_REASON_NUM.getPropertyName(), event.getBlockReasonNum());
-        //todo:do we need this property?
-        block.setProperty(BLOCK_AT.getPropertyName(), event.getBlockedAt());
 
         if (Objects.nonNull(targetPhoto)) {
-            block = getOrCreate(sourceUser, targetPhoto, Direction.OUTGOING, Relationships.BLOCK.name());
+            block = getOrCreateRelationship(sourceUser, targetPhoto, Direction.OUTGOING, Relationships.BLOCK.name());
             block.setProperty(BLOCK_REASON_NUM.getPropertyName(), event.getBlockReasonNum());
-            //todo:do we need this property
-            block.setProperty(BLOCK_AT.getPropertyName(), event.getBlockedAt());
         }
 
-//        currently users couldn't block itself concurrently (only first block will be applied
-//        if (event.getBlockReasonNum() > REPORT_REASON_TRESHOLD && relCreated > 0) {
-//        todo:implement
-//            Utils.markPersonForModeration(event.getTargetUserId(), tx);
-//            return;
-//        }
-//
-
+        //mark person for moderation
+        targetUser.setProperty(PersonProperties.NEED_TO_MODERATE.getPropertyName(), true);
     }
 
     public static void viewPhoto(UserViewPhotoEvent event, GraphDatabaseService database) {
@@ -318,7 +340,7 @@ public class ActionsUtils {
         if (targetPhotoOpt.isPresent()) {
             //photo is still here, so create view event to photo
             Node targetPhoto = targetPhotoOpt.get();
-            Relationship photoView = getOrCreate(sourceUser, targetPhoto, Direction.OUTGOING, targetPhotoRelationship.name());
+            Relationship photoView = getOrCreateRelationship(sourceUser, targetPhoto, Direction.OUTGOING, targetPhotoRelationship.name());
 
             long viewCount = (Long) photoView.getProperty(VIEW_COUNT.getPropertyName(), 0L);
             long viewTimeSec = (Long) photoView.getProperty(VIEW_TIME.getPropertyName(), 0L);
@@ -328,14 +350,9 @@ public class ActionsUtils {
 
             viewTimeSec += event.getViewTimeMillis();
             photoView.setProperty(VIEW_TIME.getPropertyName(), viewTimeSec);
-
-            //todo:check do we really need this property on relationship with photo level
-            //what we should use last or first time?
-            photoView.setProperty(VIEW_AT.getPropertyName(), event.getViewAt());
         }
 
-        Relationship profileView = getOrCreate(sourceUser, targetUser, Direction.OUTGOING, targetProfileRelationship.name());
-        profileView.setProperty(VIEW_AT.getPropertyName(), event.getViewAt());
+        getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, targetProfileRelationship.name());
 
         Iterable<Relationship> allOutgoingRels = getAllRelationshipBetweenNodes(sourceUser, targetUser);
         Set<String> toDelete = new HashSet<>();
@@ -392,15 +409,11 @@ public class ActionsUtils {
         Optional<Node> targetPhotoOpt = getUploadedPhoto(targetUser, event.getOriginPhotoId());
         if (targetPhotoOpt.isPresent()) {
             Node targetPhoto = targetPhotoOpt.get();
-            Relationship photoLike = getOrCreate(sourceUser, targetPhoto, Direction.OUTGOING, Relationships.LIKE.name());
+            Relationship photoLike = getOrCreateRelationship(sourceUser, targetPhoto, Direction.OUTGOING, Relationships.LIKE.name());
 
             long likeCount = (Long) photoLike.getProperty(LIKE_COUNT.getPropertyName(), 0L);
             likeCount += event.getLikeCount();
             photoLike.setProperty(LIKE_COUNT.getPropertyName(), likeCount);
-
-            //todo:check do we really need this property on relationship with photo level
-            //what we should use last or first time?
-            photoLike.setProperty(LIKED_AT.getPropertyName(), event.getLikedAt());
 
             //increase like counter on the person node
             long likeCounter = (Long) targetUser.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
@@ -431,12 +444,7 @@ public class ActionsUtils {
 
         //if there is no any relationships except view of any kind, then create a like
         if (existOutgoingRelationshipsBetweenProfiles.isEmpty() && existIncomingRelationshipsBetweenProfiles.isEmpty()) {
-            Relationship likeProfile = getOrCreate(sourceUser, targetUser, Direction.OUTGOING, Relationships.LIKE.name());
-            //todo:do we need this property?
-            long likeAt = (Long) likeProfile.getProperty(LIKED_AT.getPropertyName(), 0L);
-            if (likeAt == 0L) {
-                likeProfile.setProperty(LIKED_AT.getPropertyName(), event.getLikedAt());
-            }
+            getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, Relationships.LIKE.name());
             return;
         }
 
@@ -482,8 +490,7 @@ public class ActionsUtils {
                 for (Relationship each : anyRels) {
                     if (each.isType(RelationshipType.withName(Relationships.MESSAGE.name()))) {
                         //create a message
-                        Relationship messRel = getOrCreate(targetUser, sourceUser, Direction.OUTGOING, Relationships.MESSAGE.name());
-                        //todo:do we need this property?
+                        Relationship messRel = getOrCreateRelationship(targetUser, sourceUser, Direction.OUTGOING, Relationships.MESSAGE.name());
                         messRel.setProperty(MSG_AT.getPropertyName(), System.currentTimeMillis());
                         return;
                     }
@@ -495,17 +502,15 @@ public class ActionsUtils {
                 for (Relationship each : anyRels) {
                     if (each.isType(RelationshipType.withName(Relationships.MESSAGE.name()))) {
                         //create a message
-                        Relationship messRel = getOrCreate(sourceUser, targetUser, Direction.OUTGOING, Relationships.MESSAGE.name());
-                        //todo:do we need this property?
+                        Relationship messRel = getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, Relationships.MESSAGE.name());
                         messRel.setProperty(MSG_AT.getPropertyName(), System.currentTimeMillis());
                         return;
                     }
                 }
             }
 
-            getOrCreate(sourceUser, targetUser, Direction.OUTGOING, Relationships.MATCH.name());
+            getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, Relationships.MATCH.name());
         }
-
     }
 
 }

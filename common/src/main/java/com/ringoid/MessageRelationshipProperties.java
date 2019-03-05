@@ -1,11 +1,12 @@
 package com.ringoid;
 
-public enum BlockProperties {
-    BLOCK_REASON_NUM("reason");
+public enum MessageRelationshipProperties {
+    MSG_COUNT("msg_count"),
+    MSG_AT("msg_at");
 
     private String propertyName;
 
-    BlockProperties(String propertyName) {
+    MessageRelationshipProperties(String propertyName) {
         this.propertyName = propertyName;
     }
 

@@ -37,6 +37,8 @@ public class Matches {
                     Profile prof = new Profile();
                     prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
                     prof.setPhotoIds(sortLmmPhotos(sourceUser, eachProfile));
+                    List<Message> messages = Utils.messages(sourceUser, eachProfile);
+                    prof.setMessages(messages);
                     profileList.add(prof);
                 }
                 response.setProfiles(profileList);

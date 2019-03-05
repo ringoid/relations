@@ -41,6 +41,7 @@ public class Sender {
         long start = System.currentTimeMillis();
         for (UserBlockOtherEvent event : events) {
             if (event.getBlockReasonNum() > reportReasonMax) {
+                //todo:place for optimization (using batch)
                 sendEventIntoInternalQueue(event, internalStreamName, event.getUserId());
             }
         }
@@ -51,6 +52,7 @@ public class Sender {
     public void sendUserDeleteHimself(List<UserCallDeleteHimselfEvent> events) {
         long start = System.currentTimeMillis();
         for (UserCallDeleteHimselfEvent event : events) {
+            //todo:place for optimization (using batch)
             sendEventIntoInternalQueue(event, internalStreamName, event.getUserId());
         }
         //todo:implement normal logging
@@ -60,6 +62,7 @@ public class Sender {
     public void sendLikeEvents(List<PhotoLikeEvent> events, boolean botEnabled) {
         long start = System.currentTimeMillis();
         for (PhotoLikeEvent event : events) {
+            //todo:place for optimization (using batch)
             sendEventIntoInternalQueue(event, internalStreamName, event.getUserId());
             if (botEnabled) {
                 UserLikePhotoEvent botEvent = new UserLikePhotoEvent();
@@ -67,6 +70,7 @@ public class Sender {
                 botEvent.setUserId(event.getSourceOfLikeUserId());
                 botEvent.setTargetUserId(event.getUserId());
                 botEvent.setOriginPhotoId(event.getOriginPhotoId());
+                //todo:place for optimization (using batch)
                 sendBotEvent(botEvent);
             }
         }
@@ -88,7 +92,7 @@ public class Sender {
         }
     }
 
-    private void sendBotEvent(Object event) {
+    public void sendBotEvent(Object event) {
         try {
             String strRep = objectMapper.writeValueAsString(event);
             sqs.sendMessage(botSqsQueueUrl, strRep);

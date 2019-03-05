@@ -11,6 +11,8 @@ public enum Relationships {
     BLOCK,
     MATCH,
     MESSAGE,
+    TAKE_PART_IN_CONVERSATION,
+    PASS_MESSAGE,
     UNSUPPORTED;
 
     public static Relationships fromString(String str) {
@@ -35,6 +37,10 @@ public enum Relationships {
                 return MATCH;
             case "MESSAGE":
                 return MESSAGE;
+            case "TAKE_PART_IN_CONVERSATION":
+                return TAKE_PART_IN_CONVERSATION;
+            case "PASS_MESSAGE":
+                return PASS_MESSAGE;
             default:
                 return UNSUPPORTED;
         }

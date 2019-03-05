@@ -5,6 +5,8 @@ import com.ringoid.events.BaseEvent;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class UserMessageEvent extends BaseEvent {
+    private String messageId;
+    private String conversationId;
     private String userId;
     private String originPhotoId;
     private String targetUserId;
@@ -25,6 +27,14 @@ public class UserMessageEvent extends BaseEvent {
         botEvent.setEventType("BOT_" + eventType);
 
         return botEvent;
+    }
+
+    public String getMessageId() {
+        return messageId;
+    }
+
+    public void setMessageId(String messageId) {
+        this.messageId = messageId;
     }
 
     public String getUserId() {
@@ -83,17 +93,26 @@ public class UserMessageEvent extends BaseEvent {
         this.text = text;
     }
 
+    public String getConversationId() {
+        return conversationId;
+    }
+
+    public void setConversationId(String conversationId) {
+        this.conversationId = conversationId;
+    }
+
     @Override
     public String toString() {
         return "UserMessageEvent{" +
-                "userId='" + userId + '\'' +
+                "messageId='" + messageId + '\'' +
+                ", conversationId='" + conversationId + '\'' +
+                ", userId='" + userId + '\'' +
                 ", originPhotoId='" + originPhotoId + '\'' +
                 ", targetUserId='" + targetUserId + '\'' +
                 ", text='" + text + '\'' +
                 ", messageAt=" + messageAt +
                 ", source='" + source + '\'' +
                 ", unixTime=" + unixTime +
-                ", eventType='" + eventType + '\'' +
                 '}';
     }
 }

@@ -21,7 +21,46 @@ import static com.ringoid.PhotoProperties.PHOTO_ID;
 
 public class UtilsInternaly {
 
-    public static Relationship getOrCreate(Node source, Node target, Direction direction, String relType) {
+    public static void deleteUserConversations(Node sourceNode) {
+        Iterable<Relationship> takeParts = sourceNode.getRelationships(
+                RelationshipType.withName(Relationships.TAKE_PART_IN_CONVERSATION.name()),
+                Direction.OUTGOING);
+        for (Relationship takePart : takeParts) {
+            Node conversationNode = takePart.getOtherNode(sourceNode);
+            if (conversationNode.hasLabel(Label.label(Labels.CONVERSATION.getLabelName()))) {
+                List<Node> messages = new ArrayList<>();
+                messages = getFullConversation(conversationNode, messages);
+                for (Node eachMessage : messages) {
+                    for (Relationship eachRel : eachMessage.getRelationships()) {
+                        eachRel.delete();
+                    }
+                    eachMessage.delete();
+                }
+                for (Relationship eachRel : conversationNode.getRelationships()) {
+                    eachRel.delete();
+                }
+                conversationNode.delete();
+            }
+        }
+    }
+
+    public static List<Node> getFullConversation(Node startFrom, List<Node> sourceList) {
+        Relationship msgPass = startFrom.getSingleRelationship(
+                RelationshipType.withName(Relationships.PASS_MESSAGE.name()),
+                Direction.OUTGOING
+        );
+        if (Objects.isNull(msgPass)) {
+            return sourceList;
+        }
+        Node other = msgPass.getOtherNode(startFrom);
+        if (other.hasLabel(Label.label(Labels.MESSAGE.getLabelName()))) {
+            sourceList.add(other);
+        }
+        sourceList = getFullConversation(other, sourceList);
+        return sourceList;
+    }
+
+    public static Relationship getOrCreateRelationship(Node source, Node target, Direction direction, String relType) {
         Iterable<Relationship> rels = source.getRelationships(direction, RelationshipType.withName(relType));
         for (Relationship relationship : rels) {
             Node other = relationship.getOtherNode(source);

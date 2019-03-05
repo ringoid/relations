@@ -2,8 +2,7 @@ package com.ringoid;
 
 public enum ViewProperties {
     VIEW_COUNT("view_count"),
-    VIEW_TIME("view_time"),
-    VIEW_AT("view_at");
+    VIEW_TIME("view_time");
 
     private String propertyName;
 
