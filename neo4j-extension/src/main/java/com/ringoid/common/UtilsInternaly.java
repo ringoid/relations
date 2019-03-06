@@ -1,7 +1,9 @@
 package com.ringoid.common;
 
+import com.ringoid.BlockProperties;
 import com.ringoid.Labels;
 import com.ringoid.Relationships;
+import com.ringoid.events.runtime.BlockModule;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -28,6 +30,29 @@ public class UtilsInternaly {
         for (Relationship takePart : takeParts) {
             Node conversationNode = takePart.getOtherNode(sourceNode);
             if (conversationNode.hasLabel(Label.label(Labels.CONVERSATION.getLabelName()))) {
+                boolean wasReported = false;
+                //check that nobody in this conversation was not reported
+                for (Relationship eachRel : conversationNode.getRelationships(
+                        RelationshipType.withName(Relationships.TAKE_PART_IN_CONVERSATION.name()),
+                        Direction.INCOMING
+                )) {
+                    Node other = eachRel.getOtherNode(conversationNode);
+                    if (other.hasLabel(Label.label(Labels.PERSON.getLabelName()))) {
+                        for (Relationship eachBlockRel : other.getRelationships(
+                                RelationshipType.withName(Relationships.BLOCK.name()),
+                                Direction.INCOMING
+                        )) {
+                            long blockReasonNum = (Long) eachBlockRel.getProperty(BlockProperties.BLOCK_REASON_NUM.getPropertyName(), 0L);
+                            if (blockReasonNum > BlockModule.REPORT_REASON_TRESHOLD) {
+                                wasReported = true;
+                            }
+                        }
+                    }
+                }
+
+                if (wasReported) {
+                    break;
+                }
                 List<Node> messages = new ArrayList<>();
                 messages = getFullConversation(conversationNode, messages);
                 for (Node eachMessage : messages) {

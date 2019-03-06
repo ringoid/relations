@@ -22,7 +22,7 @@ import static com.ringoid.BlockProperties.BLOCK_REASON_NUM;
 import static com.ringoid.events.EventTypes.ACTION_USER_BLOCK_OTHER;
 
 public class BlockModule extends BaseTxDrivenModule<List<UserBlockOtherEvent>> {
-    private static final long REPORT_REASON_TRESHOLD = 9L;
+    public static final long REPORT_REASON_TRESHOLD = 9L;
 
     private final TxDrivenModuleConfiguration configuration;
     private final Sender sender;
