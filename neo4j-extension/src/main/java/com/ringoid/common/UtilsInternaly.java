@@ -40,7 +40,7 @@ public class UtilsInternaly {
                     if (other.hasLabel(Label.label(Labels.PERSON.getLabelName()))) {
                         for (Relationship eachBlockRel : other.getRelationships(
                                 RelationshipType.withName(Relationships.BLOCK.name()),
-                                Direction.INCOMING
+                                Direction.BOTH
                         )) {
                             long blockReasonNum = (Long) eachBlockRel.getProperty(BlockProperties.BLOCK_REASON_NUM.getPropertyName(), 0L);
                             if (blockReasonNum > BlockModule.REPORT_REASON_TRESHOLD) {
