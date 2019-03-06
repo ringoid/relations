@@ -3,8 +3,6 @@ package com.ringoid.events.internal.events;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.ringoid.events.BaseEvent;
 
-import static com.ringoid.events.EventTypes.INTERNAL_USER_SEND_MESSAGE_EVENT;
-
 @JsonIgnoreProperties
 public class MessageBotEvent extends BaseEvent {
     private String userId;
@@ -18,7 +16,7 @@ public class MessageBotEvent extends BaseEvent {
         this.userId = userId;
         this.targetUserId = targetUserId;
         this.text = text;
-        this.eventType = INTERNAL_USER_SEND_MESSAGE_EVENT.name();
+        this.eventType = "BOT_ACTION_USER_MESSAGE";
     }
 
     public String getUserId() {
