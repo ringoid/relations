@@ -1,5 +1,6 @@
 package com.ringoid.api;
 
+import com.google.common.collect.Lists;
 import com.ringoid.PhotoProperties;
 import com.ringoid.Relationships;
 import org.neo4j.graphdb.Direction;
@@ -33,15 +34,35 @@ public class NewFaces {
     private static final int MAX_LOOP_NUM = 4;
 
     //todo:implement DISTINCT
+    private static final String NEW_FACES_SEEN_QUERY = String.format(
+            "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
+                    "MATCH (target:%s) " +//2
+                    "WHERE NOT (target)-[:%s|%s|%s|%s]-(sourceUser) " +//2.1
+                    "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes LIMIT $limitParam",//3
+            PERSON.getLabelName(), USER_ID.getPropertyName(),//1
+            PERSON.getLabelName(), //2
+            Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,
+            USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
+    );
+
     private static final String NEW_FACES_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s) " +//2
                     "WHERE NOT (target)<-[]-(sourceUser) " +//2.1
-                    "RETURN target.%s AS userId, target.%s AS likes ORDER BY likes DESC SKIP $skipParam LIMIT $limitParam",//3
+                    "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), //2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
     );
+
+    private static List<Node> unknowns(NewFacesRequest request, String useQuery, int skip, GraphDatabaseService database) {
+        if (Objects.equals(NEW_FACES_QUERY, useQuery)) {
+            return unknownPersons(request.getUserId(), skip, request.getLimit(), database);
+        } else if (Objects.equals(NEW_FACES_SEEN_QUERY, useQuery)) {
+            return moreProfilesForNewFaces(request.getUserId(), 20, database);
+        }
+        return Lists.newArrayList();
+    }
 
     public static NewFacesResponse newFaces(NewFacesRequest request, GraphDatabaseService database) {
         NewFacesResponse response = new NewFacesResponse();
@@ -60,7 +81,7 @@ public class NewFaces {
                 int skip = 0;
                 int loopCounter = 0;
                 while (tmpResult.size() < request.getLimit() && loopCounter < MAX_LOOP_NUM) {
-                    List<Node> unknowns = unknownPersons(request.getUserId(), skip, request.getLimit(), database);
+                    List<Node> unknowns = unknowns(request, NEW_FACES_QUERY, skip, database);
                     if (unknowns.size() < request.getLimit()) {
                         //there is no more users, exit from the loop
                         loopCounter = MAX_LOOP_NUM;
@@ -109,6 +130,48 @@ public class NewFaces {
                     prof.setPhotoIds(sortPhotos(eachProfile));
                     profileList.add(prof);
                 }
+
+                //now fill profiles with 20 users with highest rank
+                if (profileList.isEmpty()) {
+                    tmpResult = new ArrayList<>();
+                    skip = 0;
+                    loopCounter = 0;
+                    while (tmpResult.size() < request.getLimit() && loopCounter < MAX_LOOP_NUM) {
+                        List<Node> unknowns = unknowns(request, NEW_FACES_SEEN_QUERY, skip, database);
+                        if (unknowns.size() < request.getLimit()) {
+                            //there is no more users, exit from the loop
+                            loopCounter = MAX_LOOP_NUM;
+                        } else {
+                            skip += unknowns.size();
+                            loopCounter++;
+                        }
+
+                        for (Node eachUnknown : unknowns) {
+                            if (sourceUser.getId() == eachUnknown.getId()) {
+                                continue;
+                            }
+                            if (eachUnknown.hasLabel(Label.label(HIDDEN.getLabelName()))) {
+                                continue;
+                            }
+                            String nodeSex = (String) eachUnknown.getProperty(SEX.getPropertyName());
+                            if (!Objects.equals(targetSex, nodeSex)) {
+                                continue;
+                            }
+                            if (!eachUnknown.hasRelationship(RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()), Direction.OUTGOING)) {
+                                continue;
+                            }
+
+                            tmpResult.add(eachUnknown);
+                        }
+                    }//tmpResult is ready
+                    for (Node eachProfile : tmpResult) {
+                        Profile prof = new Profile();
+                        prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
+                        prof.setPhotoIds(sortPhotos(eachProfile));
+                        profileList.add(prof);
+                    }
+                }//end block for seen top profiles
+
                 response.setNewFaces(profileList);
             }
             tx.success();
@@ -204,6 +267,21 @@ public class NewFaces {
         params.put("skipParam", skip);
         params.put("limitParam", limit);
         Result result = database.execute(NEW_FACES_QUERY, params);
+        while (result.hasNext()) {
+            Map<String, Object> mapResult = result.next();
+            String userId = (String) mapResult.get("userId");
+            Node node = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), userId);
+            nodes.add(node);
+        }
+        return nodes;
+    }
+
+    private static List<Node> moreProfilesForNewFaces(String sourceUserId, int limit, GraphDatabaseService database) {
+        List<Node> nodes = new ArrayList<>();
+        Map<String, Object> params = new HashMap<>();
+        params.put("sourceUserId", sourceUserId);
+        params.put("limitParam", limit);
+        Result result = database.execute(NEW_FACES_SEEN_QUERY, params);
         while (result.hasNext()) {
             Map<String, Object> mapResult = result.next();
             String userId = (String) mapResult.get("userId");
