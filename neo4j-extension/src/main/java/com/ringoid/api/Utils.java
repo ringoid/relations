@@ -78,7 +78,7 @@ public class Utils {
                 for (Relationship each : messages1) {
                     Node other = each.getOtherNode(node1);
                     if (other.hasLabel(Label.label(PERSON.getLabelName())) && other.getId() == sourceUser.getId()) {
-                        lastMessageAt1 = (Long) other.getProperty(MessageRelationshipProperties.MSG_AT.getPropertyName(), 0L);
+                        lastMessageAt1 = (Long) each.getProperty(MessageRelationshipProperties.MSG_AT.getPropertyName(), 0L);
                         break;
                     }
                 }
@@ -88,7 +88,7 @@ public class Utils {
                 for (Relationship each : messages2) {
                     Node other = each.getOtherNode(node2);
                     if (other.hasLabel(Label.label(PERSON.getLabelName())) && other.getId() == sourceUser.getId()) {
-                        lastMessageAt2 = (Long) other.getProperty(MessageRelationshipProperties.MSG_AT.getPropertyName(), 0L);
+                        lastMessageAt2 = (Long) each.getProperty(MessageRelationshipProperties.MSG_AT.getPropertyName(), 0L);
                         break;
                     }
                 }
