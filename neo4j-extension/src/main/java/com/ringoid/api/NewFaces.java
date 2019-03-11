@@ -33,7 +33,6 @@ public class NewFaces {
 
     private static final int MAX_LOOP_NUM = 4;
 
-    //todo:implement DISTINCT
     private static final String NEW_FACES_SEEN_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s) " +//2
@@ -123,6 +122,10 @@ public class NewFaces {
                     }
                 }//tmpResult is ready
                 tmpResult = sortProfiles(tmpResult);
+                //now check that result <= limit
+                if (tmpResult.size() > request.getLimit()) {
+                    tmpResult = tmpResult.subList(0, request.getLimit() - 1);
+                }
                 List<Profile> profileList = new ArrayList<>(tmpResult.size());
                 for (Node eachProfile : tmpResult) {
                     Profile prof = new Profile();
@@ -164,6 +167,11 @@ public class NewFaces {
                             tmpResult.add(eachUnknown);
                         }
                     }//tmpResult is ready
+
+                    //now check that result <= limit
+                    if (tmpResult.size() > request.getLimit()) {
+                        tmpResult = tmpResult.subList(0, request.getLimit() - 1);
+                    }
                     for (Node eachProfile : tmpResult) {
                         Profile prof = new Profile();
                         prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
