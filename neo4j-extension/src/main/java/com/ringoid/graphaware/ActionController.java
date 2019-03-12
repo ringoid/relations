@@ -20,6 +20,7 @@ import com.ringoid.events.actions.UserBlockOtherEvent;
 import com.ringoid.events.actions.UserLikePhotoEvent;
 import com.ringoid.events.actions.UserMessageEvent;
 import com.ringoid.events.actions.UserUnlikePhotoEvent;
+import com.ringoid.events.actions.UserViewChatEvent;
 import com.ringoid.events.actions.UserViewPhotoEvent;
 import com.ringoid.events.auth.AuthUtilsInternaly;
 import com.ringoid.events.auth.UserCallDeleteHimselfEvent;
@@ -52,8 +53,8 @@ import java.util.Objects;
 import static com.ringoid.events.EventTypes.ACTION_USER_BLOCK_OTHER;
 import static com.ringoid.events.EventTypes.ACTION_USER_LIKE_PHOTO;
 import static com.ringoid.events.EventTypes.ACTION_USER_MESSAGE;
-import static com.ringoid.events.EventTypes.ACTION_USER_OPEN_CHAT;
 import static com.ringoid.events.EventTypes.ACTION_USER_UNLIKE_PHOTO;
+import static com.ringoid.events.EventTypes.ACTION_USER_VIEW_CHAT;
 import static com.ringoid.events.EventTypes.ACTION_USER_VIEW_PHOTO;
 import static com.ringoid.events.EventTypes.AUTH_USER_CALL_DELETE_HIMSELF;
 import static com.ringoid.events.EventTypes.AUTH_USER_ONLINE;
@@ -219,26 +220,22 @@ public class ActionController {
             AuthUtilsInternaly.deleteUserInternaly(event, database);
         } else if (Objects.equals(eventType, ACTION_USER_LIKE_PHOTO.name())) {
             UserLikePhotoEvent event = objectMapper.readValue(each.traverse(), UserLikePhotoEvent.class);
-//                    ActionsUtils.likePhotoInternaly(event, database);
             ActionsUtils.likePhoto(event, database);
         } else if (Objects.equals(eventType, ACTION_USER_VIEW_PHOTO.name())) {
             UserViewPhotoEvent event = objectMapper.readValue(each.traverse(), UserViewPhotoEvent.class);
-//                    ActionsUtils.viewPhotoInternaly(event, database);
             ActionsUtils.viewPhoto(event, database);
         } else if (Objects.equals(eventType, ACTION_USER_BLOCK_OTHER.name())) {
             UserBlockOtherEvent event = objectMapper.readValue(each.traverse(), UserBlockOtherEvent.class);
-//                    ActionsUtils.blockInternaly(event, database);
             ActionsUtils.block(event, database);
         } else if (Objects.equals(eventType, ACTION_USER_MESSAGE.name())) {
             UserMessageEvent event = objectMapper.readValue(each.traverse(), UserMessageEvent.class);
-//                    ActionsUtils.messageInternal(event, database);
             ActionsUtils.message(event, database);
         } else if (Objects.equals(eventType, ACTION_USER_UNLIKE_PHOTO.name())) {
             UserUnlikePhotoEvent event = objectMapper.readValue(each.traverse(), UserUnlikePhotoEvent.class);
-//                    ActionsUtils.unlikeInternal(event, database);
             ActionsUtils.unlike(event, database);
-        } else if (Objects.equals(eventType, ACTION_USER_OPEN_CHAT.name())) {
-            //todo:implement in next version
+        } else if (Objects.equals(eventType, ACTION_USER_VIEW_CHAT.name())) {
+            UserViewChatEvent event = objectMapper.readValue(each.traverse(), UserViewChatEvent.class);
+            ActionsUtils.viewChat(event, database);
         }
     }
 

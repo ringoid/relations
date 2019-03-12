@@ -44,13 +44,16 @@ public class ActionsUtils {
 
     public static void message(UserMessageEvent event, GraphDatabaseService database) {
         Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getUserId());
+        if (Objects.nonNull(sourceUser)) {
+            updateLastActionTime(sourceUser, event.getMessageAt(), database);
+        }
+
         Node targetUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getTargetUserId());
         if (Objects.isNull(sourceUser) || Objects.isNull(targetUser)
                 || sourceUser.getId() == targetUser.getId()) {
             return;
         }
 
-        updateLastActionTime(sourceUser, event.getMessageAt(), database);
         if (doWeHaveBlockInternaly(sourceUser, targetUser, database)) {
             return;
         }
@@ -133,13 +136,16 @@ public class ActionsUtils {
 
     public static void unlike(UserUnlikePhotoEvent event, GraphDatabaseService database) {
         Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getUserId());
+        if (Objects.nonNull(sourceUser)) {
+            updateLastActionTime(sourceUser, event.getUnLikedAt(), database);
+        }
+
         Node targetUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getTargetUserId());
         if (Objects.isNull(sourceUser) || Objects.isNull(targetUser)
                 || sourceUser.getId() == targetUser.getId()) {
             return;
         }
 
-        updateLastActionTime(sourceUser, event.getUnLikedAt(), database);
         if (doWeHaveBlockInternaly(sourceUser, targetUser, database)) {
             return;
         }
@@ -229,13 +235,16 @@ public class ActionsUtils {
 
     public static void block(UserBlockOtherEvent event, GraphDatabaseService database) {
         Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getUserId());
+        if (Objects.nonNull(sourceUser)) {
+            updateLastActionTime(sourceUser, event.getBlockedAt(), database);
+        }
+
         Node targetUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getTargetUserId());
         if (Objects.isNull(sourceUser) || Objects.isNull(targetUser)
                 || sourceUser.getId() == targetUser.getId()) {
             return;
         }
 
-        updateLastActionTime(sourceUser, event.getBlockedAt(), database);
         if (doWeHaveBlockInternaly(sourceUser, targetUser, database)) {
             return;
         }
@@ -300,15 +309,26 @@ public class ActionsUtils {
         targetUser.setProperty(PersonProperties.NEED_TO_MODERATE.getPropertyName(), true);
     }
 
+    public static void viewChat(UserViewChatEvent event, GraphDatabaseService database) {
+        Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getUserId());
+        if (Objects.nonNull(sourceUser)) {
+            updateLastActionTime(sourceUser, event.getViewAt(), database);
+        }
+        //todo:mb implement later
+    }
+
     public static void viewPhoto(UserViewPhotoEvent event, GraphDatabaseService database) {
         Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getUserId());
+        if (Objects.nonNull(sourceUser)) {
+            updateLastActionTime(sourceUser, event.getViewAt(), database);
+        }
+
         Node targetUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getTargetUserId());
         if (Objects.isNull(sourceUser) || Objects.isNull(targetUser)
                 || sourceUser.getId() == targetUser.getId()) {
             return;
         }
 
-        updateLastActionTime(sourceUser, event.getViewAt(), database);
         if (doWeHaveBlockInternaly(sourceUser, targetUser, database)) {
             return;
         }
@@ -380,13 +400,16 @@ public class ActionsUtils {
 
     public static void likePhoto(UserLikePhotoEvent event, GraphDatabaseService database) {
         Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getUserId());
+        if (Objects.nonNull(sourceUser)) {
+            updateLastActionTime(sourceUser, event.getLikedAt(), database);
+        }
+
         Node targetUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getTargetUserId());
         if (Objects.isNull(sourceUser) || Objects.isNull(targetUser)
                 || sourceUser.getId() == targetUser.getId()) {
             return;
         }
 
-        updateLastActionTime(sourceUser, event.getLikedAt(), database);
         if (doWeHaveBlockInternaly(sourceUser, targetUser, database)) {
             return;
         }
