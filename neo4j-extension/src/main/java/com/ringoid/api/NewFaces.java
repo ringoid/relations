@@ -37,7 +37,7 @@ public class NewFaces {
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s) " +//2
                     "WHERE NOT (target)-[:%s|%s|%s|%s]-(sourceUser) " +//2.1
-                    "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes LIMIT $limitParam",//3
+                    "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), //2
             Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,
@@ -58,14 +58,13 @@ public class NewFaces {
         if (Objects.equals(NEW_FACES_QUERY, useQuery)) {
             return unknownPersons(request.getUserId(), skip, request.getLimit(), database);
         } else if (Objects.equals(NEW_FACES_SEEN_QUERY, useQuery)) {
-            return moreProfilesForNewFaces(request.getUserId(), 20, database);
+            return moreProfilesForNewFaces(request.getUserId(), skip, 20, database);
         }
         return Lists.newArrayList();
     }
 
     public static NewFacesResponse newFaces(NewFacesRequest request, GraphDatabaseService database) {
         NewFacesResponse response = new NewFacesResponse();
-        List<Node> tmpResult = new ArrayList<>();
         try (Transaction tx = database.beginTx()) {
             Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), request.getUserId());
             long actionTime = (Long) sourceUser.getProperty(LAST_ACTION_TIME.getPropertyName(), 0L);
@@ -79,6 +78,7 @@ public class NewFaces {
 
                 int skip = 0;
                 int loopCounter = 0;
+                List<Node> tmpResult = new ArrayList<>();
                 while (tmpResult.size() < request.getLimit() && loopCounter < MAX_LOOP_NUM) {
                     List<Node> unknowns = unknowns(request, NEW_FACES_QUERY, skip, database);
                     if (unknowns.size() < request.getLimit()) {
@@ -284,10 +284,11 @@ public class NewFaces {
         return nodes;
     }
 
-    private static List<Node> moreProfilesForNewFaces(String sourceUserId, int limit, GraphDatabaseService database) {
+    private static List<Node> moreProfilesForNewFaces(String sourceUserId, int skip, int limit, GraphDatabaseService database) {
         List<Node> nodes = new ArrayList<>();
         Map<String, Object> params = new HashMap<>();
         params.put("sourceUserId", sourceUserId);
+        params.put("skipParam", skip);
         params.put("limitParam", limit);
         Result result = database.execute(NEW_FACES_SEEN_QUERY, params);
         while (result.hasNext()) {
