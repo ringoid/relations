@@ -136,7 +136,10 @@ public class UtilsInternaly {
     }
 
     public static void updateLastActionTime(Node sourceNode, long lastActionTime, GraphDatabaseService database) {
-        sourceNode.setProperty(LAST_ACTION_TIME.getPropertyName(), lastActionTime);
+        long actualLastActionTime = (Long) sourceNode.getProperty(LAST_ACTION_TIME.getPropertyName(), 0L);
+        if (lastActionTime >= actualLastActionTime) {
+            sourceNode.setProperty(LAST_ACTION_TIME.getPropertyName(), lastActionTime);
+        }
     }
 
     public static boolean doWeHaveBlockInternaly(Node sourceNode, Node targetNode, GraphDatabaseService database) {

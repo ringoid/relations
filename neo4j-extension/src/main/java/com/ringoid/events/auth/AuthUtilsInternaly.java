@@ -40,34 +40,21 @@ public class AuthUtilsInternaly {
                             "n.%s = $createdValue, " +
                             "n.%s = 0, " +
                             "n.%s = 0, " +
-                            "n.%s = $onlineUserTime " +
-                            "ON MATCH SET " +
-                            "n.%s = $sexValue, " +
-                            "n.%s = $yearValue, " +
-                            "n.%s = $createdValue, " +
-                            "n.%s = 0, " +
                             "n.%s = $onlineUserTime",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
-                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LIKE_COUNTER.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(),
-                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LAST_ONLINE_TIME.getPropertyName());
+                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LIKE_COUNTER.getPropertyName(), LAST_ONLINE_TIME.getPropertyName());
 
     private static final String UPDATE_SETTINGS =
-            String.format("MERGE (n:%s {%s: $userIdValue}) " +
-                            "ON CREATE SET " +
-                            "n.%s = $safeDistanceInMeterValue " +
-                            "ON MATCH SET " +
-                            "n.%s = $safeDistanceInMeterValue",
+            String.format("MATCH (n:%s {%s: $userIdValue}) " +
+                            "SET n.%s = $safeDistanceInMeterValue",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
-                    SAFE_DISTANCE_IN_METER.getPropertyName(),
                     SAFE_DISTANCE_IN_METER.getPropertyName());
 
 
     private static final String UPDATE_USER_ONLINE_TIME =
-            String.format("MERGE (n:%s {%s: $userIdValue}) " +
-                            "ON CREATE SET n.%s = $onlineUserTime " +
-                            "ON MATCH SET n.%s = $onlineUserTime",
+            String.format("MATCH (n:%s {%s: $userIdValue}) " +
+                            "SET n.%s = $onlineUserTime",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
-                    LAST_ONLINE_TIME.getPropertyName(),
                     LAST_ONLINE_TIME.getPropertyName());
 
     private static final String GET_ALL_CONVERSATIONS =

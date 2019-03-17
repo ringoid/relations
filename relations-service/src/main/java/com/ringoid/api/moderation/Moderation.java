@@ -210,6 +210,8 @@ public class Moderation {
             }
             case "hide": {
                 hidePhoto(request.getProfilePhotoMap());
+                //todo:implement event
+                //todo:implement in image service
                 return response;
             }
             //todo:mb later, now it's too complicated
