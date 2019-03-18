@@ -3,6 +3,7 @@ package com.ringoid;
 public enum Labels {
     PERSON("Person"),
     PHOTO("Photo"),
+    RESIZED_PHOTO("ResizedPhoto"),
     CONVERSATION("Conversation"),
     MESSAGE("Message"),
     HIDDEN("Hidden");

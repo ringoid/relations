@@ -18,6 +18,7 @@ import java.util.Objects;
 
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
+import static com.ringoid.Labels.RESIZED_PHOTO;
 import static com.ringoid.PersonProperties.CREATED;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
@@ -71,16 +72,26 @@ public class AuthUtilsInternaly {
                 return String.format(
                         "MATCH (n:%s {%s: $userIdValue}) " +//1
                                 "OPTIONAL MATCH (n)-[:%s]->(ph:%s) " +//2
-                                "DETACH DELETE n, ph",
+                                "WITH n, ph " +//3
+                                "OPTIONAL MATCH (ph)-[:%s]->(resP:%s) " +//4
+                                "DETACH DELETE n, ph, resP",
                         PERSON.getLabelName(), USER_ID.getPropertyName(),//1
-                        Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName()//2
+                        Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//2
+                        Relationships.RESIZED.name(), RESIZED_PHOTO.getLabelName()
                 );
             }
             case HIDDEN: {
                 //match (p:Person {user_id:1000}) SET p:Hidden
                 return String.format(
-                        "MATCH (n:%s {%s: $userIdValue}) SET n:%s",
-                        PERSON.getLabelName(), USER_ID.getPropertyName(), Labels.HIDDEN.getLabelName());
+                        "MATCH (n:%s {%s: $userIdValue}) SET n:%s WITH n " +//1
+                                "OPTIONAL MATCH (n)-[:%s]->(ph:%s) " +//2
+                                "WITH n, ph " +//3
+                                "OPTIONAL MATCH (ph)-[:%s]->(resP:%s) " +//4
+                                "DETACH DELETE resP",
+                        PERSON.getLabelName(), USER_ID.getPropertyName(), Labels.HIDDEN.getLabelName(),//1
+                        Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//2
+                        Relationships.RESIZED.name(), RESIZED_PHOTO.getLabelName()//4
+                );
             }
             default: {
 //                log.error("unsupported user status {} with delete user request with params {}", userStatus, parameters);

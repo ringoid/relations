@@ -13,6 +13,7 @@ public enum Relationships {
     MESSAGE,
     TAKE_PART_IN_CONVERSATION,
     PASS_MESSAGE,
+    RESIZED,
     UNSUPPORTED;
 
     public static Relationships fromString(String str) {
@@ -41,6 +42,8 @@ public enum Relationships {
                 return TAKE_PART_IN_CONVERSATION;
             case "PASS_MESSAGE":
                 return PASS_MESSAGE;
+            case "RESIZED":
+                return RESIZED;
             default:
                 return UNSUPPORTED;
         }

@@ -5,7 +5,9 @@ public enum PhotoProperties {
     PHOTO_UPLOADED_AT("photo_uploaded_at"),
     LIKE_COUNTER("like_counter"),
     PHOTO_S3_KEY("photo_s3_key"),
-    NEED_TO_MODERATE("need_to_moderate");
+    NEED_TO_MODERATE("need_to_moderate"),
+    RESOLUTION("resolution"),
+    PHOTO_LINK("link");
 
     private String propertyName;
 

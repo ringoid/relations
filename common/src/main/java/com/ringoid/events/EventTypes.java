@@ -22,5 +22,6 @@ public enum EventTypes {
     INTERNAL_DELETE_USER_CONVERSATION_EVENT,//this event goes to message service
     INTERNAL_HIDE_PHOTO_EVENT,//this event goes to image service
 
-    FEEDS_NEW_FACES_SEEN_PROFILES
+    FEEDS_NEW_FACES_SEEN_PROFILES,
+    INTERNAL_RESIZE_PHOTO_EVENT
 }

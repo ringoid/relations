@@ -28,6 +28,7 @@ import com.ringoid.events.auth.UserOnlineEvent;
 import com.ringoid.events.auth.UserProfileCreatedEvent;
 import com.ringoid.events.auth.UserSettingsUpdatedEvent;
 import com.ringoid.events.image.ImageUtilsInternaly;
+import com.ringoid.events.image.ResizePhotoEvent;
 import com.ringoid.events.image.UserDeletePhotoEvent;
 import com.ringoid.events.image.UserUploadedPhotoEvent;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -62,6 +63,7 @@ import static com.ringoid.events.EventTypes.AUTH_USER_PROFILE_CREATED;
 import static com.ringoid.events.EventTypes.AUTH_USER_SETTINGS_UPDATED;
 import static com.ringoid.events.EventTypes.IMAGE_USER_DELETE_PHOTO;
 import static com.ringoid.events.EventTypes.IMAGE_USER_UPLOAD_PHOTO;
+import static com.ringoid.events.EventTypes.INTERNAL_RESIZE_PHOTO_EVENT;
 
 /**
  * Sample REST API for counting all nodes in the database.
@@ -215,6 +217,9 @@ public class ActionController {
         } else if (Objects.equals(eventType, IMAGE_USER_DELETE_PHOTO.name())) {
             UserDeletePhotoEvent event = objectMapper.readValue(each.traverse(), UserDeletePhotoEvent.class);
             ImageUtilsInternaly.deletePhotoInternaly(event, database);
+        } else if (Objects.equals(eventType, INTERNAL_RESIZE_PHOTO_EVENT.name())) {
+            ResizePhotoEvent event = objectMapper.readValue(each.traverse(), ResizePhotoEvent.class);
+            ImageUtilsInternaly.resizedPhotoInternaly(event, database);
         } else if (Objects.equals(eventType, AUTH_USER_CALL_DELETE_HIMSELF.name())) {
             UserCallDeleteHimselfEvent event = objectMapper.readValue(each.traverse(), UserCallDeleteHimselfEvent.class);
             AuthUtilsInternaly.deleteUserInternaly(event, database);
