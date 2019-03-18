@@ -14,7 +14,7 @@ Mappings:
     Neo4jUris:
       stage: "52.48.255.177"
       test: "34.244.4.133"
-      prod: "34.244.112.46&34.252.154.250&63.34.22.195"
+      prod: "34.253.186.163"
     Neo4jUser:
       stage: neo4j
       test: neo4j
