@@ -53,6 +53,7 @@ func handler(ctx context.Context, event events.KinesisEvent) (error) {
 	}
 
 	apimodel.Anlogger.Debugf(lc, "handle_stream : start iterate on hosts %v", tmpNeo4jHosts)
+
 	for index, eachHost := range tmpNeo4jHosts {
 		url := fmt.Sprintf("%s%s", eachHost, apimodel.ActionExtensionSuffix)
 		apimodel.Anlogger.Debugf(lc, "handle_stream : try this url [%s]", url)
@@ -64,8 +65,9 @@ func handler(ctx context.Context, event events.KinesisEvent) (error) {
 		client := &http.Client{}
 		httpResponse, err := client.Do(request)
 		if err != nil {
-			//todo:it's a place where will be error in case if instance is down
-			apimodel.Anlogger.Fatalf(lc, "handle_stream : error making request to host [%s] : %v", eachHost, err)
+			tmpNeo4jHosts = append(tmpNeo4jHosts[:index], tmpNeo4jHosts[index+1:]...)
+			apimodel.Anlogger.Errorf(lc, "handle_stream : error making request to host [%s], result neo4j hosts %v, try next one : %v", eachHost, tmpNeo4jHosts, err)
+			continue
 		}
 		defer httpResponse.Body.Close()
 
@@ -77,17 +79,18 @@ func handler(ctx context.Context, event events.KinesisEvent) (error) {
 		apimodel.Anlogger.Debugf(lc, "handle_stream : response body %s", string(respBody))
 
 		if httpResponse.StatusCode != 200 {
-			apimodel.Anlogger.Errorf(lc, "handle_stream : response from Neo4j NOT OK, requested host [%s], status code [%d] and status [%s]", eachHost, httpResponse.StatusCode, httpResponse.Status)
 			tmpNeo4jHosts = append(tmpNeo4jHosts[:index], tmpNeo4jHosts[index+1:]...)
-			apimodel.Anlogger.Errorf(lc, "handle_stream : result neo4j hosts %v", tmpNeo4jHosts)
+			apimodel.Anlogger.Errorf(lc, "handle_stream : response from Neo4j NOT OK, requested host [%s], status code [%d] and status [%s], result neo4j hosts %v",
+				eachHost, httpResponse.StatusCode, httpResponse.Status, tmpNeo4jHosts)
 		} else {
-			apimodel.Anlogger.Debugf(lc, "handle_stream : successfully handle %d records from the stream in %v millis",
+			apimodel.Anlogger.Infof(lc, "handle_stream : successfully handle %d records from the stream in %v millis",
 				len(event.Records), commons.UnixTimeInMillis()-start)
 			return nil
 		}
 	}
 
-	return fmt.Errorf("handle_stream : there is no alive hosts in %v", apimodel.Neo4jHosts)
+	apimodel.Anlogger.Errorf(lc, "handle_stream : there is no alive hosts in %v, restart the function", apimodel.Neo4jHosts)
+	return fmt.Errorf("handle_stream : there is no alive hosts in %v, restart the function", apimodel.Neo4jHosts)
 }
 
 func main() {

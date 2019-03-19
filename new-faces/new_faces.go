@@ -24,10 +24,6 @@ func handler(ctx context.Context, request commons.InternalGetNewFacesReq) (commo
 
 	apimodel.Anlogger.Debugf(lc, "new_faces.go : start handle new_faces request %v", request)
 
-	if request.WarmUpRequest {
-		return commons.InternalGetNewFacesResp{}, nil
-	}
-
 	start := commons.UnixTimeInMillis()
 
 	if len(tmpNeo4jHosts) == 0 {
@@ -54,9 +50,8 @@ func handler(ctx context.Context, request commons.InternalGetNewFacesReq) (commo
 		client := &http.Client{}
 		httpResponse, err := client.Do(request)
 		if err != nil {
-			apimodel.Anlogger.Errorf(lc, "new_faces : error making request to host [%s] : %v", eachHost, err)
 			tmpNeo4jHosts = append(tmpNeo4jHosts[:index], tmpNeo4jHosts[index+1:]...)
-			apimodel.Anlogger.Errorf(lc, "new_faces : result neo4j hosts %v", tmpNeo4jHosts)
+			apimodel.Anlogger.Errorf(lc, "new_faces.go : error making request to host [%s], result neo4j hosts %v : %v", eachHost, tmpNeo4jHosts, err)
 			continue
 		}
 		defer httpResponse.Body.Close()
@@ -70,9 +65,9 @@ func handler(ctx context.Context, request commons.InternalGetNewFacesReq) (commo
 		apimodel.Anlogger.Debugf(lc, "new_faces : response body %s", string(respBody))
 
 		if httpResponse.StatusCode != 200 {
-			apimodel.Anlogger.Errorf(lc, "new_faces : response from Neo4j NOT OK, requested host [%s], status code [%d] and status [%s]", eachHost, httpResponse.StatusCode, httpResponse.Status)
 			tmpNeo4jHosts = append(tmpNeo4jHosts[:index], tmpNeo4jHosts[index+1:]...)
-			apimodel.Anlogger.Errorf(lc, "new_faces : result neo4j hosts %v", tmpNeo4jHosts)
+			apimodel.Anlogger.Errorf(lc, "new_faces.go : response from Neo4j NOT OK, requested host [%s], status code [%d] and status [%s], result neo4j hosts %v",
+				eachHost, httpResponse.StatusCode, httpResponse.Status, tmpNeo4jHosts)
 		} else {
 			var response commons.InternalGetNewFacesResp
 			err := json.Unmarshal(respBody, &response)
@@ -89,6 +84,7 @@ func handler(ctx context.Context, request commons.InternalGetNewFacesReq) (commo
 		}
 	}
 
+	apimodel.Anlogger.Errorf(lc, "new_faces.go : there is no alive hosts in %v", apimodel.Neo4jHosts)
 	return commons.InternalGetNewFacesResp{}, fmt.Errorf("new_faces : there is no alive hosts in %v", apimodel.Neo4jHosts)
 }
 
