@@ -36,7 +36,7 @@ public class LikesYou {
                 for (Node eachProfile : liked) {
                     Profile prof = new Profile();
                     prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
-                    prof.setPhotoIds(sortLmmPhotos(sourceUser, eachProfile));
+                    prof.setPhotos(Utils.resizedPhotos(sortLmmPhotos(sourceUser, eachProfile), request.getResolution(), database));
                     List<Message> messages = Utils.messages(sourceUser, eachProfile);
                     prof.setMessages(messages);
                     profileList.add(prof);

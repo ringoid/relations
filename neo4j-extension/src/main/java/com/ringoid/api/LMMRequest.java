@@ -7,6 +7,7 @@ public class LMMRequest {
     private String userId;
     private boolean requestNewPart;
     private long requestedLastActionTime;
+    private String resolution;
 
     public String getUserId() {
         return userId;
@@ -32,12 +33,11 @@ public class LMMRequest {
         this.requestedLastActionTime = requestedLastActionTime;
     }
 
-    @Override
-    public String toString() {
-        return "LMMRequest{" +
-                "userId='" + userId + '\'' +
-                ", requestNewPart=" + requestNewPart +
-                ", requestedLastActionTime=" + requestedLastActionTime +
-                '}';
+    public String getResolution() {
+        return resolution;
+    }
+
+    public void setResolution(String resolution) {
+        this.resolution = resolution;
     }
 }

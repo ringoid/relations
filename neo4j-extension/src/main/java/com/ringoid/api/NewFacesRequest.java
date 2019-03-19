@@ -7,6 +7,7 @@ public class NewFacesRequest {
     private String userId;
     private int limit;
     private long requestedLastActionTime;
+    private String resolution;
 
     public String getUserId() {
         return userId;
@@ -30,5 +31,13 @@ public class NewFacesRequest {
 
     public void setRequestedLastActionTime(long requestedLastActionTime) {
         this.requestedLastActionTime = requestedLastActionTime;
+    }
+
+    public String getResolution() {
+        return resolution;
+    }
+
+    public void setResolution(String resolution) {
+        this.resolution = resolution;
     }
 }

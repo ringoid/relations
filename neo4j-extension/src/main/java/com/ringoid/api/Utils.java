@@ -8,6 +8,7 @@ import com.ringoid.PhotoProperties;
 import com.ringoid.Relationships;
 import com.ringoid.common.UtilsInternaly;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -28,6 +29,44 @@ import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
 
 public class Utils {
+
+    public static List<Photo> resizedPhotos(List<String> origins, String resolution, GraphDatabaseService database) {
+        List<Photo> result = new ArrayList<>();
+        for (String eachOrigin : origins) {
+            Photo photo = new Photo();
+            photo.setOriginPhotoId(eachOrigin);
+            photo.setResolution(resolution);
+
+            Node originNode = database.findNode(Label.label(Labels.PHOTO.getLabelName()), PhotoProperties.PHOTO_ID.getPropertyName(), eachOrigin);
+            String resizedPhotoId = null;
+            String link = null;
+            if (Objects.nonNull(originNode)) {
+                Iterable<Relationship> resized = originNode.getRelationships(RelationshipType.withName(Relationships.RESIZED.name()), Direction.OUTGOING);
+                for (Relationship eachResized : resized) {
+                    Node other = eachResized.getOtherNode(originNode);
+                    if (other.hasLabel(Label.label(Labels.RESIZED_PHOTO.getLabelName()))) {
+                        String res = (String) other.getProperty(PhotoProperties.RESOLUTION.getPropertyName(), "n/a");
+                        if (Objects.equals(resolution, res)) {
+                            String rPhotoId = (String) other.getProperty(PhotoProperties.PHOTO_ID.getPropertyName(), "n/a");
+                            String rLink = (String) other.getProperty(PhotoProperties.PHOTO_LINK.getPropertyName(), "n/a");
+                            if (!Objects.equals("n/a", rPhotoId) && !Objects.equals("n/a", rLink)) {
+                                resizedPhotoId = rPhotoId;
+                                link = rLink;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (Objects.nonNull(resizedPhotoId) && Objects.nonNull(link)) {
+                    photo.setResizedPhotoId(resizedPhotoId);
+                    photo.setLink(link);
+                    result.add(photo);
+                }
+            }
+        }
+        return result;
+    }
+
     public static List<Node> filterUsers(Node sourceUser, List<Node> list, RelationshipType type, boolean onlyNew) {
         List<Node> result = new ArrayList<>();
         for (Node each : list) {

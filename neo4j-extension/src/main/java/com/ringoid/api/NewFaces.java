@@ -130,7 +130,7 @@ public class NewFaces {
                 for (Node eachProfile : tmpResult) {
                     Profile prof = new Profile();
                     prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
-                    prof.setPhotoIds(sortPhotos(eachProfile));
+                    prof.setPhotos(Utils.resizedPhotos(sortPhotos(eachProfile), request.getResolution(), database));
                     profileList.add(prof);
                 }
 
@@ -175,7 +175,7 @@ public class NewFaces {
                     for (Node eachProfile : tmpResult) {
                         Profile prof = new Profile();
                         prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
-                        prof.setPhotoIds(sortPhotos(eachProfile));
+                        prof.setPhotos(Utils.resizedPhotos(sortPhotos(eachProfile), request.getResolution(), database));
                         profileList.add(prof);
                     }
                 }//end block for seen top profiles

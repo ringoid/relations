@@ -40,7 +40,7 @@ public class Messages {
                 for (Node eachProfile : messages) {
                     Profile prof = new Profile();
                     prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
-                    prof.setPhotoIds(sortLmmPhotos(sourceUser, eachProfile));
+                    prof.setPhotos(Utils.resizedPhotos(sortLmmPhotos(sourceUser, eachProfile), request.getResolution(), database));
                     List<Message> msgs = Utils.messages(sourceUser, eachProfile);
                     prof.setMessages(msgs);
                     profileList.add(prof);
