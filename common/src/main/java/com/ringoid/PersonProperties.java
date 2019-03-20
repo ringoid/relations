@@ -10,7 +10,8 @@ public enum PersonProperties {
     LAST_ACTION_TIME("last_action_time"),
     LIKE_COUNTER("like_counter"),
     NEED_TO_MODERATE("need_to_moderate"),
-    MODERATION_STARTED_AT("moderation_started_at");
+    MODERATION_STARTED_AT("moderation_started_at"),
+    REFERRAL_ID("referral_id");
 
     private String propertyName;
 

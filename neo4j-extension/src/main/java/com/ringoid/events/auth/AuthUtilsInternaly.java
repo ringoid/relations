@@ -23,6 +23,7 @@ import static com.ringoid.PersonProperties.CREATED;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
+import static com.ringoid.PersonProperties.REFERRAL_ID;
 import static com.ringoid.PersonProperties.SAFE_DISTANCE_IN_METER;
 import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
@@ -41,9 +42,10 @@ public class AuthUtilsInternaly {
                             "n.%s = $createdValue, " +
                             "n.%s = 0, " +
                             "n.%s = 0, " +
+                            "n.%s = $referral, " +
                             "n.%s = $onlineUserTime",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
-                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LIKE_COUNTER.getPropertyName(), LAST_ONLINE_TIME.getPropertyName());
+                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LIKE_COUNTER.getPropertyName(), REFERRAL_ID.getPropertyName(), LAST_ONLINE_TIME.getPropertyName());
 
     private static final String UPDATE_SETTINGS =
             String.format("MATCH (n:%s {%s: $userIdValue}) " +
@@ -131,6 +133,7 @@ public class AuthUtilsInternaly {
         parameters.put("userIdValue", event.getUserId());
         parameters.put("sexValue", event.getSex());
         parameters.put("yearValue", event.getYearOfBirth());
+        parameters.put("referral", event.getReferralId());
         parameters.put("createdValue", event.getUnixTime());
         parameters.put("onlineUserTime", event.getUnixTime());
         database.execute(CREATE_PROFILE, parameters);

@@ -8,6 +8,7 @@ public class UserProfileCreatedEvent extends BaseEvent {
     private String userId;
     private String sex;
     private int yearOfBirth;
+    private String referralId;
     private long unixTime;
 
     public String getUserId() {
@@ -42,13 +43,11 @@ public class UserProfileCreatedEvent extends BaseEvent {
         this.unixTime = unixTime;
     }
 
-    @Override
-    public String toString() {
-        return "UserProfileCreatedEvent{" +
-                "userId='" + userId + '\'' +
-                ", sex='" + sex + '\'' +
-                ", yearOfBirth=" + yearOfBirth +
-                ", unixTime=" + unixTime +
-                '}';
+    public String getReferralId() {
+        return referralId;
+    }
+
+    public void setReferralId(String referralId) {
+        this.referralId = referralId;
     }
 }
