@@ -25,6 +25,7 @@ import com.ringoid.events.actions.UserViewChatEvent;
 import com.ringoid.events.actions.UserViewPhotoEvent;
 import com.ringoid.events.auth.AuthUtilsInternaly;
 import com.ringoid.events.auth.UserCallDeleteHimselfEvent;
+import com.ringoid.events.auth.UserClaimReferralCodeEvent;
 import com.ringoid.events.auth.UserOnlineEvent;
 import com.ringoid.events.auth.UserProfileCreatedEvent;
 import com.ringoid.events.auth.UserSettingsUpdatedEvent;
@@ -60,6 +61,7 @@ import static com.ringoid.events.EventTypes.ACTION_USER_UNLIKE_PHOTO;
 import static com.ringoid.events.EventTypes.ACTION_USER_VIEW_CHAT;
 import static com.ringoid.events.EventTypes.ACTION_USER_VIEW_PHOTO;
 import static com.ringoid.events.EventTypes.AUTH_USER_CALL_DELETE_HIMSELF;
+import static com.ringoid.events.EventTypes.AUTH_USER_CLAIM_REFERRAL_CODE;
 import static com.ringoid.events.EventTypes.AUTH_USER_ONLINE;
 import static com.ringoid.events.EventTypes.AUTH_USER_PROFILE_CREATED;
 import static com.ringoid.events.EventTypes.AUTH_USER_SETTINGS_UPDATED;
@@ -228,6 +230,9 @@ public class ActionController {
         } else if (Objects.equals(eventType, AUTH_USER_CALL_DELETE_HIMSELF.name())) {
             UserCallDeleteHimselfEvent event = objectMapper.readValue(each.traverse(), UserCallDeleteHimselfEvent.class);
             AuthUtilsInternaly.deleteUserInternaly(event, database);
+        } else if (Objects.equals(eventType, AUTH_USER_CLAIM_REFERRAL_CODE.name())) {
+            UserClaimReferralCodeEvent event = objectMapper.readValue(each.traverse(), UserClaimReferralCodeEvent.class);
+            AuthUtilsInternaly.claimReferralCodeInternaly(event, database);
         } else if (Objects.equals(eventType, ACTION_USER_LIKE_PHOTO.name())) {
             UserLikePhotoEvent event = objectMapper.readValue(each.traverse(), UserLikePhotoEvent.class);
             ActionsUtils.likePhoto(event, database);

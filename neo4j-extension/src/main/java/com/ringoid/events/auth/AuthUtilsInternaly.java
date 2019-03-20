@@ -23,6 +23,7 @@ import static com.ringoid.PersonProperties.CREATED;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
+import static com.ringoid.PersonProperties.PRIVATE_KEY;
 import static com.ringoid.PersonProperties.REFERRAL_ID;
 import static com.ringoid.PersonProperties.SAFE_DISTANCE_IN_METER;
 import static com.ringoid.PersonProperties.SEX;
@@ -43,9 +44,10 @@ public class AuthUtilsInternaly {
                             "n.%s = 0, " +
                             "n.%s = 0, " +
                             "n.%s = $referral, " +
+                            "n.%s = $privateKey, " +
                             "n.%s = $onlineUserTime",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
-                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LIKE_COUNTER.getPropertyName(), REFERRAL_ID.getPropertyName(), LAST_ONLINE_TIME.getPropertyName());
+                    SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LIKE_COUNTER.getPropertyName(), REFERRAL_ID.getPropertyName(), PRIVATE_KEY.getPropertyName(), LAST_ONLINE_TIME.getPropertyName());
 
     private static final String UPDATE_SETTINGS =
             String.format("MATCH (n:%s {%s: $userIdValue}) " +
@@ -53,6 +55,12 @@ public class AuthUtilsInternaly {
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
                     SAFE_DISTANCE_IN_METER.getPropertyName());
 
+
+    private static final String CLAIM_REFERRAL_CODE =
+            String.format("MATCH (n:%s {%s: $userIdValue}) " +
+                            "SET n.%s = $referral",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(),
+                    REFERRAL_ID.getPropertyName());
 
     private static final String UPDATE_USER_ONLINE_TIME =
             String.format("MATCH (n:%s {%s: $userIdValue}) " +
@@ -134,6 +142,7 @@ public class AuthUtilsInternaly {
         parameters.put("sexValue", event.getSex());
         parameters.put("yearValue", event.getYearOfBirth());
         parameters.put("referral", event.getReferralId());
+        parameters.put("privateKey", event.getPrivateKey());
         parameters.put("createdValue", event.getUnixTime());
         parameters.put("onlineUserTime", event.getUnixTime());
         database.execute(CREATE_PROFILE, parameters);
@@ -144,6 +153,13 @@ public class AuthUtilsInternaly {
         parameters.put("userIdValue", event.getUserId());
         parameters.put("safeDistanceInMeterValue", event.getSafeDistanceInMeter());
         database.execute(UPDATE_SETTINGS, parameters);
+    }
+
+    public static void claimReferralCodeInternaly(UserClaimReferralCodeEvent event, GraphDatabaseService database) {
+        final Map<String, Object> parameters = new HashMap<>();
+        parameters.put("userIdValue", event.getUserId());
+        parameters.put("referral", event.getReferralId());
+        database.execute(CLAIM_REFERRAL_CODE, parameters);
     }
 
     public static void updateLastOnlineTimeInternaly(UserOnlineEvent event, GraphDatabaseService database) {

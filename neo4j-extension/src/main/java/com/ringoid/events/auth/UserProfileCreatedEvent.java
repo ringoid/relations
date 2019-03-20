@@ -9,6 +9,7 @@ public class UserProfileCreatedEvent extends BaseEvent {
     private String sex;
     private int yearOfBirth;
     private String referralId;
+    private String privateKey;
     private long unixTime;
 
     public String getUserId() {
@@ -49,5 +50,13 @@ public class UserProfileCreatedEvent extends BaseEvent {
 
     public void setReferralId(String referralId) {
         this.referralId = referralId;
+    }
+
+    public String getPrivateKey() {
+        return privateKey;
+    }
+
+    public void setPrivateKey(String privateKey) {
+        this.privateKey = privateKey;
     }
 }

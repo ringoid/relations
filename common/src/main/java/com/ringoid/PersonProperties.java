@@ -11,7 +11,8 @@ public enum PersonProperties {
     LIKE_COUNTER("like_counter"),
     NEED_TO_MODERATE("need_to_moderate"),
     MODERATION_STARTED_AT("moderation_started_at"),
-    REFERRAL_ID("referral_id");
+    REFERRAL_ID("referral_id"),
+    PRIVATE_KEY("private_key");
 
     private String propertyName;
 
