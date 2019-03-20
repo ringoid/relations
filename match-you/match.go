@@ -22,7 +22,7 @@ func init() {
 func handler(ctx context.Context, request commons.InternalLMMReq) (commons.InternalLMMResp, error) {
 	lc, _ := lambdacontext.FromContext(ctx)
 
-	apimodel.Anlogger.Debugf(lc, "match.go : start handle likes_you request %v", request)
+	apimodel.Anlogger.Debugf(lc, "match.go : start handle likes_you request %v for userId [%s]", request, request.UserId)
 
 	start := commons.UnixTimeInMillis()
 
@@ -33,32 +33,32 @@ func handler(ctx context.Context, request commons.InternalLMMReq) (commons.Inter
 
 	body, err := json.Marshal(request)
 	if err != nil {
-		apimodel.Anlogger.Errorf(lc, "match.go : error marshaling request %v into json : %v", request, err)
+		apimodel.Anlogger.Errorf(lc, "match.go : error marshaling request %v into json for userId [%s] : %v", request, request.UserId, err)
 		return commons.InternalLMMResp{}, fmt.Errorf("error marshaling request %v into json : %v", request, err)
 	}
 
-	apimodel.Anlogger.Debugf(lc, "match.go : start iterate on hosts %v", tmpNeo4jHosts)
+	apimodel.Anlogger.Debugf(lc, "match.go : start iterate on hosts %v for userId [%s]", tmpNeo4jHosts, request.UserId)
 	for index, eachHost := range tmpNeo4jHosts {
 		url := fmt.Sprintf("%s%s", eachHost, apimodel.MatchYouExtensionSuffix)
-		apimodel.Anlogger.Debugf(lc, "match.go : try this url [%s]", url)
-		request, err := http.NewRequest("GET", url, bytes.NewReader(body))
+		apimodel.Anlogger.Debugf(lc, "match.go : try this url [%s] for userId [%s]", url, request.UserId)
+		httpRequest, err := http.NewRequest("GET", url, bytes.NewReader(body))
 		if err != nil {
-			apimodel.Anlogger.Errorf(lc, "match.go : error construction the request to host [%s] with body [%s] : %v", eachHost, string(body), err)
-			return commons.InternalLMMResp{}, fmt.Errorf("error construction the request to host [%s] with body [%s] : %v", eachHost, string(body), err)
+			apimodel.Anlogger.Errorf(lc, "match.go : error construction the httpRequest to host [%s] with body [%s] for userId [%s] : %v", eachHost, string(body), request.UserId, err)
+			return commons.InternalLMMResp{}, fmt.Errorf("error construction the httpRequest to host [%s] with body [%s] : %v", eachHost, string(body), err)
 		}
-		request.SetBasicAuth(apimodel.Neo4jUser, apimodel.Neo4jPassword)
+		httpRequest.SetBasicAuth(apimodel.Neo4jUser, apimodel.Neo4jPassword)
 		client := &http.Client{}
-		httpResponse, err := client.Do(request)
+		httpResponse, err := client.Do(httpRequest)
 		if err != nil {
 			tmpNeo4jHosts = append(tmpNeo4jHosts[:index], tmpNeo4jHosts[index+1:]...)
-			apimodel.Anlogger.Errorf(lc, "match.go : error making request to host [%s], result neo4j hosts %v : %v", eachHost, tmpNeo4jHosts, err)
+			apimodel.Anlogger.Errorf(lc, "match.go : error making httpRequest to host [%s], result neo4j hosts %v for userId [%s] : %v", eachHost, tmpNeo4jHosts, request.UserId, err)
 			continue
 		}
 		defer httpResponse.Body.Close()
 
 		respBody, err := ioutil.ReadAll(httpResponse.Body)
 		if err != nil {
-			apimodel.Anlogger.Errorf(lc, "match.go : error reading response body : %v", err)
+			apimodel.Anlogger.Errorf(lc, "match.go : error reading response body for userId [%s] : %v", request.UserId, err)
 			return commons.InternalLMMResp{}, fmt.Errorf("error reading response body : %v", err)
 		}
 
@@ -66,24 +66,24 @@ func handler(ctx context.Context, request commons.InternalLMMReq) (commons.Inter
 
 		if httpResponse.StatusCode != 200 {
 			tmpNeo4jHosts = append(tmpNeo4jHosts[:index], tmpNeo4jHosts[index+1:]...)
-			apimodel.Anlogger.Errorf(lc, "match.go : response from Neo4j NOT OK, requested host [%s], status code [%d] and status [%s], result neo4j hosts %v",
-				eachHost, httpResponse.StatusCode, httpResponse.Status, tmpNeo4jHosts)
+			apimodel.Anlogger.Errorf(lc, "match.go : response from Neo4j NOT OK, requested host [%s], status code [%d] and status [%s], result neo4j hosts %v for userId [%s]",
+				eachHost, httpResponse.StatusCode, httpResponse.Status, tmpNeo4jHosts, request.UserId)
 		} else {
 			var response commons.InternalLMMResp
 			err := json.Unmarshal(respBody, &response)
 			if err != nil {
-				apimodel.Anlogger.Errorf(lc, "match.go : error unmarshaling response body [%s] in commons.InternalLMMResp : %v", string(respBody), err)
+				apimodel.Anlogger.Errorf(lc, "match.go : error unmarshaling response body [%s] in commons.InternalLMMResp for userId [%s] : %v", string(respBody), request.UserId, err)
 				return commons.InternalLMMResp{}, fmt.Errorf("error unmarshaling response body [%s] in commons.InternalLMMResp : %v", string(respBody), err)
 			}
-			apimodel.Anlogger.Debugf(lc, "match.go : successfully handle match request in %v millis", commons.UnixTimeInMillis()-start)
+			apimodel.Anlogger.Debugf(lc, "match.go : successfully handle match httpRequest in %v millis for userId [%s]", commons.UnixTimeInMillis()-start, request.UserId)
 
 			//round robin load balancer
 			tmpNeo4jHosts = append(tmpNeo4jHosts[:index], tmpNeo4jHosts[index+1:]...)
-			apimodel.Anlogger.Debugf(lc, "match.go : result neo4j hosts %v", tmpNeo4jHosts)
+			apimodel.Anlogger.Debugf(lc, "match.go : result neo4j hosts %v for userId [%s]", tmpNeo4jHosts, request.UserId)
 			return response, nil
 		}
 	}
-	apimodel.Anlogger.Errorf(lc, "match.go : there is no alive hosts in %v", apimodel.Neo4jHosts)
+	apimodel.Anlogger.Errorf(lc, "match.go : there is no alive hosts in %v for userId [%s]", apimodel.Neo4jHosts, request.UserId)
 	return commons.InternalLMMResp{}, fmt.Errorf("match.go : there is no alive hosts in %v", apimodel.Neo4jHosts)
 }
 
