@@ -8,10 +8,12 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.graphaware.common.log.LoggerFactory;
 import com.ringoid.events.actions.UserBlockOtherEvent;
 import com.ringoid.events.actions.UserLikePhotoEvent;
 import com.ringoid.events.auth.UserCallDeleteHimselfEvent;
 import com.ringoid.events.internal.events.PhotoLikeEvent;
+import org.neo4j.logging.Log;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -19,6 +21,9 @@ import java.util.List;
 import static com.ringoid.events.EventTypes.ACTION_USER_LIKE_PHOTO;
 
 public class Sender {
+
+    private final Log log = LoggerFactory.getLogger(getClass());
+
     private final ObjectMapper objectMapper;
     private final String internalStreamName;
     private final String botSqsQueueUrl;
@@ -45,8 +50,7 @@ public class Sender {
                 sendEventIntoInternalQueue(event, internalStreamName, event.getUserId());
             }
         }
-        //todo:implement normal logging
-        System.out.println("(extension-report) successfully handle " + events.size() + " UserBlockOtherEvent events in " + (System.currentTimeMillis() - start) + " millis");
+        log.info("(extension-report) successfully handle %s UserBlockOtherEvent events in %s millis", events.size(), (System.currentTimeMillis() - start));
     }
 
     public void sendUserDeleteHimself(List<UserCallDeleteHimselfEvent> events) {
@@ -55,8 +59,7 @@ public class Sender {
             //todo:place for optimization (using batch)
             sendEventIntoInternalQueue(event, internalStreamName, event.getUserId());
         }
-        //todo:implement normal logging
-        System.out.println("(extension-report) successfully handle " + events.size() + " UserCallDeleteHimselfEvent events in " + (System.currentTimeMillis() - start) + " millis");
+        log.info("(extension-report) successfully handle %s UserCallDeleteHimselfEvent events in %s millis", events.size(), (System.currentTimeMillis() - start));
     }
 
     public void sendLikeEvents(List<PhotoLikeEvent> events, boolean botEnabled) {
@@ -74,8 +77,7 @@ public class Sender {
                 sendBotEvent(botEvent);
             }
         }
-        //todo:implement normal logging
-        System.out.println("(extension-report) successfully handle " + events.size() + " PhotoLikeEvent events in " + (System.currentTimeMillis() - start) + " millis");
+        log.info("(extension-report) successfully handle %s PhotoLikeEvent events in %s millis", events.size(), (System.currentTimeMillis() - start));
     }
 
     private void sendEventIntoInternalQueue(Object event, String streamName, String partitionKey) {
@@ -87,8 +89,7 @@ public class Sender {
             putRecordRequest.setPartitionKey(partitionKey);
             kinesis.putRecord(putRecordRequest);
         } catch (JsonProcessingException e) {
-            //todo:add normal logging
-            e.printStackTrace();
+            log.error("error send event into internal stream [%s]", streamName, e);
         }
     }
 
@@ -97,8 +98,7 @@ public class Sender {
             String strRep = objectMapper.writeValueAsString(event);
             sqs.sendMessage(botSqsQueueUrl, strRep);
         } catch (JsonProcessingException e) {
-            //todo:add normal logging
-            e.printStackTrace();
+            log.error("error sending bot's event", e);
         }
     }
 

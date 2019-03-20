@@ -2,6 +2,7 @@ package com.ringoid.graphaware;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.graphaware.common.log.LoggerFactory;
 import com.ringoid.ConversationProperties;
 import com.ringoid.Labels;
 import com.ringoid.MessageProperties;
@@ -38,6 +39,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.logging.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -71,6 +73,8 @@ import static com.ringoid.events.EventTypes.INTERNAL_RESIZE_PHOTO_EVENT;
 @Controller
 public class ActionController {
 
+    private final Log log = LoggerFactory.getLogger(getClass());
+
     private static final int BATCH_SIZE = 500;
     private static final int RETRIES = 5;
     private static final int BACKOFF = 100;
@@ -85,6 +89,7 @@ public class ActionController {
     @RequestMapping(value = "/hello", method = RequestMethod.GET)
     @ResponseBody
     public String hello() {
+        log.info("hello world endpoint");
         return "Hello World!";
     }
 
@@ -102,7 +107,7 @@ public class ActionController {
         ObjectMapper objectMapper = new ObjectMapper();
         LMMRequest request = objectMapper.readValue(body, LMMRequest.class);
         LMMResponse response = LikesYou.likesYou(request, database);
-        System.out.println("handle likes_you in " + (System.currentTimeMillis() - start) + " millis");
+        log.info("handle likes_you with result size %s in %s millis", response.getProfiles().size(), (System.currentTimeMillis() - start));
         return objectMapper.writeValueAsString(response);
     }
 
@@ -113,7 +118,7 @@ public class ActionController {
         ObjectMapper objectMapper = new ObjectMapper();
         LMMRequest request = objectMapper.readValue(body, LMMRequest.class);
         LMMResponse response = Matches.matches(request, database);
-        System.out.println("handle matches in " + (System.currentTimeMillis() - start) + " millis");
+        log.info("handle matches with result size %s in %s millis", response.getProfiles().size(), (System.currentTimeMillis() - start));
         return objectMapper.writeValueAsString(response);
     }
 
@@ -124,7 +129,7 @@ public class ActionController {
         ObjectMapper objectMapper = new ObjectMapper();
         LMMRequest request = objectMapper.readValue(body, LMMRequest.class);
         LMMResponse response = Messages.messages(request, database);
-        System.out.println("handle messages in " + (System.currentTimeMillis() - start) + " millis");
+        log.info("handle messages with result size %s in %s millis", response.getProfiles().size(), (System.currentTimeMillis() - start));
         return objectMapper.writeValueAsString(response);
     }
 
@@ -135,7 +140,7 @@ public class ActionController {
         ObjectMapper objectMapper = new ObjectMapper();
         NewFacesRequest request = objectMapper.readValue(body, NewFacesRequest.class);
         NewFacesResponse response = NewFaces.newFaces(request, database);
-        System.out.println("handle new_faces in " + (System.currentTimeMillis() - start) + " millis");
+        log.info("handle new_faces with result size %s in %s millis", response.getNewFaces().size(), (System.currentTimeMillis() - start));
         return objectMapper.writeValueAsString(response);
     }
 
@@ -168,7 +173,7 @@ public class ActionController {
                 batch.clear();
             }
 
-            System.out.println("(extension-report) complete handle " + actionCounter + " actions in " + (System.currentTimeMillis() - start) + " millis");
+            log.info("(extension-report) complete handle %s actions in %s millis", actionCounter, (System.currentTimeMillis() - start));
         } catch (IOException e) {
             throw new RuntimeException(e.getCause());
         }
@@ -183,10 +188,10 @@ public class ActionController {
                     doStuff(each, objectMapper);
                 }
                 tx.success();
-                System.out.println("(extension-report) successfully handle " + list.size() + " actions in " + (System.currentTimeMillis() - start) + " millis");
+                log.info("(extension-report) successfully handle %s actions in %s millis", list.size(), (System.currentTimeMillis() - start));
                 return;
             } catch (DeadlockDetectedException ex) {
-                System.out.println("Catch a DeadlockDetectedException");
+                log.warn("catch a DeadlockDetectedException on %s retries, lets sleep for %s millis", i, BACKOFF);
             }
 
             // Wait so that we don't immediately get into the same deadlock
@@ -262,6 +267,7 @@ public class ActionController {
             for (IndexDefinition each : schema.getIndexes(Label.label(label))) {
                 for (String eachProperty : each.getPropertyKeys()) {
                     if (Objects.equals(property, eachProperty)) {
+                        log.debug("index for :%s(%s) already exist", label, property);
                         return;
                     }
                 }
@@ -272,7 +278,7 @@ public class ActionController {
                     .create();
 
             tx.success();
-
+            log.info("index for :%s(%s) was successfully created", label, property);
         } finally {
             tx.close();
         }
