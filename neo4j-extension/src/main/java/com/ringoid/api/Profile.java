@@ -2,6 +2,7 @@ package com.ringoid.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -9,6 +10,11 @@ public class Profile {
     private String userId;
     private List<Photo> photos;
     private List<Message> messages;
+
+    public Profile() {
+        this.photos = new ArrayList<>();
+        this.messages = new ArrayList<>();
+    }
 
     public String getUserId() {
         return userId;

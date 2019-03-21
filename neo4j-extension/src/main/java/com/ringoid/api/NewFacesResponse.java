@@ -2,12 +2,17 @@ package com.ringoid.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class NewFacesResponse {
     private List<Profile> newFaces;
     private long lastActionTime;
+
+    public NewFacesResponse() {
+        this.newFaces = new ArrayList<>();
+    }
 
     public List<Profile> getNewFaces() {
         return newFaces;
