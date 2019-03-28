@@ -73,6 +73,7 @@ public class NewFaces {
             Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), request.getUserId());
             if (Objects.isNull(sourceUser)) {
                 log.warn("request new_faces for user that not exist, userId [%s]", request.getUserId());
+                response.setLastActionTime(request.getRequestedLastActionTime() + 1);
                 tx.success();
                 return response;
             }
