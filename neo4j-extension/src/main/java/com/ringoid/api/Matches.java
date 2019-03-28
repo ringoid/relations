@@ -1,5 +1,6 @@
 package com.ringoid.api;
 
+import com.graphaware.common.log.LoggerFactory;
 import com.ringoid.Relationships;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -7,9 +8,11 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.logging.Log;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
@@ -19,12 +22,18 @@ import static com.ringoid.api.Utils.sortLmmProfiles;
 import static com.ringoid.api.Utils.whoHasLikeMatchOrMessageWithMe;
 
 public class Matches {
+    private final static Log log = LoggerFactory.getLogger(Matches.class);
 
     public static LMMResponse matches(LMMRequest request, GraphDatabaseService database) {
         LMMResponse response = new LMMResponse();
 
         try (Transaction tx = database.beginTx()) {
             Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), request.getUserId());
+            if (Objects.isNull(sourceUser)) {
+                log.warn("request matches for non exist user, userId [%s]", request.getUserId());
+                tx.success();
+                return response;
+            }
             long actionTime = (Long) sourceUser.getProperty(LAST_ACTION_TIME.getPropertyName(), 0L);
             response.setLastActionTime(actionTime);
             if (request.getRequestedLastActionTime() <= actionTime) {

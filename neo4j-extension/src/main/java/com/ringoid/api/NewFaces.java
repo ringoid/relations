@@ -1,6 +1,7 @@
 package com.ringoid.api;
 
 import com.google.common.collect.Lists;
+import com.graphaware.common.log.LoggerFactory;
 import com.ringoid.PhotoProperties;
 import com.ringoid.Relationships;
 import org.neo4j.graphdb.Direction;
@@ -11,6 +12,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.logging.Log;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,6 +32,8 @@ import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
 
 public class NewFaces {
+
+    private final static Log log = LoggerFactory.getLogger(NewFaces.class);
 
     private static final int MAX_LOOP_NUM = 4;
 
@@ -67,6 +71,11 @@ public class NewFaces {
         NewFacesResponse response = new NewFacesResponse();
         try (Transaction tx = database.beginTx()) {
             Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), request.getUserId());
+            if (Objects.isNull(sourceUser)) {
+                log.warn("request new_faces for user that not exist, userId [%s]", request.getUserId());
+                tx.success();
+                return response;
+            }
             long actionTime = (Long) sourceUser.getProperty(LAST_ACTION_TIME.getPropertyName(), 0L);
             response.setLastActionTime(actionTime);
             if (request.getRequestedLastActionTime() <= actionTime) {

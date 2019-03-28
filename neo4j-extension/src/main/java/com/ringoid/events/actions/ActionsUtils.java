@@ -1,5 +1,6 @@
 package com.ringoid.events.actions;
 
+import com.graphaware.common.log.LoggerFactory;
 import com.ringoid.ConversationProperties;
 import com.ringoid.Labels;
 import com.ringoid.MessageProperties;
@@ -13,6 +14,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.logging.Log;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -41,6 +43,7 @@ import static com.ringoid.common.UtilsInternaly.getUploadedPhoto;
 import static com.ringoid.common.UtilsInternaly.updateLastActionTime;
 
 public class ActionsUtils {
+    private final static Log log = LoggerFactory.getLogger(ActionsUtils.class);
 
     public static void message(UserMessageEvent event, GraphDatabaseService database) {
         Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getUserId());
@@ -51,10 +54,16 @@ public class ActionsUtils {
         Node targetUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getTargetUserId());
         if (Objects.isNull(sourceUser) || Objects.isNull(targetUser)
                 || sourceUser.getId() == targetUser.getId()) {
+            log.warn("message action for non exist user or for the same users, " +
+                            "sourceUser exist [%s], targetUser exist [%s] : source userId [%s], target userId [%s]",
+                    String.valueOf(Objects.nonNull(sourceUser)), String.valueOf(Objects.nonNull(targetUser)),
+                    event.getUserId(), event.getTargetUserId());
             return;
         }
 
         if (doWeHaveBlockInternaly(sourceUser, targetUser, database)) {
+            log.warn("can not apply message action coz there is a block already, source userId [%s], target userId [%s]",
+                    event.getUserId(), event.getTargetUserId());
             return;
         }
 
@@ -143,10 +152,16 @@ public class ActionsUtils {
         Node targetUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getTargetUserId());
         if (Objects.isNull(sourceUser) || Objects.isNull(targetUser)
                 || sourceUser.getId() == targetUser.getId()) {
+            log.warn("unlike action for non exist user or for the same users, " +
+                            "sourceUser exist [%s], targetUser exist [%s] : source userId [%s], target userId [%s]",
+                    String.valueOf(Objects.nonNull(sourceUser)), String.valueOf(Objects.nonNull(targetUser)),
+                    event.getUserId(), event.getTargetUserId());
             return;
         }
 
         if (doWeHaveBlockInternaly(sourceUser, targetUser, database)) {
+            log.warn("can not apply unlike action coz there is a block already, source userId [%s], target userId [%s]",
+                    event.getUserId(), event.getTargetUserId());
             return;
         }
 
@@ -242,12 +257,19 @@ public class ActionsUtils {
         Node targetUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getTargetUserId());
         if (Objects.isNull(sourceUser) || Objects.isNull(targetUser)
                 || sourceUser.getId() == targetUser.getId()) {
+            log.warn("block action for non exist user or for the same users, " +
+                            "sourceUser exist [%s], targetUser exist [%s] : source userId [%s], target userId [%s]",
+                    String.valueOf(Objects.nonNull(sourceUser)), String.valueOf(Objects.nonNull(targetUser)),
+                    event.getUserId(), event.getTargetUserId());
             return;
         }
 
         if (doWeHaveBlockInternaly(sourceUser, targetUser, database)) {
+            log.warn("can not apply block action coz there is a block already, source userId [%s], target userId [%s]",
+                    event.getUserId(), event.getTargetUserId());
             return;
         }
+
 
         Set<Relationships> existOutgoingRelationshipsBetweenProfiles = getAllRelationshipTypes(sourceUser, targetUser, Direction.OUTGOING);
         if (!existOutgoingRelationshipsBetweenProfiles.contains(Relationships.VIEW) &&
@@ -326,12 +348,19 @@ public class ActionsUtils {
         Node targetUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getTargetUserId());
         if (Objects.isNull(sourceUser) || Objects.isNull(targetUser)
                 || sourceUser.getId() == targetUser.getId()) {
+            log.warn("view action for non exist user or for the same users, " +
+                            "sourceUser exist [%s], targetUser exist [%s] : source userId [%s], target userId [%s]",
+                    String.valueOf(Objects.nonNull(sourceUser)), String.valueOf(Objects.nonNull(targetUser)),
+                    event.getUserId(), event.getTargetUserId());
             return;
         }
 
         if (doWeHaveBlockInternaly(sourceUser, targetUser, database)) {
+            log.warn("can not apply view action coz there is a block already, source userId [%s], target userId [%s]",
+                    event.getUserId(), event.getTargetUserId());
             return;
         }
+
         ViewRelationshipSource source = ViewRelationshipSource.fromString(event.getSource());
         Relationships targetPhotoRelationship = Relationships.VIEW;
         Relationships targetProfileRelationship;
@@ -407,10 +436,16 @@ public class ActionsUtils {
         Node targetUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getTargetUserId());
         if (Objects.isNull(sourceUser) || Objects.isNull(targetUser)
                 || sourceUser.getId() == targetUser.getId()) {
+            log.warn("like action for non exist user or for the same users, " +
+                            "sourceUser exist [%s], targetUser exist [%s] : source userId [%s], target userId [%s]",
+                    String.valueOf(Objects.nonNull(sourceUser)), String.valueOf(Objects.nonNull(targetUser)),
+                    event.getUserId(), event.getTargetUserId());
             return;
         }
 
         if (doWeHaveBlockInternaly(sourceUser, targetUser, database)) {
+            log.warn("can not apply like action coz there is a block already, source userId [%s], target userId [%s]",
+                    event.getUserId(), event.getTargetUserId());
             return;
         }
 
