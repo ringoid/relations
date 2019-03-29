@@ -28,7 +28,6 @@ import com.ringoid.events.auth.UserCallDeleteHimselfEvent;
 import com.ringoid.events.auth.UserClaimReferralCodeEvent;
 import com.ringoid.events.auth.UserOnlineEvent;
 import com.ringoid.events.auth.UserProfileCreatedEvent;
-import com.ringoid.events.auth.UserSettingsUpdatedEvent;
 import com.ringoid.events.image.ImageUtilsInternaly;
 import com.ringoid.events.image.ResizePhotoEvent;
 import com.ringoid.events.image.UserDeletePhotoEvent;
@@ -64,7 +63,6 @@ import static com.ringoid.events.EventTypes.AUTH_USER_CALL_DELETE_HIMSELF;
 import static com.ringoid.events.EventTypes.AUTH_USER_CLAIM_REFERRAL_CODE;
 import static com.ringoid.events.EventTypes.AUTH_USER_ONLINE;
 import static com.ringoid.events.EventTypes.AUTH_USER_PROFILE_CREATED;
-import static com.ringoid.events.EventTypes.AUTH_USER_SETTINGS_UPDATED;
 import static com.ringoid.events.EventTypes.IMAGE_USER_DELETE_PHOTO;
 import static com.ringoid.events.EventTypes.IMAGE_USER_UPLOAD_PHOTO;
 import static com.ringoid.events.EventTypes.INTERNAL_RESIZE_PHOTO_EVENT;
@@ -215,9 +213,6 @@ public class ActionController {
         } else if (Objects.equals(eventType, AUTH_USER_PROFILE_CREATED.name())) {
             UserProfileCreatedEvent event = objectMapper.readValue(each.traverse(), UserProfileCreatedEvent.class);
             AuthUtilsInternaly.createProfileInternaly(event, database);
-        } else if (Objects.equals(eventType, AUTH_USER_SETTINGS_UPDATED.name())) {
-            UserSettingsUpdatedEvent event = objectMapper.readValue(each.traverse(), UserSettingsUpdatedEvent.class);
-            AuthUtilsInternaly.updateSettingsInternaly(event, database);
         } else if (Objects.equals(eventType, IMAGE_USER_UPLOAD_PHOTO.name())) {
             UserUploadedPhotoEvent event = objectMapper.readValue(each.traverse(), UserUploadedPhotoEvent.class);
             ImageUtilsInternaly.uploadPhotoInternaly(event, database);

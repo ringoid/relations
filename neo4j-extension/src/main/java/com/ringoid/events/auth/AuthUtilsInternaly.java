@@ -49,13 +49,6 @@ public class AuthUtilsInternaly {
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
                     SEX.getPropertyName(), YEAR.getPropertyName(), CREATED.getPropertyName(), LAST_ACTION_TIME.getPropertyName(), LIKE_COUNTER.getPropertyName(), REFERRAL_ID.getPropertyName(), PRIVATE_KEY.getPropertyName(), LAST_ONLINE_TIME.getPropertyName());
 
-    private static final String UPDATE_SETTINGS =
-            String.format("MATCH (n:%s {%s: $userIdValue}) " +
-                            "SET n.%s = $safeDistanceInMeterValue",
-                    PERSON.getLabelName(), USER_ID.getPropertyName(),
-                    SAFE_DISTANCE_IN_METER.getPropertyName());
-
-
     private static final String CLAIM_REFERRAL_CODE =
             String.format("MATCH (n:%s {%s: $userIdValue}) " +
                             "SET n.%s = $referral",
@@ -146,13 +139,6 @@ public class AuthUtilsInternaly {
         parameters.put("createdValue", event.getUnixTime());
         parameters.put("onlineUserTime", event.getUnixTime());
         database.execute(CREATE_PROFILE, parameters);
-    }
-
-    public static void updateSettingsInternaly(UserSettingsUpdatedEvent event, GraphDatabaseService database) {
-        final Map<String, Object> parameters = new HashMap<>();
-        parameters.put("userIdValue", event.getUserId());
-        parameters.put("safeDistanceInMeterValue", event.getSafeDistanceInMeter());
-        database.execute(UPDATE_SETTINGS, parameters);
     }
 
     public static void claimReferralCodeInternaly(UserClaimReferralCodeEvent event, GraphDatabaseService database) {

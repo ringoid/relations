@@ -31,7 +31,7 @@ public class Messages {
             Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), request.getUserId());
             if (Objects.isNull(sourceUser)) {
                 log.warn("request messages for non exist user, userId [%s]", request.getUserId());
-                response.setLastActionTime(request.getRequestedLastActionTime() + 1);
+                response.setLastActionTime(request.getRequestedLastActionTime() - 1);
                 tx.success();
                 return response;
             }
