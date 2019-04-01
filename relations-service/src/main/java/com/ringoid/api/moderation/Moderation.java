@@ -40,6 +40,7 @@ import static com.ringoid.BlockProperties.BLOCK_REASON_NUM;
 import static com.ringoid.Labels.HIDDEN;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
+import static com.ringoid.Labels.RESIZED_PHOTO;
 import static com.ringoid.PersonProperties.MODERATION_STARTED_AT;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.PhotoProperties.PHOTO_ID;
@@ -84,9 +85,9 @@ public class Moderation {
                             "WITH DISTINCT targetUser LIMIT $limit " +//5
                             "MATCH (ph:%s)<-[relP:%s|%s]-(targetUser) WITH targetUser, relP, ph " +//5.1
                             "OPTIONAL MATCH (ph)<-[br:%s]-() " +//6
-                            "WITH targetUser, ph, relP, br " +//7
+                            "WITH targetUser, ph, relP, count(br) AS %s, collect(br.%s) as %s " +//7
                             "OPTIONAL MATCH (ph)<-[ll:%s]-() " +//8
-                            "RETURN targetUser.%s AS %s, ph.%s AS %s, ph.%s AS %s, type(relP)='%s' AS %s, count(br) AS %s, collect(br.%s) as %s, count(ll) AS %s, ph.%s as %s " +//9
+                            "RETURN targetUser.%s AS %s, ph.%s AS %s, ph.%s AS %s, type(relP)='%s' AS %s, count(ll) AS %s, ph.%s as %s, %s, %s " +//9
                             "ORDER BY %s DESC, %s DESC, %s DESC",
 
                     PHOTO.getLabelName(), Relationships.UPLOAD_PHOTO.name(), Relationships.HIDE_PHOTO.name(), PERSON.getLabelName(), Relationships.BLOCK.name(), PERSON.getLabelName(),//1
@@ -95,8 +96,9 @@ public class Moderation {
                     MODERATION_STARTED_AT.getPropertyName(), MODERATION_STARTED_AT.getPropertyName(),//4
                     PHOTO.getLabelName(), Relationships.UPLOAD_PHOTO.name(), Relationships.HIDE_PHOTO.name(),//5.1
                     Relationships.BLOCK.name(),//6
+                    HOW_MANY_BLOCK_PROPERTY, BLOCK_REASON_NUM.getPropertyName(), LIST_BLOCK_REASONS,//7
                     Relationships.LIKE.name(),//8
-                    USER_ID.getPropertyName(), USER_ID_PROPERY, PHOTO_ID.getPropertyName(), PHOTO_ID_PROPERTY, PHOTO_ID_PROPERTY, PHOTO_S3_KEY.getPropertyName(), Relationships.HIDE_PHOTO.name(), IS_IT_HIDDEN_PROPERTY, HOW_MANY_BLOCK_PROPERTY, BLOCK_REASON_NUM.getPropertyName(), LIST_BLOCK_REASONS, HOW_MANY_LIKE_PROPERTY, PhotoProperties.NEED_TO_MODERATE.getPropertyName(), NEW_ONE_PROPERTY,//9
+                    USER_ID.getPropertyName(), USER_ID_PROPERY, PHOTO_ID.getPropertyName(), PHOTO_ID_PROPERTY, PHOTO_S3_KEY.getPropertyName(), S3_PHOTO_KEY, Relationships.HIDE_PHOTO.name(), IS_IT_HIDDEN_PROPERTY, HOW_MANY_LIKE_PROPERTY, PhotoProperties.NEED_TO_MODERATE.getPropertyName(), NEW_ONE_PROPERTY, HOW_MANY_BLOCK_PROPERTY, LIST_BLOCK_REASONS,//9
                     IS_IT_HIDDEN_PROPERTY, HOW_MANY_BLOCK_PROPERTY, HOW_MANY_LIKE_PROPERTY
             );
     private final static String MARK_THAT_MODERATION_IN_PROGRESS =
@@ -104,18 +106,24 @@ public class Moderation {
                     "MATCH (n:%s {%s:$targetUserId}) SET n.%s = $startModerationTime",
                     PERSON.getLabelName(), USER_ID.getPropertyName(), MODERATION_STARTED_AT.getPropertyName()
             );
+
     private final static String HIDE_PHOTO =
             String.format(
                     "MATCH (n:%s {%s:$targetUserId})-[upl:%s]->(ph:%s {%s:$targetPhotoId}) " +//1
                             "DELETE upl " +//2
                             "MERGE (n)-[h:%s]->(ph) " +//3
                             "ON CREATE SET h.%s = $time, h.%s = $moderator, ph.%s = false " +//4
-                            "ON MATCH SET h.%s = $time, h.%s = $moderator, ph.%s = false",//5
+                            "ON MATCH SET h.%s = $time, h.%s = $moderator, ph.%s = false " +//5
+                            "WITH ph " +//6
+                            "OPTIONAL MATCH (ph)-[:%s]->(rs:%s) " +//7
+                            "DETACH DELETE rs",//8
                     PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), PHOTO_ID.getPropertyName(),//1
                     Relationships.HIDE_PHOTO.name(),//3
                     HideProperties.HIDE_AT.getPropertyName(), HideProperties.HIDE_REASON.getPropertyName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName(),//4
-                    HideProperties.HIDE_AT.getPropertyName(), HideProperties.HIDE_REASON.getPropertyName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName()//5
+                    HideProperties.HIDE_AT.getPropertyName(), HideProperties.HIDE_REASON.getPropertyName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName(),//5
+                    Relationships.RESIZED.name(), RESIZED_PHOTO.getLabelName()//7
             );
+
     private final static String UNHIDE_PHOTO =
             String.format(
                     "MATCH (n:%s {%s:$targetUserId})-[upl:%s]->(ph:%s {%s:$targetPhotoId}) " +//1
@@ -197,21 +205,36 @@ public class Moderation {
         ModerationResponse response = new ModerationResponse();
         switch (request.getQueryType()) {
             case "reported": {
+//                {
+//                    "queryType": "reported",
+//                    "limit": 10
+//                }
+
                 List<ProfileObj> result = reported(parameters);
-//                markPersonInModerationProccess(result);
+                markPersonInModerationProccess(result);
                 response.setProfiles(result);
                 return response;
             }
             case "unReported": {
+//                {
+//                    "queryType": "unReported",
+//                    "limit": 10
+//                }
+
                 List<ProfileObj> result = unReported(parameters);
                 markPersonInModerationProccess(result);
                 response.setProfiles(result);
                 return response;
             }
             case "hide": {
+//                {
+//                    "queryType": "hide",
+//                        "limit": 100,
+//                        "profilePhotoMap":{
+//                    "3162d6f0d83f36032d6e8d6c1e9455aad7ef91e0": "origin_4531f21d90c4c6e4fa933f3333aa41bc2a3c2692photo_s3_key"
+//                }
+//                }
                 hidePhoto(request.getProfilePhotoMap());
-                //todo:implement event
-                //todo:implement in image service
                 return response;
             }
             //todo:mb later, now it's too complicated
@@ -220,6 +243,14 @@ public class Moderation {
 //                return response;
 //            }
             case "complete": {
+//                {
+//                    "queryType": "complete",
+//                        "limit": 100,
+//                        "profilePhotoMap":{
+//                    "3162d6f0d83f36032d6e8d6c1e9455aad7ef91e0": "origin_4531f21d90c4c6e4fa933f3333aa41bc2a3c2692photo_s3_key"
+//                }
+//                }
+
                 complete(request.getProfilePhotoMap());
                 return response;
             }
@@ -300,9 +331,9 @@ public class Moderation {
         }
     }
 
-    private void unHidePhoto(Map<String, String> photos) {
-        execute(UNHIDE_PHOTO, photos);
-    }
+//    private void unHidePhoto(Map<String, String> photos) {
+//        execute(UNHIDE_PHOTO, photos);
+//    }
 
     private List<ProfileObj> reported(Map<String, Object> parameters) {
         Map<String, List<PhotoObj>> listMap = new HashMap<>();
@@ -333,7 +364,7 @@ public class Moderation {
                     }
 
                     log.info("{} profiles were found for reported moderation request", userOrder.size());
-                    log.debug("{}", REPORTED);
+                    log.info("{}", REPORTED);
                     return 1;
                 }
             });

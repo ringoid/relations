@@ -179,6 +179,7 @@ Resources:
       Description: Moderation function
       Policies:
         - SecretsManagerReadWrite
+        - AmazonKinesisFullAccess
 
   #----------------- Bots section ------------------------
   BotSqsQueue:
