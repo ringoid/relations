@@ -49,6 +49,10 @@ Mappings:
       test: test-moderation-relationships
       stage: stage-moderation-relationships
       prod: prod-moderation-relationships
+    RedyForPushFunction:
+      test: test-readyforpush-relationships
+      stage: stage-readyforpush-relationships
+      prod: prod-readyforpush-relationships
 
   BotSqsResourcesName:
     BotSqsQueue:
@@ -170,6 +174,18 @@ Resources:
       Policies:
         - SecretsManagerReadWrite
 
+  RedyForPushFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: ready_for_push
+      CodeUri: ./ready_for_push.zip
+      FunctionName: !FindInMap [FunctionName, RedyForPushFunction, !Ref Env]
+      Description: Ready for Push Relationsips function
+      Policies:
+        - SecretsManagerReadWrite
+        - AmazonSQSFullAccess
+
   ModerationFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -206,6 +222,10 @@ Outputs:
     Value: !FindInMap [FunctionName, MessagesFunction, !Ref Env]
     Export:
       Name: !Join [ "-", [ !Ref Env, MessagesFunctionExport] ]
+  RedyForPushFunctionExport:
+    Value: !FindInMap [FunctionName, RedyForPushFunction, !Ref Env]
+    Export:
+      Name: !Join [ "-", [ !Ref Env, RedyForPushFunctionExport] ]
   InternalCleanDbRelationshipsFunctionExport:
     Value: !FindInMap [FunctionName, InternalCleanDbRelationshipsFunction, !Ref Env]
     Export:

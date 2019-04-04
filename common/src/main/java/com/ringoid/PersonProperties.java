@@ -12,7 +12,11 @@ public enum PersonProperties {
     NEED_TO_MODERATE("need_to_moderate"),
     MODERATION_STARTED_AT("moderation_started_at"),
     REFERRAL_ID("referral_id"),
-    PRIVATE_KEY("private_key");
+    PRIVATE_KEY("private_key"),
+    SETTINGS_LOCALE("settings_locale"),
+    SETTINGS_PUSH("settings_push"),
+    SETTINGS_TIMEZONE("settings_timezone"),
+    PUSH_WAS_SENT_AT("push_was_sent_at");
 
     private String propertyName;
 

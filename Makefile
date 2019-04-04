@@ -9,6 +9,7 @@ build-go:
 	GOOS=linux go build likes-you/likes_you.go
 	GOOS=linux go build match-you/match.go
 	GOOS=linux go build message-you/messages.go
+	GOOS=linux go build ready-for-push/ready_for_push.go
 
 zip-go: build-go
 	@echo '--- Zip Go modules ---'
@@ -17,6 +18,7 @@ zip-go: build-go
 	zip likes_you.zip ./likes_you
 	zip match.zip ./match
 	zip messages.zip ./messages
+	zip ready_for_push.zip ./ready_for_push
 
 buildgradle:
 	@echo '--- Building kinesis-consumer-relationships function ---'
@@ -56,4 +58,6 @@ clean:
 	rm -rf match
 	rm -rf messages.zip
 	rm -rf messages
+	rm -rf ready_for_push
+	rm -rf ready_for_push.zip
 

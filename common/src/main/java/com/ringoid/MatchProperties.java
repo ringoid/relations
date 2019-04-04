@@ -1,12 +1,11 @@
 package com.ringoid;
 
-public enum LikeProperties {
-    LIKE_COUNT("like_count"),
-    LIKE_AT("like_at");
+public enum MatchProperties {
+    MATCH_AT("match_at");
 
     private String propertyName;
 
-    LikeProperties(String propertyName) {
+    MatchProperties(String propertyName) {
         this.propertyName = propertyName;
     }
 

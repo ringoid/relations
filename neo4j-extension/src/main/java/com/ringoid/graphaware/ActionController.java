@@ -16,6 +16,9 @@ import com.ringoid.api.Messages;
 import com.ringoid.api.NewFaces;
 import com.ringoid.api.NewFacesRequest;
 import com.ringoid.api.NewFacesResponse;
+import com.ringoid.api.PushRequest;
+import com.ringoid.api.PushResponse;
+import com.ringoid.api.WhoReadyForPush;
 import com.ringoid.events.actions.ActionsUtils;
 import com.ringoid.events.actions.UserBlockOtherEvent;
 import com.ringoid.events.actions.UserLikePhotoEvent;
@@ -28,10 +31,13 @@ import com.ringoid.events.auth.UserCallDeleteHimselfEvent;
 import com.ringoid.events.auth.UserClaimReferralCodeEvent;
 import com.ringoid.events.auth.UserOnlineEvent;
 import com.ringoid.events.auth.UserProfileCreatedEvent;
+import com.ringoid.events.auth.UserSettingsUpdatedEvent;
 import com.ringoid.events.image.ImageUtilsInternaly;
 import com.ringoid.events.image.ResizePhotoEvent;
 import com.ringoid.events.image.UserDeletePhotoEvent;
 import com.ringoid.events.image.UserUploadedPhotoEvent;
+import com.ringoid.events.push.PushUtils;
+import com.ringoid.events.push.PushWasSentEvent;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -63,9 +69,11 @@ import static com.ringoid.events.EventTypes.AUTH_USER_CALL_DELETE_HIMSELF;
 import static com.ringoid.events.EventTypes.AUTH_USER_CLAIM_REFERRAL_CODE;
 import static com.ringoid.events.EventTypes.AUTH_USER_ONLINE;
 import static com.ringoid.events.EventTypes.AUTH_USER_PROFILE_CREATED;
+import static com.ringoid.events.EventTypes.AUTH_USER_SETTINGS_UPDATED;
 import static com.ringoid.events.EventTypes.IMAGE_USER_DELETE_PHOTO;
 import static com.ringoid.events.EventTypes.IMAGE_USER_UPLOAD_PHOTO;
 import static com.ringoid.events.EventTypes.INTERNAL_RESIZE_PHOTO_EVENT;
+import static com.ringoid.events.EventTypes.PUSH_WAS_SENT;
 
 /**
  * Sample REST API for counting all nodes in the database.
@@ -141,6 +149,17 @@ public class ActionController {
         NewFacesRequest request = objectMapper.readValue(body, NewFacesRequest.class);
         NewFacesResponse response = NewFaces.newFaces(request, database);
         log.info("handle new_faces with result size %s in %s millis", response.getNewFaces().size(), (System.currentTimeMillis() - start));
+        return objectMapper.writeValueAsString(response);
+    }
+
+    @RequestMapping(value = "/ready_for_push", method = RequestMethod.GET)
+    @ResponseBody
+    public String readyForPush(@RequestBody String body) throws IOException {
+        long start = System.currentTimeMillis();
+        ObjectMapper objectMapper = new ObjectMapper();
+        PushRequest request = objectMapper.readValue(body, PushRequest.class);
+        PushResponse response = WhoReadyForPush.whoAreReady(request, database);
+        log.info("handle ready_for_push with result size %s in %s millis", response.getUsers().size(), (System.currentTimeMillis() - start));
         return objectMapper.writeValueAsString(response);
     }
 
@@ -237,6 +256,9 @@ public class ActionController {
         } else if (Objects.equals(eventType, ACTION_USER_BLOCK_OTHER.name())) {
             UserBlockOtherEvent event = objectMapper.readValue(each.traverse(), UserBlockOtherEvent.class);
             ActionsUtils.block(event, database);
+        } else if (Objects.equals(eventType, AUTH_USER_SETTINGS_UPDATED.name())) {
+            UserSettingsUpdatedEvent event = objectMapper.readValue(each.traverse(), UserSettingsUpdatedEvent.class);
+            AuthUtilsInternaly.updateSettings(event, database);
         } else if (Objects.equals(eventType, ACTION_USER_MESSAGE.name())) {
             UserMessageEvent event = objectMapper.readValue(each.traverse(), UserMessageEvent.class);
             ActionsUtils.message(event, database);
@@ -246,6 +268,9 @@ public class ActionController {
         } else if (Objects.equals(eventType, ACTION_USER_VIEW_CHAT.name())) {
             UserViewChatEvent event = objectMapper.readValue(each.traverse(), UserViewChatEvent.class);
             ActionsUtils.viewChat(event, database);
+        } else if (Objects.equals(eventType, PUSH_WAS_SENT.name())) {
+            PushWasSentEvent event = objectMapper.readValue(each.traverse(), PushWasSentEvent.class);
+            PushUtils.pushWasSent(event, database);
         }
     }
 
@@ -254,6 +279,10 @@ public class ActionController {
         createIndex(Labels.PERSON.getLabelName(), PersonProperties.SEX.getPropertyName(), database);
         createIndex(Labels.PERSON.getLabelName(), PersonProperties.NEED_TO_MODERATE.getPropertyName(), database);
         createIndex(Labels.PERSON.getLabelName(), PersonProperties.LIKE_COUNTER.getPropertyName(), database);
+        createIndex(Labels.PERSON.getLabelName(), PersonProperties.PUSH_WAS_SENT_AT.getPropertyName(), database);
+        createIndex(Labels.PERSON.getLabelName(), PersonProperties.LAST_ONLINE_TIME.getPropertyName(), database);
+        createIndex(Labels.PERSON.getLabelName(), PersonProperties.CREATED.getPropertyName(), database);
+
         createIndex(Labels.PHOTO.getLabelName(), PhotoProperties.PHOTO_ID.getPropertyName(), database);
         createIndex(Labels.PHOTO.getLabelName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName(), database);
         createIndex(Labels.CONVERSATION.getLabelName(), ConversationProperties.CONVERSATION_ID.getPropertyName(), database);

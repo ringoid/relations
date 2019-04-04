@@ -3,6 +3,7 @@ package com.ringoid.events.actions;
 import com.graphaware.common.log.LoggerFactory;
 import com.ringoid.ConversationProperties;
 import com.ringoid.Labels;
+import com.ringoid.MatchProperties;
 import com.ringoid.MessageProperties;
 import com.ringoid.PersonProperties;
 import com.ringoid.PhotoProperties;
@@ -26,6 +27,7 @@ import java.util.Set;
 import static com.ringoid.BlockProperties.BLOCK_REASON_NUM;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
+import static com.ringoid.LikeProperties.LIKE_AT;
 import static com.ringoid.LikeProperties.LIKE_COUNT;
 import static com.ringoid.MessageRelationshipProperties.MSG_AT;
 import static com.ringoid.MessageRelationshipProperties.MSG_COUNT;
@@ -502,7 +504,9 @@ public class ActionsUtils {
 
         //if there is no any relationships except view of any kind, then create a like
         if (existOutgoingRelationshipsBetweenProfiles.isEmpty() && existIncomingRelationshipsBetweenProfiles.isEmpty()) {
-            getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, Relationships.LIKE.name());
+            Relationship rel = getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, Relationships.LIKE.name());
+            //need for push
+            rel.setProperty(LIKE_AT.getPropertyName(), event.getLikedAt());
             return;
         }
 
@@ -549,7 +553,7 @@ public class ActionsUtils {
                     if (each.isType(RelationshipType.withName(Relationships.MESSAGE.name()))) {
                         //create a message
                         Relationship messRel = getOrCreateRelationship(targetUser, sourceUser, Direction.OUTGOING, Relationships.MESSAGE.name());
-                        messRel.setProperty(MSG_AT.getPropertyName(), System.currentTimeMillis());
+                        messRel.setProperty(MSG_AT.getPropertyName(), event.getLikedAt());
                         return;
                     }
                 }
@@ -561,13 +565,14 @@ public class ActionsUtils {
                     if (each.isType(RelationshipType.withName(Relationships.MESSAGE.name()))) {
                         //create a message
                         Relationship messRel = getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, Relationships.MESSAGE.name());
-                        messRel.setProperty(MSG_AT.getPropertyName(), System.currentTimeMillis());
+                        messRel.setProperty(MSG_AT.getPropertyName(), event.getLikedAt());
                         return;
                     }
                 }
             }
 
-            getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, Relationships.MATCH.name());
+            Relationship rel = getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, Relationships.MATCH.name());
+            rel.setProperty(MatchProperties.MATCH_AT.getPropertyName(), event.getLikedAt());
         }
     }
 

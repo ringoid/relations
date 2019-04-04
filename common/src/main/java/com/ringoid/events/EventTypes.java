@@ -24,5 +24,7 @@ public enum EventTypes {
     INTERNAL_HIDE_PHOTO_EVENT,//this event goes to image service
 
     FEEDS_NEW_FACES_SEEN_PROFILES,
-    INTERNAL_RESIZE_PHOTO_EVENT
+    INTERNAL_RESIZE_PHOTO_EVENT,
+
+    PUSH_WAS_SENT
 }

@@ -24,6 +24,9 @@ import static com.ringoid.PhotoProperties.PHOTO_ID;
 public class UtilsInternaly {
 
     public static void deleteUserConversations(Node sourceNode) {
+        if (Objects.isNull(sourceNode)) {
+            return;
+        }
         Iterable<Relationship> takeParts = sourceNode.getRelationships(
                 RelationshipType.withName(Relationships.TAKE_PART_IN_CONVERSATION.name()),
                 Direction.OUTGOING);

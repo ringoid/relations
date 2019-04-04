@@ -25,7 +25,9 @@ import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
 import static com.ringoid.PersonProperties.PRIVATE_KEY;
 import static com.ringoid.PersonProperties.REFERRAL_ID;
-import static com.ringoid.PersonProperties.SAFE_DISTANCE_IN_METER;
+import static com.ringoid.PersonProperties.SETTINGS_LOCALE;
+import static com.ringoid.PersonProperties.SETTINGS_PUSH;
+import static com.ringoid.PersonProperties.SETTINGS_TIMEZONE;
 import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.PersonProperties.YEAR;
@@ -153,5 +155,34 @@ public class AuthUtilsInternaly {
         parameters.put("userIdValue", event.getUserId());
         parameters.put("onlineUserTime", event.getUnixTime());
         database.execute(UPDATE_USER_ONLINE_TIME, parameters);
+    }
+
+    public static void updateSettings(UserSettingsUpdatedEvent event, GraphDatabaseService database) {
+        final Map<String, Object> parameters = new HashMap<>();
+        parameters.put("userIdValue", event.getUserId());
+        if (event.getWasLocaleChanged()) {
+            parameters.put("locale", event.getLocale());
+            String query = String.format(
+                    "MATCH (n:%s {%s: $userIdValue}) SET n.%s = $locale",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), SETTINGS_LOCALE.getPropertyName()
+            );
+            database.execute(query, parameters);
+        }
+        if (event.getWasPushChanged()) {
+            parameters.put("push", event.getPush());
+            String query = String.format(
+                    "MATCH (n:%s {%s: $userIdValue}) SET n.%s = $push",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), SETTINGS_PUSH.getPropertyName()
+            );
+            database.execute(query, parameters);
+        }
+        if (event.getWasTimeZoneChanged()) {
+            parameters.put("timezone", event.getTimeZone());
+            String query = String.format(
+                    "MATCH (n:%s {%s: $userIdValue}) SET n.%s = $timezone",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), SETTINGS_TIMEZONE.getPropertyName()
+            );
+            database.execute(query, parameters);
+        }
     }
 }
