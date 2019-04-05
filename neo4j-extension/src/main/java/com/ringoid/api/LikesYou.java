@@ -47,6 +47,10 @@ public class LikesYou {
                     Profile prof = new Profile();
                     prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
                     prof.setPhotos(Utils.resizedPhotos(sortLmmPhotos(sourceUser, eachProfile), request.getResolution(), database));
+                    //if user don't have photo right now - then skip him
+                    if (Objects.isNull(prof.getPhotos()) || prof.getPhotos().size() == 0) {
+                        continue;
+                    }
                     List<Message> messages = Utils.messages(sourceUser, eachProfile);
                     prof.setMessages(messages);
                     profileList.add(prof);
