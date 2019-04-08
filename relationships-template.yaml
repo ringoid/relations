@@ -41,10 +41,6 @@ Mappings:
       test: test-messages-relationships
       stage: stage-messages-relationships
       prod: prod-messages-relationships
-    InternalCleanDbRelationshipsFunction:
-      test: test-internal-clean-db-relationships
-      stage: stage-internal-clean-db-relationships
-      prod: prod-internal-clean-db-relationships
     ModerationFunction:
       test: test-moderation-relationships
       stage: stage-moderation-relationships
@@ -98,14 +94,6 @@ Globals:
           Environment: !Ref Env
 
 Resources:
-
-  InternalCleanDbRelationshipsFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: relations-service/build/distributions/relations-service-1.0-SNAPSHOT.zip
-      FunctionName: !FindInMap [FunctionName, InternalCleanDbRelationshipsFunction, !Ref Env]
-      Handler: "com.ringoid.internal.Clean::handler"
-      Description: Internal Clean DB for relationships
 
   KinesisConsumerFunction:
     Type: AWS::Serverless::Function
@@ -226,10 +214,6 @@ Outputs:
     Value: !FindInMap [FunctionName, RedyForPushFunction, !Ref Env]
     Export:
       Name: !Join [ "-", [ !Ref Env, RedyForPushFunctionExport] ]
-  InternalCleanDbRelationshipsFunctionExport:
-    Value: !FindInMap [FunctionName, InternalCleanDbRelationshipsFunction, !Ref Env]
-    Export:
-      Name: !Join [ "-", [ !Ref Env, InternalCleanDbRelationshipsFunctionExport] ]
   BotSqsQueueArnExport:
     Value: !GetAtt BotSqsQueue.Arn
     Export:

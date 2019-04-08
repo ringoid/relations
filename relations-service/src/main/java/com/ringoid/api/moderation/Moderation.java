@@ -319,6 +319,7 @@ public class Moderation {
                         parameters.put("moderator", "moderator");
                         tx.run(query, parameters);
                         //send events to internal queue
+
                         HidePhotoEvent event = new HidePhotoEvent(eachUserId, photoId);
                         Utils.sendEventIntoInternalQueue(event, kinesis, internalStreamName, event.getUserId(), gson);
                     }

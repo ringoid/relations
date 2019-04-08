@@ -39,30 +39,30 @@ public class NewFaces {
 
     private static final String NEW_FACES_SEEN_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
-                    "MATCH (target:%s) " +//2
+                    "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
                     "WHERE NOT (target)-[:%s|%s|%s|%s]-(sourceUser) " +//2.1
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
-            PERSON.getLabelName(), //2
+            PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
             Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
     );
 
     private static final String NEW_FACES_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
-                    "MATCH (target:%s) " +//2
-                    "WHERE NOT (target)<-[]-(sourceUser) " +//2.1
+                    "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
+                    "WHERE NOT (target)--(sourceUser) " +//2.1
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
-            PERSON.getLabelName(), //2
+            PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
     );
 
-    private static List<Node> unknowns(NewFacesRequest request, String useQuery, int skip, GraphDatabaseService database) {
+    private static List<Node> unknowns(NewFacesRequest request, String targetSex, String useQuery, int skip, GraphDatabaseService database) {
         if (Objects.equals(NEW_FACES_QUERY, useQuery)) {
-            return unknownPersons(request.getUserId(), skip, request.getLimit(), database);
+            return unknownPersons(request.getUserId(), targetSex, skip, request.getLimit(), database);
         } else if (Objects.equals(NEW_FACES_SEEN_QUERY, useQuery)) {
-            return moreProfilesForNewFaces(request.getUserId(), skip, 20, database);
+            return moreProfilesForNewFaces(request.getUserId(), targetSex, skip, 20, database);
         }
         return Lists.newArrayList();
     }
@@ -90,7 +90,7 @@ public class NewFaces {
                 int loopCounter = 0;
                 List<Node> tmpResult = new ArrayList<>();
                 while (tmpResult.size() < request.getLimit() && loopCounter < MAX_LOOP_NUM) {
-                    List<Node> unknowns = unknowns(request, NEW_FACES_QUERY, skip, database);
+                    List<Node> unknowns = unknowns(request, targetSex, NEW_FACES_QUERY, skip, database);
                     if (unknowns.size() < request.getLimit()) {
                         //there is no more users, exit from the loop
                         loopCounter = MAX_LOOP_NUM;
@@ -106,33 +106,12 @@ public class NewFaces {
                         if (eachUnknown.hasLabel(Label.label(HIDDEN.getLabelName()))) {
                             continue;
                         }
-                        String nodeSex = (String) eachUnknown.getProperty(SEX.getPropertyName());
-                        if (!Objects.equals(targetSex, nodeSex)) {
-                            continue;
-                        }
-                        if (!eachUnknown.hasRelationship(RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()), Direction.OUTGOING)) {
-                            continue;
-                        }
-
-                        Iterable<Relationship> relationshipIterable = eachUnknown.getRelationships(
-                                Direction.OUTGOING,
-                                RelationshipType.withName(Relationships.LIKE.name()),
-                                RelationshipType.withName(Relationships.BLOCK.name())
-                        );
-                        int hasRelWithSource = 0;
-                        for (Relationship eachRel : relationshipIterable) {
-                            if (eachRel.getOtherNode(eachUnknown).getId() == sourceUser.getId()) {
-                                hasRelWithSource++;
-                            }
-                        }
-                        if (hasRelWithSource == 0) {
-                            tmpResult.add(eachUnknown);
-                        }
-
+                        tmpResult.add(eachUnknown);
                     }
                 }//tmpResult is ready
                 tmpResult = sortProfiles(tmpResult);
                 //now check that result <= limit
+                log.info("new_faces (not seen part) for userId [%s] size is [%s]", request.getUserId(), tmpResult.size());
                 if (tmpResult.size() > request.getLimit()) {
                     tmpResult = tmpResult.subList(0, request.getLimit() - 1);
                 }
@@ -146,11 +125,13 @@ public class NewFaces {
 
                 //now fill profiles with 20 users with highest rank
                 if (profileList.isEmpty()) {
+                    log.info("new_faces try to feel seen part for userId [%s]", request.getUserId());
                     tmpResult = new ArrayList<>();
                     skip = 0;
                     loopCounter = 0;
                     while (tmpResult.size() < request.getLimit() && loopCounter < MAX_LOOP_NUM) {
-                        List<Node> unknowns = unknowns(request, NEW_FACES_SEEN_QUERY, skip, database);
+                        List<Node> unknowns = unknowns(request, targetSex, NEW_FACES_SEEN_QUERY, skip, database);
+                        log.info("new_faces cypher query (seen part) return nodes size [%s] for userId [%s]", unknowns.size(), request.getUserId());
                         if (unknowns.size() < request.getLimit()) {
                             //there is no more users, exit from the loop
                             loopCounter = MAX_LOOP_NUM;
@@ -166,18 +147,11 @@ public class NewFaces {
                             if (eachUnknown.hasLabel(Label.label(HIDDEN.getLabelName()))) {
                                 continue;
                             }
-                            String nodeSex = (String) eachUnknown.getProperty(SEX.getPropertyName());
-                            if (!Objects.equals(targetSex, nodeSex)) {
-                                continue;
-                            }
-                            if (!eachUnknown.hasRelationship(RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()), Direction.OUTGOING)) {
-                                continue;
-                            }
-
                             tmpResult.add(eachUnknown);
                         }
                     }//tmpResult is ready
 
+                    log.info("new_faces (seen part) for userId [%s] size is [%s]", request.getUserId(), tmpResult.size());
                     //now check that result <= limit
                     if (tmpResult.size() > request.getLimit()) {
                         tmpResult = tmpResult.subList(0, request.getLimit() - 1);
@@ -278,12 +252,13 @@ public class NewFaces {
         return result;
     }
 
-    private static List<Node> unknownPersons(String sourceUserId, int skip, int limit, GraphDatabaseService database) {
+    private static List<Node> unknownPersons(String sourceUserId, String targetSex, int skip, int limit, GraphDatabaseService database) {
         List<Node> nodes = new ArrayList<>();
         Map<String, Object> params = new HashMap<>();
         params.put("sourceUserId", sourceUserId);
         params.put("skipParam", skip);
         params.put("limitParam", limit);
+        params.put("sex", targetSex);
         Result result = database.execute(NEW_FACES_QUERY, params);
         while (result.hasNext()) {
             Map<String, Object> mapResult = result.next();
@@ -294,12 +269,13 @@ public class NewFaces {
         return nodes;
     }
 
-    private static List<Node> moreProfilesForNewFaces(String sourceUserId, int skip, int limit, GraphDatabaseService database) {
+    private static List<Node> moreProfilesForNewFaces(String sourceUserId, String targetSex, int skip, int limit, GraphDatabaseService database) {
         List<Node> nodes = new ArrayList<>();
         Map<String, Object> params = new HashMap<>();
         params.put("sourceUserId", sourceUserId);
         params.put("skipParam", skip);
         params.put("limitParam", limit);
+        params.put("sex", targetSex);
         Result result = database.execute(NEW_FACES_SEEN_QUERY, params);
         while (result.hasNext()) {
             Map<String, Object> mapResult = result.next();
