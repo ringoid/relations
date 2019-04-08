@@ -36,6 +36,7 @@ import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.PhotoProperties.PHOTO_ID;
 import static com.ringoid.ViewProperties.VIEW_COUNT;
 import static com.ringoid.ViewProperties.VIEW_TIME;
+import static com.ringoid.ViewRelationshipSource.WHO_LIKED_ME;
 import static com.ringoid.common.UtilsInternaly.doWeHaveBlockInternaly;
 import static com.ringoid.common.UtilsInternaly.getAllRelationshipBetweenNodes;
 import static com.ringoid.common.UtilsInternaly.getAllRelationshipTypes;
@@ -75,6 +76,10 @@ public class ActionsUtils {
                 !existOutgoingRelationshipsBetweenProfiles.contains(Relationships.MESSAGE) &&
                 !existIncomingRelationshipsBetweenProfiles.contains(Relationships.MATCH) &&
                 !existIncomingRelationshipsBetweenProfiles.contains(Relationships.MESSAGE)) {
+            log.warn("source user with userId [%s], try to message without any kind of MATCH or MESSAGE with target (userId [%s])",
+                    event.getUserId(), event.getTargetUserId());
+            //todo:implement some kind of notifications later
+
             return;
         }
 
@@ -278,6 +283,9 @@ public class ActionsUtils {
                 !existOutgoingRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_LIKES_YOU) &&
                 !existOutgoingRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_MESSAGES) &&
                 !existOutgoingRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_MATCHES)) {
+            log.warn("source user with userId [%s], try to block without any kind of VIEW with target (userId [%s])",
+                    event.getUserId(), event.getTargetUserId());
+            //todo:implement some kind of notifications later
             return;
         }
 
@@ -456,6 +464,9 @@ public class ActionsUtils {
                 !existOutgoingRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_LIKES_YOU) &&
                 !existOutgoingRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_MESSAGES) &&
                 !existOutgoingRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_MATCHES)) {
+            log.warn("source user with userId [%s], try to like without any kind of VIEW with target (userId [%s])",
+                    event.getUserId(), event.getTargetUserId());
+            //todo:implement some kind of notifications later
             return;
         }
         existOutgoingRelationshipsBetweenProfiles.remove(Relationships.VIEW);
@@ -510,7 +521,7 @@ public class ActionsUtils {
             return;
         }
 
-        //now the difficult case
+        //now the difficult case (when incoming like already exist)
         if (existIncomingRelationshipsBetweenProfiles.contains(Relationships.LIKE)) {
             Iterable<Relationship> rels = sourceUser.getRelationships(RelationshipType.withName(Relationships.LIKE.name()), Direction.INCOMING);
             Relationship incommingLike = null;
@@ -573,7 +584,27 @@ public class ActionsUtils {
 
             Relationship rel = getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, Relationships.MATCH.name());
             rel.setProperty(MatchProperties.MATCH_AT.getPropertyName(), event.getLikedAt());
-        }
+
+            //If someone liked me (Likes You) and then I like their photo (Likes You),
+            // that match should be marked as "match seen" straightaway (Matches).
+            // It shouldn't show up as new match (no red badge, no in-app notification,
+            // no priority for the sorting)
+            ViewRelationshipSource source = ViewRelationshipSource.fromString(event.getSource());
+            if (source == WHO_LIKED_ME) {
+                getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, Relationships.VIEW_IN_MATCHES.name());
+                Iterable<Relationship> allOutgoingRels = getAllRelationshipBetweenNodes(sourceUser, targetUser);
+                Set<String> toDelete = new HashSet<>();
+                toDelete.add(Relationships.VIEW.name());
+                toDelete.add(Relationships.VIEW_IN_LIKES_YOU.name());
+                toDelete.add(Relationships.VIEW_IN_MESSAGES.name());
+
+                for (Relationship each : allOutgoingRels) {
+                    if (each.getStartNode().getId() == sourceUser.getId() && toDelete.contains(each.getType().name())) {
+                        each.delete();
+                    }
+                }
+            }
+        }//end case with already exist incoming like
     }
 
 }
