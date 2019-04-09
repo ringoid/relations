@@ -41,7 +41,7 @@ public class NewFaces {
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
                     "WHERE NOT (target)-[:%s|%s|%s|%s]-(sourceUser) " +//2.1
-                    "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC SKIP $skipParam LIMIT $limitParam",//3
+                    "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
             Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,
@@ -51,8 +51,8 @@ public class NewFaces {
     private static final String NEW_FACES_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
-                    "WHERE NOT (target)--(sourceUser) " +//2.1
-                    "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC SKIP $skipParam LIMIT $limitParam",//3
+                    "WHERE NOT (target)<-[]-(sourceUser) " +//2.1
+                    "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
@@ -106,7 +106,21 @@ public class NewFaces {
                         if (eachUnknown.hasLabel(Label.label(HIDDEN.getLabelName()))) {
                             continue;
                         }
-                        tmpResult.add(eachUnknown);
+
+                        Iterable<Relationship> relationshipIterable = eachUnknown.getRelationships(
+                                Direction.OUTGOING,
+                                RelationshipType.withName(Relationships.LIKE.name()),
+                                RelationshipType.withName(Relationships.BLOCK.name())
+                        );
+                        int hasRelWithSource = 0;
+                        for (Relationship eachRel : relationshipIterable) {
+                            if (eachRel.getOtherNode(eachUnknown).getId() == sourceUser.getId()) {
+                                hasRelWithSource++;
+                            }
+                        }
+                        if (hasRelWithSource == 0) {
+                            tmpResult.add(eachUnknown);
+                        }
                     }
                 }//tmpResult is ready
                 tmpResult = sortProfiles(tmpResult);
