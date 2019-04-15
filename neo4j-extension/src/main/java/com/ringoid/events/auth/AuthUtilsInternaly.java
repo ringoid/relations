@@ -10,6 +10,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +37,13 @@ import static com.ringoid.UserStatus.HIDDEN;
 
 public class AuthUtilsInternaly {
     private static final String USER_ID_PROPERTY = "userIdProperty";
+
+    private final static String HIDE_PROFILE =
+            String.format(
+                    "MATCH (n:%s {%s: $userIdValue}) SET n:%s",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), Labels.HIDDEN.getLabelName()
+            );
+
 
     private static final String CREATE_PROFILE =
             String.format("MERGE (n:%s {%s: $userIdValue}) " +
@@ -141,6 +149,12 @@ public class AuthUtilsInternaly {
         parameters.put("createdValue", event.getUnixTime());
         parameters.put("onlineUserTime", event.getUnixTime());
         database.execute(CREATE_PROFILE, parameters);
+
+        LocalDate localDate = LocalDate.now();
+        int minYear = localDate.getYear() - 18;
+        if (event.getYearOfBirth() > minYear) {
+            database.execute(HIDE_PROFILE, parameters);
+        }
     }
 
     public static void claimReferralCodeInternaly(UserClaimReferralCodeEvent event, GraphDatabaseService database) {
