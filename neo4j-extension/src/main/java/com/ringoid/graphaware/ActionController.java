@@ -21,6 +21,7 @@ import com.ringoid.api.PushResponse;
 import com.ringoid.api.WhoReadyForPush;
 import com.ringoid.events.actions.ActionsUtils;
 import com.ringoid.events.actions.UserBlockOtherEvent;
+import com.ringoid.events.actions.UserChangedLocationEvent;
 import com.ringoid.events.actions.UserLikePhotoEvent;
 import com.ringoid.events.actions.UserMessageEvent;
 import com.ringoid.events.actions.UserUnlikePhotoEvent;
@@ -60,6 +61,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.ringoid.events.EventTypes.ACTION_USER_BLOCK_OTHER;
+import static com.ringoid.events.EventTypes.ACTION_USER_CHANGE_LOCATION;
 import static com.ringoid.events.EventTypes.ACTION_USER_LIKE_PHOTO;
 import static com.ringoid.events.EventTypes.ACTION_USER_MESSAGE;
 import static com.ringoid.events.EventTypes.ACTION_USER_UNLIKE_PHOTO;
@@ -271,6 +273,9 @@ public class ActionController {
         } else if (Objects.equals(eventType, PUSH_WAS_SENT.name())) {
             PushWasSentEvent event = objectMapper.readValue(each.traverse(), PushWasSentEvent.class);
             PushUtils.pushWasSent(event, database);
+        } else if (Objects.equals(eventType, ACTION_USER_CHANGE_LOCATION.name())) {
+            UserChangedLocationEvent event = objectMapper.readValue(each.traverse(), UserChangedLocationEvent.class);
+            ActionsUtils.updateLocation(event, database);
         }
     }
 
@@ -282,6 +287,7 @@ public class ActionController {
         createIndex(Labels.PERSON.getLabelName(), PersonProperties.PUSH_WAS_SENT_AT.getPropertyName(), database);
         createIndex(Labels.PERSON.getLabelName(), PersonProperties.LAST_ONLINE_TIME.getPropertyName(), database);
         createIndex(Labels.PERSON.getLabelName(), PersonProperties.CREATED.getPropertyName(), database);
+        createIndex(Labels.PERSON.getLabelName(), PersonProperties.LOCATION.getPropertyName(), database);
 
         createIndex(Labels.PHOTO.getLabelName(), PhotoProperties.PHOTO_ID.getPropertyName(), database);
         createIndex(Labels.PHOTO.getLabelName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName(), database);

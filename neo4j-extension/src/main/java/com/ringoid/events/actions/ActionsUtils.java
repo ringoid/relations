@@ -18,8 +18,10 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.logging.Log;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -32,6 +34,7 @@ import static com.ringoid.LikeProperties.LIKE_COUNT;
 import static com.ringoid.MessageRelationshipProperties.MSG_AT;
 import static com.ringoid.MessageRelationshipProperties.MSG_COUNT;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
+import static com.ringoid.PersonProperties.LOCATION;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.PhotoProperties.PHOTO_ID;
 import static com.ringoid.ViewProperties.VIEW_COUNT;
@@ -47,7 +50,13 @@ import static com.ringoid.common.UtilsInternaly.updateLastActionTime;
 import static com.ringoid.events.runtime.BlockModule.REPORT_REASON_TRESHOLD;
 
 public class ActionsUtils {
-    private final static Log log = LoggerFactory.getLogger(ActionsUtils.class);
+    private static final Log log = LoggerFactory.getLogger(ActionsUtils.class);
+
+    private static final String UPDATE_LOCATION_QUERY =
+            String.format("MATCH (n:%s {%s: $userIdValue}) " +
+                            "SET n.%s = point({ latitude:$lat, longitude:$lon })",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(),
+                    LOCATION.getPropertyName());
 
     public static void message(UserMessageEvent event, GraphDatabaseService database) {
         Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getUserId());
@@ -611,4 +620,18 @@ public class ActionsUtils {
         }//end case with already exist incoming like
     }
 
+    public static void updateLocation(UserChangedLocationEvent event, GraphDatabaseService database) {
+        Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getUserId());
+        if (Objects.nonNull(sourceUser)) {
+            updateLastActionTime(sourceUser, event.getUpdatedLocationTimeAt(), database);
+        } else {
+            log.warn("can not apply location action coz source user id null, source userId [%s]", event.getUserId());
+            return;
+        }
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("userIdValue", event.getUserId());
+        parameters.put("lat", event.getLat());
+        parameters.put("lon", event.getLon());
+        database.execute(UPDATE_LOCATION_QUERY, parameters);
+    }
 }

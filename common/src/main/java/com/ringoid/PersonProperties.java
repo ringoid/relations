@@ -16,7 +16,8 @@ public enum PersonProperties {
     SETTINGS_LOCALE("settings_locale"),
     SETTINGS_PUSH("settings_push"),
     SETTINGS_TIMEZONE("settings_timezone"),
-    PUSH_WAS_SENT_AT("push_was_sent_at");
+    PUSH_WAS_SENT_AT("push_was_sent_at"),
+    LOCATION("location");
 
     private String propertyName;
 
