@@ -7,7 +7,8 @@ public enum PhotoProperties {
     PHOTO_S3_KEY("photo_s3_key"),
     NEED_TO_MODERATE("need_to_moderate"),
     RESOLUTION("resolution"),
-    PHOTO_LINK("link");
+    PHOTO_LINK("link"),
+    ONLY_OWNER_CAN_SEE("only_owner_can_see");
 
     private String propertyName;
 

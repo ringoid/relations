@@ -46,7 +46,7 @@ public class LikesYou {
                 for (Node eachProfile : liked) {
                     Profile prof = new Profile();
                     prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
-                    prof.setPhotos(Utils.resizedPhotos(sortLmmPhotos(sourceUser, eachProfile), request.getResolution(), database));
+                    prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortLmmPhotos(sourceUser, eachProfile), request.getResolution(), database));
                     //if user don't have photo right now - then skip him
                     if (Objects.isNull(prof.getPhotos()) || prof.getPhotos().size() == 0) {
                         continue;

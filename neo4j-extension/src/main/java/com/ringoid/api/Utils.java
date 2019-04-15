@@ -30,7 +30,7 @@ import static com.ringoid.PersonProperties.LIKE_COUNTER;
 
 public class Utils {
 
-    public static List<Photo> resizedPhotos(List<String> origins, String resolution, GraphDatabaseService database) {
+    public static List<Photo> resizedAndVisibleToEveryOnePhotos(List<String> origins, String resolution, GraphDatabaseService database) {
         List<Photo> result = new ArrayList<>();
         for (String eachOrigin : origins) {
             Photo photo = new Photo();
@@ -40,7 +40,9 @@ public class Utils {
             Node originNode = database.findNode(Label.label(Labels.PHOTO.getLabelName()), PhotoProperties.PHOTO_ID.getPropertyName(), eachOrigin);
             String resizedPhotoId = null;
             String link = null;
-            if (Objects.nonNull(originNode)) {
+            if (Objects.nonNull(originNode) &&
+                    !((Boolean) originNode.getProperty(PhotoProperties.ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
+
                 Iterable<Relationship> resized = originNode.getRelationships(RelationshipType.withName(Relationships.RESIZED.name()), Direction.OUTGOING);
                 for (Relationship eachResized : resized) {
                     Node other = eachResized.getOtherNode(originNode);
@@ -154,7 +156,9 @@ public class Utils {
                     Iterable<Relationship> uploads1 = node1.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()));
                     for (Relationship each : uploads1) {
                         Node photo = each.getOtherNode(node1);
-                        if (photo.hasLabel(Label.label(PHOTO.getLabelName()))) {
+                        if (photo.hasLabel(Label.label(PHOTO.getLabelName())) &&
+                                !((Boolean) photo.getProperty(PhotoProperties.ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
+
                             Iterable<Relationship> likes = photo.getRelationships(Direction.INCOMING, RelationshipType.withName(Relationships.LIKE.name()));
                             for (Relationship rel : likes) {
                                 Node other = rel.getOtherNode(photo);
@@ -169,7 +173,8 @@ public class Utils {
                     Iterable<Relationship> uploads2 = node2.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()));
                     for (Relationship each : uploads2) {
                         Node photo = each.getOtherNode(node2);
-                        if (photo.hasLabel(Label.label(PHOTO.getLabelName()))) {
+                        if (photo.hasLabel(Label.label(PHOTO.getLabelName())) &&
+                                !((Boolean) photo.getProperty(PhotoProperties.ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
                             Iterable<Relationship> likes = photo.getRelationships(Direction.INCOMING, RelationshipType.withName(Relationships.LIKE.name()));
                             for (Relationship rel : likes) {
                                 Node other = rel.getOtherNode(photo);
@@ -198,11 +203,19 @@ public class Utils {
                 //now count photos
                 int photoCounter1 = 0;
                 for (Relationship each : node1.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
-                    photoCounter1++;
+                    Node eachPhoto = each.getOtherNode(node1);
+                    if (Objects.nonNull(eachPhoto) &&
+                            !((Boolean) eachPhoto.getProperty(PhotoProperties.ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
+                        photoCounter1++;
+                    }
                 }
                 int photoCounter2 = 0;
                 for (Relationship each : node2.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
-                    photoCounter2++;
+                    Node eachPhoto = each.getOtherNode(node2);
+                    if (Objects.nonNull(eachPhoto) &&
+                            !((Boolean) eachPhoto.getProperty(PhotoProperties.ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
+                        photoCounter2++;
+                    }
                 }
 
                 if (photoCounter1 > photoCounter2) {

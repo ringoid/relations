@@ -11,6 +11,7 @@ public class PhotoObj {
     private int likes;
     private long updatedAt;
     private String s3Key;
+    private boolean onlyOwnerCanSee;
 
     public PhotoObj() {
     }
@@ -79,17 +80,11 @@ public class PhotoObj {
         this.s3Key = s3Key;
     }
 
-    @Override
-    public String toString() {
-        return "PhotoObj{" +
-                "photoId='" + photoId + '\'' +
-                ", photoHidden=" + photoHidden +
-                ", photoReported=" + photoReported +
-                ", wasModeratedBefore=" + wasModeratedBefore +
-                ", blockReasons=" + blockReasons +
-                ", likes=" + likes +
-                ", updatedAt=" + updatedAt +
-                ", s3Key='" + s3Key + '\'' +
-                '}';
+    public boolean getOnlyOwnerCanSee() {
+        return onlyOwnerCanSee;
+    }
+
+    public void setOnlyOwnerCanSee(boolean onlyOwnerCanSee) {
+        this.onlyOwnerCanSee = onlyOwnerCanSee;
     }
 }

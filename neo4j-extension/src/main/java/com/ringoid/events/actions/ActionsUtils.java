@@ -44,6 +44,7 @@ import static com.ringoid.common.UtilsInternaly.getFullConversation;
 import static com.ringoid.common.UtilsInternaly.getOrCreateRelationship;
 import static com.ringoid.common.UtilsInternaly.getUploadedPhoto;
 import static com.ringoid.common.UtilsInternaly.updateLastActionTime;
+import static com.ringoid.events.runtime.BlockModule.REPORT_REASON_TRESHOLD;
 
 public class ActionsUtils {
     private final static Log log = LoggerFactory.getLogger(ActionsUtils.class);
@@ -337,8 +338,11 @@ public class ActionsUtils {
             block.setProperty(BLOCK_REASON_NUM.getPropertyName(), event.getBlockReasonNum());
         }
 
-        //mark person for moderation
-        targetUser.setProperty(PersonProperties.NEED_TO_MODERATE.getPropertyName(), true);
+
+        //mark person for moderation only if it's report
+        if (event.getBlockReasonNum() > REPORT_REASON_TRESHOLD) {
+            targetUser.setProperty(PersonProperties.NEED_TO_MODERATE.getPropertyName(), true);
+        }
     }
 
     public static void viewChat(UserViewChatEvent event, GraphDatabaseService database) {

@@ -1,5 +1,6 @@
 package com.ringoid.events.image;
 
+import com.ringoid.PersonProperties;
 import com.ringoid.PhotoProperties;
 import com.ringoid.Relationships;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,16 +43,16 @@ public class ImageUtilsInternaly {
                             "ON MATCH SET p.%s = $photoKey " +//2.2
 
                             "MERGE (n)-[rel:%s]->(p) " +//3
-                            "ON CREATE SET rel.%s = $uploadedAtValue, p.%s = true " +//4
-                            "ON MATCH SET rel.%s = $uploadedAtValue, p.%s = true",//5
+                            "ON CREATE SET rel.%s = $uploadedAtValue, p.%s = true, n.%s = true " +//4
+                            "ON MATCH SET rel.%s = $uploadedAtValue, p.%s = true, n.%s = true",//5
 
                     PERSON.getLabelName(), USER_ID.getPropertyName(),//1
                     PHOTO.getLabelName(), PHOTO_ID.getPropertyName(),//2
                     PHOTO_S3_KEY.getPropertyName(), PhotoProperties.LIKE_COUNTER.getPropertyName(),//2.1
                     PHOTO_S3_KEY.getPropertyName(),//2.2
                     Relationships.UPLOAD_PHOTO.name(),//3
-                    PHOTO_UPLOADED_AT.getPropertyName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName(),//4
-                    PHOTO_UPLOADED_AT.getPropertyName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName());//5
+                    PHOTO_UPLOADED_AT.getPropertyName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName(), PersonProperties.NEED_TO_MODERATE.getPropertyName(),//4
+                    PHOTO_UPLOADED_AT.getPropertyName(), PhotoProperties.NEED_TO_MODERATE.getPropertyName(), PersonProperties.NEED_TO_MODERATE.getPropertyName());//5
 
     private static String deletePhotoQuery(boolean userTakePartInReport) {
         if (!userTakePartInReport) {

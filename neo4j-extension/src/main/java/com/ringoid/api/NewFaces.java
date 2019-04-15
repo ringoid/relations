@@ -2,6 +2,7 @@ package com.ringoid.api;
 
 import com.google.common.collect.Lists;
 import com.graphaware.common.log.LoggerFactory;
+import com.ringoid.Labels;
 import com.ringoid.PhotoProperties;
 import com.ringoid.Relationships;
 import org.neo4j.graphdb.Direction;
@@ -30,6 +31,7 @@ import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
 import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
+import static com.ringoid.PhotoProperties.ONLY_OWNER_CAN_SEE;
 
 public class NewFaces {
 
@@ -41,10 +43,12 @@ public class NewFaces {
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
                     "WHERE NOT (target)-[:%s|%s|%s|%s]-(sourceUser) " +//2.1
+                    "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
-            Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,
+            Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
+            ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
     );
 
@@ -52,9 +56,11 @@ public class NewFaces {
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
                     "WHERE NOT (target)<-[]-(sourceUser) " +//2.1
+                    "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
+            ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
     );
 
@@ -123,6 +129,7 @@ public class NewFaces {
                         }
                     }
                 }//tmpResult is ready
+
                 tmpResult = sortProfiles(tmpResult);
                 //now check that result <= limit
                 log.info("new_faces (not seen part) for userId [%s] size is [%s]", request.getUserId(), tmpResult.size());
@@ -133,8 +140,10 @@ public class NewFaces {
                 for (Node eachProfile : tmpResult) {
                     Profile prof = new Profile();
                     prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
-                    prof.setPhotos(Utils.resizedPhotos(sortPhotos(eachProfile), request.getResolution(), database));
-                    profileList.add(prof);
+                    prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortPhotos(eachProfile), request.getResolution(), database));
+                    if (!prof.getPhotos().isEmpty()) {
+                        profileList.add(prof);
+                    }
                 }
 
                 //now fill profiles with 20 users with highest rank
@@ -173,8 +182,10 @@ public class NewFaces {
                     for (Node eachProfile : tmpResult) {
                         Profile prof = new Profile();
                         prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
-                        prof.setPhotos(Utils.resizedPhotos(sortPhotos(eachProfile), request.getResolution(), database));
-                        profileList.add(prof);
+                        prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortPhotos(eachProfile), request.getResolution(), database));
+                        if (!prof.getPhotos().isEmpty()) {
+                            profileList.add(prof);
+                        }
                     }
                 }//end block for seen top profiles
 
@@ -200,11 +211,21 @@ public class NewFaces {
                 //now count photos
                 int photoCounter1 = 0;
                 for (Relationship each : node1.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
-                    photoCounter1++;
+                    Node eachPhoto = each.getOtherNode(node1);
+                    if (Objects.nonNull(eachPhoto) && eachPhoto.hasLabel(Label.label(Labels.PHOTO.getLabelName()))) {
+                        if (!((Boolean) eachPhoto.getProperty(ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
+                            photoCounter1++;
+                        }
+                    }
                 }
                 int photoCounter2 = 0;
                 for (Relationship each : node2.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
-                    photoCounter2++;
+                    Node eachPhoto = each.getOtherNode(node2);
+                    if (Objects.nonNull(eachPhoto) && eachPhoto.hasLabel(Label.label(Labels.PHOTO.getLabelName()))) {
+                        if (!((Boolean) eachPhoto.getProperty(ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
+                            photoCounter2++;
+                        }
+                    }
                 }
 
                 if (photoCounter1 > photoCounter2) {
