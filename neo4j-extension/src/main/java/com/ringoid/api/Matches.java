@@ -22,7 +22,9 @@ import static com.ringoid.api.Utils.sortLmmProfiles;
 import static com.ringoid.api.Utils.whoHasLikeMatchOrMessageWithMe;
 
 public class Matches {
-    private final static Log log = LoggerFactory.getLogger(Matches.class);
+    private static final Log log = LoggerFactory.getLogger(Matches.class);
+
+    private static final int MAX_MATCH_PROFILES_NUM = 100;
 
     public static LMMResponse matches(LMMRequest request, GraphDatabaseService database) {
         LMMResponse response = new LMMResponse();
@@ -55,6 +57,11 @@ public class Matches {
                     prof.setMessages(messages);
                     profileList.add(prof);
                 }
+
+                if (profileList.size() > MAX_MATCH_PROFILES_NUM) {
+                    profileList = profileList.subList(0, MAX_MATCH_PROFILES_NUM);
+                }
+
                 response.setProfiles(profileList);
             }
             tx.success();

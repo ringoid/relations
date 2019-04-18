@@ -26,6 +26,9 @@ buildgradle:
 
 test-deploy: zip-go buildgradle
 	@echo '--- Build lambda test ---'
+	@echo '--- Upload jars --'
+	aws s3 cp common/build/libs/common-1.0-SNAPSHOT.jar s3://test-ringoid-neo4j-jars
+	aws s3 cp neo4j-extension/build/libs/neo4j-extension-1.0-SNAPSHOT.jar s3://test-ringoid-neo4j-jars
 	@echo 'Package template'
 	sam package --template-file relationships-template.yaml --s3-bucket ringoid-cloudformation-template --output-template-file relationships-template-packaged.yaml
 	@echo 'Deploy relationships-image-stack'
@@ -33,6 +36,9 @@ test-deploy: zip-go buildgradle
 
 stage-deploy: zip-go buildgradle
 	@echo '--- Build lambda stage ---'
+	@echo '--- Upload jars --'
+	aws s3 cp common/build/libs/common-1.0-SNAPSHOT.jar s3://stage-ringoid-neo4j-jars
+	aws s3 cp neo4j-extension/build/libs/neo4j-extension-1.0-SNAPSHOT.jar s3://stage-ringoid-neo4j-jars
 	@echo 'Package template'
 	sam package --template-file relationships-template.yaml --s3-bucket ringoid-cloudformation-template --output-template-file relationships-template-packaged.yaml
 	@echo 'Deploy relationships-image-stack'
@@ -40,6 +46,9 @@ stage-deploy: zip-go buildgradle
 
 prod-deploy: zip-go buildgradle
 	@echo '--- Build lambda prod ---'
+	@echo '--- Upload jars --'
+	aws s3 cp common/build/libs/common-1.0-SNAPSHOT.jar s3://prod-ringoid-neo4j-jars
+	aws s3 cp neo4j-extension/build/libs/neo4j-extension-1.0-SNAPSHOT.jar s3://prod-ringoid-neo4j-jars
 	@echo 'Package template'
 	sam package --template-file relationships-template.yaml --s3-bucket ringoid-cloudformation-template --output-template-file relationships-template-packaged.yaml
 	@echo 'Deploy relationships-image-stack'
