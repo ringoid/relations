@@ -209,6 +209,15 @@ public class NewFaces {
                     profileList = profileList.subList(0, request.getLimit());
                 }
                 log.info("new_faces (full) for userId [%s] size is [%s]", request.getUserId(), profileList.size());
+
+                Set<String> uniqueIds = new HashSet<>();
+                Iterator<Profile> it = profileList.iterator();
+                while (it.hasNext()) {
+                    if (!uniqueIds.add(it.next().getUserId())) {
+                        it.remove();
+                    }
+                }
+                
                 response.setNewFaces(profileList);
             }
             tx.success();
