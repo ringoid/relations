@@ -217,7 +217,7 @@ public class NewFaces {
                         it.remove();
                     }
                 }
-                
+
                 response.setNewFaces(profileList);
             }
             tx.success();
@@ -233,14 +233,6 @@ public class NewFaces {
         Collections.sort(tmpResult, new Comparator<Node>() {
             @Override
             public int compare(Node node1, Node node2) {
-//                long likeCounter1 = (Long) node1.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
-//                long likeCounter2 = (Long) node2.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
-//                if (likeCounter1 > likeCounter2) {
-//                    return -1;
-//                } else if (likeCounter1 < likeCounter2) {
-//                    return 1;
-//                }
-
                 //now count photos
                 int photoCounter1 = 0;
                 for (Relationship each : node1.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
@@ -264,6 +256,14 @@ public class NewFaces {
                 if (photoCounter1 > photoCounter2) {
                     return -1;
                 } else if (photoCounter1 < photoCounter2) {
+                    return 1;
+                }
+
+                long likeCounter1 = (Long) node1.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
+                long likeCounter2 = (Long) node2.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
+                if (likeCounter1 > likeCounter2) {
+                    return -1;
+                } else if (likeCounter1 < likeCounter2) {
                     return 1;
                 }
 
@@ -334,7 +334,7 @@ public class NewFaces {
                 break;
             }
             result.addAll(loopRequest(sourceUserNodeId, sourceUserId, targetSex, limit, eachD,
-                    GEO_SEEN_SORTED_BY_ONLINE_TIME_QUERY, GEO_SEEN_SORTED_BY_LIKES_QUERY,
+                    GEO_SEEN_SORTED_BY_ONLINE_TIME_QUERY, null,
                     nodeIdsToExclude,
                     database));
         }
@@ -358,7 +358,7 @@ public class NewFaces {
         start = System.currentTimeMillis();
 
         List<Node> tmp = loopRequest(sourceUserNodeId, sourceUserId, targetSex, limit, 0,
-                SEEN_SORTED_BY_ONLINE_TIME_QUERY, SEEN_SORTED_BY_LIKES_QUERY,
+                SEEN_SORTED_BY_ONLINE_TIME_QUERY, null,
                 nodeIds,
                 database);
 
@@ -504,14 +504,14 @@ public class NewFaces {
             return collectNodes(newUsers, database);
         }
 
-        List<String> popularUseIds = executeQueryAndReturnUserIds(querySecondPart, params, database);
-        newUsers.addAll(popularUseIds);
+        if (Objects.nonNull(querySecondPart)) {
+            List<String> popularUseIds = executeQueryAndReturnUserIds(querySecondPart, params, database);
+            newUsers.addAll(popularUseIds);
+            Collections.shuffle(newUsers);
+        }
 
         //todo:future place for optimization (we can ask only limit nodes)
         result.addAll(collectNodes(newUsers, database));
-
-        //todo:uncomments!!!
-        Collections.shuffle(result);
 
         return result;
     }
