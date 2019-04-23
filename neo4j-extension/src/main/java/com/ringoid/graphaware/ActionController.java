@@ -89,6 +89,8 @@ public class ActionController {
     private static final int RETRIES = 5;
     private static final int BACKOFF = 100;
 
+    private static final int NEW_FACES_HARDCODE_LIMIT = 50;
+
     private final GraphDatabaseService database;
 
     @Autowired
@@ -149,6 +151,8 @@ public class ActionController {
         long start = System.currentTimeMillis();
         ObjectMapper objectMapper = new ObjectMapper();
         NewFacesRequest request = objectMapper.readValue(body, NewFacesRequest.class);
+        //IGNORE CLIENT SIDE LIMIT AND HARDCODE OWN
+        request.setLimit(NEW_FACES_HARDCODE_LIMIT);
         NewFacesResponse response = NewFaces.newFaces(request, database);
         log.info("handle new_faces with result size %s in %s millis", response.getNewFaces().size(), (System.currentTimeMillis() - start));
         return objectMapper.writeValueAsString(response);
