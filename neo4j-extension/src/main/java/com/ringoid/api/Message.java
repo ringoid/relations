@@ -7,6 +7,9 @@ public class Message {
     private boolean wasYouSender;
     private String text;
 
+    //use this property only for sorting inside engine
+    private long wasSentAt;
+
     public boolean isWasYouSender() {
         return wasYouSender;
     }
@@ -23,11 +26,12 @@ public class Message {
         this.text = text;
     }
 
-    @Override
-    public String toString() {
-        return "Message{" +
-                "wasYouSender=" + wasYouSender +
-                ", text='" + text + '\'' +
-                '}';
+    public long getWasSentAt() {
+        return wasSentAt;
     }
+
+    public void setWasSentAt(long wasSentAt) {
+        this.wasSentAt = wasSentAt;
+    }
+
 }

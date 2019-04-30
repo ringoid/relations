@@ -8,8 +8,9 @@ import com.ringoid.Labels;
 import com.ringoid.MessageProperties;
 import com.ringoid.PersonProperties;
 import com.ringoid.PhotoProperties;
-import com.ringoid.api.LMMRequest;
-import com.ringoid.api.LMMResponse;
+import com.ringoid.api.LMHIS;
+import com.ringoid.api.LMHISRequest;
+import com.ringoid.api.LMHISResponse;
 import com.ringoid.api.LikesYou;
 import com.ringoid.api.Matches;
 import com.ringoid.api.Messages;
@@ -117,8 +118,8 @@ public class ActionController {
     public String likesYou(@RequestBody String body) throws IOException {
         long start = System.currentTimeMillis();
         ObjectMapper objectMapper = new ObjectMapper();
-        LMMRequest request = objectMapper.readValue(body, LMMRequest.class);
-        LMMResponse response = LikesYou.likesYou(request, database);
+        LMHISRequest request = objectMapper.readValue(body, LMHISRequest.class);
+        LMHISResponse response = LikesYou.likesYou(request, database);
         log.info("handle likes_you with result size %s in %s millis", response.getProfiles().size(), (System.currentTimeMillis() - start));
         return objectMapper.writeValueAsString(response);
     }
@@ -128,8 +129,8 @@ public class ActionController {
     public String matches(@RequestBody String body) throws IOException {
         long start = System.currentTimeMillis();
         ObjectMapper objectMapper = new ObjectMapper();
-        LMMRequest request = objectMapper.readValue(body, LMMRequest.class);
-        LMMResponse response = Matches.matches(request, database);
+        LMHISRequest request = objectMapper.readValue(body, LMHISRequest.class);
+        LMHISResponse response = Matches.matches(request, database);
         log.info("handle matches with result size %s in %s millis", response.getProfiles().size(), (System.currentTimeMillis() - start));
         return objectMapper.writeValueAsString(response);
     }
@@ -139,9 +140,20 @@ public class ActionController {
     public String messages(@RequestBody String body) throws IOException {
         long start = System.currentTimeMillis();
         ObjectMapper objectMapper = new ObjectMapper();
-        LMMRequest request = objectMapper.readValue(body, LMMRequest.class);
-        LMMResponse response = Messages.messages(request, database);
+        LMHISRequest request = objectMapper.readValue(body, LMHISRequest.class);
+        LMHISResponse response = Messages.messages(request, database);
         log.info("handle messages with result size %s in %s millis", response.getProfiles().size(), (System.currentTimeMillis() - start));
+        return objectMapper.writeValueAsString(response);
+    }
+
+    @RequestMapping(value = "/lmhis", method = RequestMethod.GET)
+    @ResponseBody
+    public String lmhis(@RequestBody String body) throws IOException {
+        long start = System.currentTimeMillis();
+        ObjectMapper objectMapper = new ObjectMapper();
+        LMHISRequest request = objectMapper.readValue(body, LMHISRequest.class);
+        LMHISResponse response = LMHIS.lmHis(request, database);
+        log.info("handle lmhis for %s part with result size %s in %s millis", request.getLmhisPart(), response.getProfiles().size(), (System.currentTimeMillis() - start));
         return objectMapper.writeValueAsString(response);
     }
 

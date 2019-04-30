@@ -5,7 +5,8 @@ public enum MessageProperties {
     MSG_SOURCE_USER_ID("msg_source_user_id"),
     MSG_TARGET_USER_ID("msg_target_user_id"),
     MSG_TEXT("msg_text"),
-    MSG_PHOTO_ID("msg_photo_id");
+    MSG_PHOTO_ID("msg_photo_id"),
+    MSG_AT("msg_at");
 
     private String propertyName;
 

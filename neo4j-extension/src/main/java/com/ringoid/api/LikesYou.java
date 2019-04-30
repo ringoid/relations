@@ -26,8 +26,8 @@ public class LikesYou {
 
     private static final int MAX_LIKES_YOU_PROFILES_NUM = 100;
 
-    public static LMMResponse likesYou(LMMRequest request, GraphDatabaseService database) {
-        LMMResponse response = new LMMResponse();
+    public static LMHISResponse likesYou(LMHISRequest request, GraphDatabaseService database) {
+        LMHISResponse response = new LMHISResponse();
 
         try (Transaction tx = database.beginTx()) {
             Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), request.getUserId());

@@ -10,6 +10,7 @@ build-go:
 	GOOS=linux go build match-you/match.go
 	GOOS=linux go build message-you/messages.go
 	GOOS=linux go build ready-for-push/ready_for_push.go
+	GOOS=linux go build lmhis-you/lmhis.go
 
 zip-go: build-go
 	@echo '--- Zip Go modules ---'
@@ -19,6 +20,7 @@ zip-go: build-go
 	zip match.zip ./match
 	zip messages.zip ./messages
 	zip ready_for_push.zip ./ready_for_push
+	zip lmhis.zip ./lmhis
 
 buildgradle:
 	@echo '--- Building kinesis-consumer-relationships function ---'
@@ -69,4 +71,6 @@ clean:
 	rm -rf messages
 	rm -rf ready_for_push
 	rm -rf ready_for_push.zip
+	rm -rf lmhis
+	rm -rf lmhis.zip
 

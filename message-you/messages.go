@@ -22,7 +22,7 @@ func init() {
 func handler(ctx context.Context, request commons.InternalLMMReq) (commons.InternalLMMResp, error) {
 	lc, _ := lambdacontext.FromContext(ctx)
 
-	apimodel.Anlogger.Debugf(lc, "messages.go : start handle likes_you request %v for userId [%s]", request, request.UserId)
+	apimodel.Anlogger.Debugf(lc, "messages.go : start handle messages request %v for userId [%s]", request, request.UserId)
 
 	start := commons.UnixTimeInMillis()
 

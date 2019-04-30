@@ -10,6 +10,8 @@ public class Profile {
     private String userId;
     private List<Photo> photos;
     private List<Message> messages;
+    //need for sorting only inside engine
+    private long lastMessageAt;
 
     public Profile() {
         this.photos = new ArrayList<>();
@@ -38,5 +40,13 @@ public class Profile {
 
     public void setPhotos(List<Photo> photos) {
         this.photos = photos;
+    }
+
+    public long getLastMessageAt() {
+        return lastMessageAt;
+    }
+
+    public void setLastMessageAt(long lastMessageAt) {
+        this.lastMessageAt = lastMessageAt;
     }
 }

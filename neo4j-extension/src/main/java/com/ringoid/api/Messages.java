@@ -18,7 +18,7 @@ import static com.ringoid.Labels.PERSON;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.api.Utils.sortLmmPhotos;
-import static com.ringoid.api.Utils.sortMessagesProfiles;
+import static com.ringoid.api.Utils.sortProfilesByLastMessageAt;
 import static com.ringoid.api.Utils.whoHasLikeMatchOrMessageWithMe;
 
 public class Messages {
@@ -26,8 +26,8 @@ public class Messages {
 
     private static final int MAX_MESSAGES_PROFILES_NUM = 100;
 
-    public static LMMResponse messages(LMMRequest request, GraphDatabaseService database) {
-        LMMResponse response = new LMMResponse();
+    public static LMHISResponse messages(LMHISRequest request, GraphDatabaseService database) {
+        LMHISResponse response = new LMHISResponse();
 
         try (Transaction tx = database.beginTx()) {
             Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), request.getUserId());
@@ -46,7 +46,7 @@ public class Messages {
                 List<Node> messages = Utils.filterUsers(sourceUser, whoMessageWithMe, RelationshipType.withName(Relationships.VIEW_IN_MESSAGES.name()), true);
                 messages.addAll(Utils.filterUsers(sourceUser, whoMessageWithMe, RelationshipType.withName(Relationships.VIEW_IN_MESSAGES.name()), false));
 
-                messages = sortMessagesProfiles(sourceUser, messages);
+                messages = sortProfilesByLastMessageAt(sourceUser, messages);
                 List<Profile> profileList = new ArrayList<>(messages.size());
 
                 for (Node eachProfile : messages) {

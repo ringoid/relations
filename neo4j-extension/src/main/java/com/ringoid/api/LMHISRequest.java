@@ -3,11 +3,12 @@ package com.ringoid.api;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class LMMRequest {
+public class LMHISRequest {
     private String userId;
-    private boolean requestNewPart;
     private long requestedLastActionTime;
+    private boolean requestNewPart;
     private String resolution;
+    private String lmhisPart;//hellos | inbox | sent
 
     public String getUserId() {
         return userId;
@@ -15,14 +16,6 @@ public class LMMRequest {
 
     public void setUserId(String userId) {
         this.userId = userId;
-    }
-
-    public boolean isRequestNewPart() {
-        return requestNewPart;
-    }
-
-    public void setRequestNewPart(boolean requestNewPart) {
-        this.requestNewPart = requestNewPart;
     }
 
     public long getRequestedLastActionTime() {
@@ -39,5 +32,21 @@ public class LMMRequest {
 
     public void setResolution(String resolution) {
         this.resolution = resolution;
+    }
+
+    public String getLmhisPart() {
+        return lmhisPart;
+    }
+
+    public void setLmhisPart(String lmhisPart) {
+        this.lmhisPart = lmhisPart;
+    }
+
+    public boolean isRequestNewPart() {
+        return requestNewPart;
+    }
+
+    public void setRequestNewPart(boolean requestNewPart) {
+        this.requestNewPart = requestNewPart;
     }
 }

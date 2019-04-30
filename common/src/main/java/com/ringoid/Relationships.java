@@ -8,6 +8,11 @@ public enum Relationships {
     VIEW_IN_LIKES_YOU,
     VIEW_IN_MATCHES,
     VIEW_IN_MESSAGES,
+
+    VIEW_IN_HELLOS,
+    VIEW_IN_INBOX,
+    VIEW_IN_SENT,
+
     BLOCK,
     MATCH,
     MESSAGE,
@@ -44,6 +49,12 @@ public enum Relationships {
                 return PASS_MESSAGE;
             case "RESIZED":
                 return RESIZED;
+            case "VIEW_IN_HELLOS":
+                return VIEW_IN_HELLOS;
+            case "VIEW_IN_INBOX":
+                return VIEW_IN_INBOX;
+            case "VIEW_IN_SENT":
+                return VIEW_IN_SENT;
             default:
                 return UNSUPPORTED;
         }

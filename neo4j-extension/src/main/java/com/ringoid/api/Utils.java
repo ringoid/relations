@@ -110,7 +110,110 @@ public class Utils {
         return result;
     }
 
-    public static List<Node> sortMessagesProfiles(Node sourceUser, List<Node> tmpResult) {
+    public static Profile markProfileWithLastMessageAt(Node sourceUser, Node profileNode, Profile profile) {
+        long lastMessageAt = 0L;
+        Iterable<Relationship> msgRels = profileNode.getRelationships(Direction.BOTH, RelationshipType.withName(Relationships.MESSAGE.name()));
+        for (Relationship eachMsgRel : msgRels) {
+            Node other = eachMsgRel.getOtherNode(profileNode);
+            if (other.hasLabel(Label.label(PERSON.getLabelName())) && other.getId() == sourceUser.getId()) {
+                lastMessageAt = (Long) eachMsgRel.getProperty(MessageRelationshipProperties.MSG_AT.getPropertyName(), 0L);
+                break;
+            }
+        }
+        profile.setLastMessageAt(lastMessageAt);
+        return profile;
+    }
+
+    public static List<Profile> sortForHellos(List<Profile> profiles) {
+        Collections.sort(profiles, new Comparator<Profile>() {
+            @Override
+            public int compare(Profile profile1, Profile profile2) {
+                if (profile1.getLastMessageAt() > profile2.getLastMessageAt()) {
+                    return -1;
+                } else if (profile1.getLastMessageAt() < profile2.getLastMessageAt()) {
+                    return 1;
+                }
+                return 0;
+            }
+        });
+        return profiles;
+    }
+
+    public static List<Profile> sortForInbox(List<Profile> profiles) {
+        Collections.sort(profiles, new Comparator<Profile>() {
+            @Override
+            public int compare(Profile profile1, Profile profile2) {
+                long lastMessageToMeAt1 = 0L;
+                for (Message msg : profile1.getMessages()) {
+                    if (!msg.isWasYouSender() && msg.getWasSentAt() > lastMessageToMeAt1) {
+                        lastMessageToMeAt1 = msg.getWasSentAt();
+                    }
+                }
+
+                long lastMessageToMeAt2 = 0L;
+                for (Message msg : profile2.getMessages()) {
+                    if (!msg.isWasYouSender() && msg.getWasSentAt() > lastMessageToMeAt2) {
+                        lastMessageToMeAt2 = msg.getWasSentAt();
+                    }
+                }
+
+                if (lastMessageToMeAt1 > lastMessageToMeAt2) {
+                    //put profile1 before profile2
+                    return -1;
+                } else if (lastMessageToMeAt1 < lastMessageToMeAt2) {
+                    return 1;
+                }
+
+                //if we don't have time in a messages then use usual sorting order
+                if (profile1.getLastMessageAt() > profile2.getLastMessageAt()) {
+                    return -1;
+                } else if (profile1.getLastMessageAt() < profile2.getLastMessageAt()) {
+                    return 1;
+                }
+                return 0;
+            }
+        });
+        return profiles;
+    }
+
+    public static List<Profile> sortForSent(List<Profile> profiles) {
+        Collections.sort(profiles, new Comparator<Profile>() {
+            @Override
+            public int compare(Profile profile1, Profile profile2) {
+                long lastMessageToMeAt1 = 0L;
+                for (Message msg : profile1.getMessages()) {
+                    if (msg.isWasYouSender() && msg.getWasSentAt() > lastMessageToMeAt1) {
+                        lastMessageToMeAt1 = msg.getWasSentAt();
+                    }
+                }
+
+                long lastMessageToMeAt2 = 0L;
+                for (Message msg : profile2.getMessages()) {
+                    if (msg.isWasYouSender() && msg.getWasSentAt() > lastMessageToMeAt2) {
+                        lastMessageToMeAt2 = msg.getWasSentAt();
+                    }
+                }
+
+                if (lastMessageToMeAt1 > lastMessageToMeAt2) {
+                    //put profile1 before profile2
+                    return -1;
+                } else if (lastMessageToMeAt1 < lastMessageToMeAt2) {
+                    return 1;
+                }
+
+                //if we don't have time in a messages then use usual sorting order
+                if (profile1.getLastMessageAt() > profile2.getLastMessageAt()) {
+                    return -1;
+                } else if (profile1.getLastMessageAt() < profile2.getLastMessageAt()) {
+                    return 1;
+                }
+                return 0;
+            }
+        });
+        return profiles;
+    }
+
+    public static List<Node> sortProfilesByLastMessageAt(Node sourceUser, List<Node> tmpResult) {
         Collections.sort(tmpResult, new Comparator<Node>() {
             @Override
             public int compare(Node node1, Node node2) {
@@ -352,17 +455,17 @@ public class Utils {
     public static List<Message> messages(Node sourceNode, Node withHim) {
         List<Message> result = new ArrayList<>();
 
-        Iterable<Relationship> takeParrt = sourceNode.getRelationships(
+        Iterable<Relationship> takePart = sourceNode.getRelationships(
                 RelationshipType.withName(Relationships.TAKE_PART_IN_CONVERSATION.name()),
                 Direction.OUTGOING);
         Node targetConversation = null;
-        for (Relationship out : takeParrt) {
+        for (Relationship out : takePart) {
             Node conversationNode = out.getOtherNode(sourceNode);
             if (conversationNode.hasLabel(Label.label(Labels.CONVERSATION.getLabelName()))) {
-                Iterable<Relationship> takeParrtIn = conversationNode.getRelationships(
+                Iterable<Relationship> takePartIn = conversationNode.getRelationships(
                         RelationshipType.withName(Relationships.TAKE_PART_IN_CONVERSATION.name()),
                         Direction.INCOMING);
-                for (Relationship in : takeParrtIn) {
+                for (Relationship in : takePartIn) {
                     Node otherProf = in.getOtherNode(conversationNode);
                     if (otherProf.hasLabel(Label.label(Labels.PERSON.getLabelName())) && otherProf.getId() == withHim.getId()) {
                         targetConversation = conversationNode;
@@ -386,9 +489,11 @@ public class Utils {
             String msgSourceUser = (String) each.getProperty(MessageProperties.MSG_SOURCE_USER_ID.getPropertyName());
             boolean wasYouSender = Objects.equals(originSenderId, msgSourceUser);
             String text = (String) each.getProperty(MessageProperties.MSG_TEXT.getPropertyName());
+            long sentAt = (Long) each.getProperty(MessageProperties.MSG_AT.getPropertyName(), 0L);
             Message msg = new Message();
             msg.setWasYouSender(wasYouSender);
             msg.setText(text);
+            msg.setWasSentAt(sentAt);
             result.add(msg);
         }
 

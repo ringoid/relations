@@ -26,8 +26,8 @@ public class Matches {
 
     private static final int MAX_MATCH_PROFILES_NUM = 100;
 
-    public static LMMResponse matches(LMMRequest request, GraphDatabaseService database) {
-        LMMResponse response = new LMMResponse();
+    public static LMHISResponse matches(LMHISRequest request, GraphDatabaseService database) {
+        LMHISResponse response = new LMHISResponse();
 
         try (Transaction tx = database.beginTx()) {
             Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), request.getUserId());

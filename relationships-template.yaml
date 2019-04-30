@@ -49,6 +49,10 @@ Mappings:
       test: test-readyforpush-relationships
       stage: stage-readyforpush-relationships
       prod: prod-readyforpush-relationships
+    LMHISFunction:
+      test: test-lmhis-relationships
+      stage: stage-lmhis-relationships
+      prod: prod-lmhis-relationships
 
   BotSqsResourcesName:
     BotSqsQueue:
@@ -162,6 +166,17 @@ Resources:
       Policies:
         - SecretsManagerReadWrite
 
+  LMHISFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: lmhis
+      CodeUri: ./lmhis.zip
+      FunctionName: !FindInMap [FunctionName, LMHISFunction, !Ref Env]
+      Description: LMHIS Relationships function
+      Policies:
+        - SecretsManagerReadWrite
+
   RedyForPushFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -210,6 +225,10 @@ Outputs:
     Value: !FindInMap [FunctionName, MessagesFunction, !Ref Env]
     Export:
       Name: !Join [ "-", [ !Ref Env, MessagesFunctionExport] ]
+  LMHISFunctionExport:
+    Value: !FindInMap [FunctionName, LMHISFunction, !Ref Env]
+    Export:
+      Name: !Join [ "-", [ !Ref Env, LMHISFunctionExport] ]
   RedyForPushFunctionExport:
     Value: !FindInMap [FunctionName, RedyForPushFunction, !Ref Env]
     Export:

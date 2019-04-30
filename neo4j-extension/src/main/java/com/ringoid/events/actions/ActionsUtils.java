@@ -156,6 +156,7 @@ public class ActionsUtils {
         lastMessage.setProperty(MessageProperties.MSG_SOURCE_USER_ID.getPropertyName(), event.getUserId());
         lastMessage.setProperty(MessageProperties.MSG_TARGET_USER_ID.getPropertyName(), event.getTargetUserId());
         lastMessage.setProperty(MessageProperties.MSG_TEXT.getPropertyName(), event.getText());
+        lastMessage.setProperty(MessageProperties.MSG_AT.getPropertyName(), event.getUnixTime());
 
         getOrCreateRelationship(start, lastMessage, Direction.OUTGOING, Relationships.PASS_MESSAGE.name());
     }
@@ -400,6 +401,15 @@ public class ActionsUtils {
             case MESSAGES:
                 targetProfileRelationship = Relationships.VIEW_IN_MESSAGES;
                 break;
+            case HELLOS:
+                targetProfileRelationship = Relationships.VIEW_IN_HELLOS;
+                break;
+            case INBOX:
+                targetProfileRelationship = Relationships.VIEW_IN_INBOX;
+                break;
+            case SENT:
+                targetProfileRelationship = Relationships.VIEW_IN_SENT;
+                break;
             case CHAT:
                 //todo:discuss this
                 targetProfileRelationship = Relationships.VIEW;
@@ -432,6 +442,9 @@ public class ActionsUtils {
         toDelete.add(Relationships.VIEW_IN_LIKES_YOU.name());
         toDelete.add(Relationships.VIEW_IN_MATCHES.name());
         toDelete.add(Relationships.VIEW_IN_MESSAGES.name());
+        toDelete.add(Relationships.VIEW_IN_HELLOS.name());
+        toDelete.add(Relationships.VIEW_IN_INBOX.name());
+        toDelete.add(Relationships.VIEW_IN_SENT.name());
 
         if (targetProfileRelationship == Relationships.VIEW_IN_MESSAGES) {
             toDelete.remove(Relationships.VIEW_IN_MESSAGES.name());
@@ -441,6 +454,14 @@ public class ActionsUtils {
             toDelete.remove(Relationships.VIEW_IN_LIKES_YOU.name());
         } else if (targetProfileRelationship == Relationships.VIEW) {
             toDelete.remove(Relationships.VIEW.name());
+        } else if (targetProfileRelationship == Relationships.VIEW_IN_HELLOS) {
+            toDelete.remove(Relationships.VIEW_IN_HELLOS.name());
+        } else if (targetProfileRelationship == Relationships.VIEW_IN_INBOX) {
+            toDelete.remove(Relationships.VIEW_IN_INBOX.name());
+            toDelete.remove(Relationships.VIEW_IN_SENT.name());
+        } else if (targetProfileRelationship == Relationships.VIEW_IN_SENT) {
+            toDelete.remove(Relationships.VIEW_IN_INBOX.name());
+            toDelete.remove(Relationships.VIEW_IN_SENT.name());
         }
 
         for (Relationship each : allOutgoingRels) {

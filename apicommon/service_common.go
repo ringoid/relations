@@ -21,6 +21,7 @@ const (
 	MatchYouExtensionSuffix     = ":7474/graphaware/matches"
 	MessageYouExtensionSuffix   = ":7474/graphaware/messages"
 	ReadyForPushExtensionSuffix = ":7474/graphaware/ready_for_push"
+	LMHISExtensionSuffix        = ":7474/graphaware/lmhis"
 )
 
 func InitLambdaVars(lambdaName string) {
