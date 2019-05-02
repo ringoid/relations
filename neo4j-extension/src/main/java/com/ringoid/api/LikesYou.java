@@ -17,8 +17,9 @@ import java.util.Objects;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.USER_ID;
-import static com.ringoid.api.Utils.sortLmmPhotos;
-import static com.ringoid.api.Utils.sortLmmProfiles;
+import static com.ringoid.api.Utils.commonSortProfilesSeenPart;
+import static com.ringoid.api.Utils.sortLMHISPhotos;
+import static com.ringoid.api.Utils.sortLMHISUnseenPartProfiles;
 import static com.ringoid.api.Utils.whoHasLikeMatchOrMessageWithMe;
 
 public class LikesYou {
@@ -43,12 +44,17 @@ public class LikesYou {
                 List<Node> whoLikedMe = whoHasLikeMatchOrMessageWithMe(sourceUser, RelationshipType.withName(Relationships.LIKE.name()), Direction.INCOMING);
                 List<Node> liked = Utils.filterUsers(sourceUser, whoLikedMe, RelationshipType.withName(Relationships.VIEW_IN_LIKES_YOU.name()), request.isRequestNewPart());
 
-                liked = sortLmmProfiles(sourceUser, liked, false);
+                if (request.isRequestNewPart()) {
+                    liked = sortLMHISUnseenPartProfiles(sourceUser, liked);
+                } else {
+                    liked = commonSortProfilesSeenPart(sourceUser, liked);
+                }
+
                 List<Profile> profileList = new ArrayList<>(liked.size());
                 for (Node eachProfile : liked) {
                     Profile prof = new Profile();
                     prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
-                    prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortLmmPhotos(sourceUser, eachProfile), request.getResolution(), database));
+                    prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortLMHISPhotos(sourceUser, eachProfile), request.getResolution(), database));
                     //if user don't have photo right now - then skip him
                     if (Objects.isNull(prof.getPhotos()) || prof.getPhotos().size() == 0) {
                         continue;

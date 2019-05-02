@@ -17,8 +17,9 @@ import java.util.Objects;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.USER_ID;
-import static com.ringoid.api.Utils.sortLmmPhotos;
-import static com.ringoid.api.Utils.sortLmmProfiles;
+import static com.ringoid.api.Utils.commonSortProfilesSeenPart;
+import static com.ringoid.api.Utils.sortLMHISPhotos;
+import static com.ringoid.api.Utils.sortLMHISUnseenPartProfiles;
 import static com.ringoid.api.Utils.whoHasLikeMatchOrMessageWithMe;
 
 public class Matches {
@@ -43,12 +44,17 @@ public class Matches {
                 List<Node> whoMatchedWithMe = whoHasLikeMatchOrMessageWithMe(sourceUser, RelationshipType.withName(Relationships.MATCH.name()), Direction.BOTH);
                 List<Node> matched = Utils.filterUsers(sourceUser, whoMatchedWithMe, RelationshipType.withName(Relationships.VIEW_IN_MATCHES.name()), request.isRequestNewPart());
 
-                matched = sortLmmProfiles(sourceUser, matched, true);
+                if (request.isRequestNewPart()) {
+                    matched = sortLMHISUnseenPartProfiles(sourceUser, matched);
+                } else {
+                    matched = commonSortProfilesSeenPart(sourceUser, matched);
+                }
+
                 List<Profile> profileList = new ArrayList<>(matched.size());
                 for (Node eachProfile : matched) {
                     Profile prof = new Profile();
                     prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
-                    prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortLmmPhotos(sourceUser, eachProfile), request.getResolution(), database));
+                    prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortLMHISPhotos(sourceUser, eachProfile), request.getResolution(), database));
                     //if user don't have photo right now - then skip him
                     if (Objects.isNull(prof.getPhotos()) || prof.getPhotos().size() == 0) {
                         continue;

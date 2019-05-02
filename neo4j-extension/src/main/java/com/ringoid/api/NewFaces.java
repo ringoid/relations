@@ -2,7 +2,6 @@ package com.ringoid.api;
 
 import com.graphaware.common.log.LoggerFactory;
 import com.ringoid.Labels;
-import com.ringoid.PhotoProperties;
 import com.ringoid.Relationships;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,6 +34,9 @@ import static com.ringoid.PersonProperties.LOCATION;
 import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.PhotoProperties.ONLY_OWNER_CAN_SEE;
+import static com.ringoid.api.Utils.commonSortProfilesSeenPart;
+import static com.ringoid.api.Utils.sortLMHISPhotos;
+import static com.ringoid.api.Utils.sortNewFacesUnseenPhotos;
 
 public class NewFaces {
 
@@ -180,29 +182,24 @@ public class NewFaces {
                     targetSex = "male";
                 }
 
-                List<Node> respone = loopByUnseenPart(sourceUser.getId(), request.getUserId(), targetSex, request.getLimit(),
+                List<Node> unseen = loopByUnseenPart(sourceUser.getId(), request.getUserId(), targetSex, request.getLimit(),
                         Collections.emptySet(), database);
                 //now check that result <= limit
-                log.info("new_faces (not seen part) for userId [%s] size is [%s]", request.getUserId(), respone.size());
-                if (respone.size() < request.getLimit()) {
-                    Set<Long> nodeIds = new HashSet<>(respone.size());
-                    for (Node each : respone) {
+                log.info("new_faces (not seen part) for userId [%s] size is [%s]", request.getUserId(), unseen.size());
+
+                List<Profile> profileList = new ArrayList<>();
+                profileList.addAll(profileList(request, unseen, true, sourceUser, database));
+
+                if (unseen.size() < request.getLimit()) {
+                    Set<Long> nodeIds = new HashSet<>(unseen.size());
+                    for (Node each : unseen) {
                         nodeIds.add(each.getId());
                     }
                     List<Node> seen = loopBySeenPart(sourceUser.getId(), request.getUserId(), targetSex, request.getLimit(),
                             nodeIds, database);
+                    seen = commonSortProfilesSeenPart(sourceUser, seen);
                     log.info("new_faces (seen part) for userId [%s] size is [%s]", request.getUserId(), seen.size());
-                    respone.addAll(seen);
-                }
-
-                List<Profile> profileList = new ArrayList<>(respone.size());
-                for (Node eachProfile : respone) {
-                    Profile prof = new Profile();
-                    prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
-                    prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortPhotos(eachProfile), request.getResolution(), database));
-                    if (!prof.getPhotos().isEmpty()) {
-                        profileList.add(prof);
-                    }
+                    profileList.addAll(profileList(request, seen, false, sourceUser, database));
                 }
 
                 if (profileList.size() > request.getLimit()) {
@@ -223,6 +220,24 @@ public class NewFaces {
             tx.success();
         }
         return response;
+    }
+
+    private static List<Profile> profileList(NewFacesRequest request, List<Node> source,
+                                             boolean isItUnseenPart, Node sourceUser, GraphDatabaseService database) {
+        List<Profile> profileList = new ArrayList<>(source.size());
+        for (Node eachProfile : source) {
+            Profile prof = new Profile();
+            prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
+            if (isItUnseenPart) {
+                prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortNewFacesUnseenPhotos(eachProfile), request.getResolution(), database));
+            } else {
+                prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortLMHISPhotos(sourceUser, eachProfile), request.getResolution(), database));
+            }
+            if (!prof.getPhotos().isEmpty()) {
+                profileList.add(prof);
+            }
+        }
+        return profileList;
     }
 
     private static List<Node> sortProfiles(List<Node> tmpResult) {
@@ -279,45 +294,6 @@ public class NewFaces {
             }
         });
         return tmpResult;
-    }
-
-    private static List<String> sortPhotos(Node each) {
-        List<Node> photos = new ArrayList<>();
-        Iterable<Relationship> uploads = each.getRelationships(RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()), Direction.OUTGOING);
-        for (Relationship eachRel : uploads) {
-            Node photo = eachRel.getOtherNode(each);
-            if (photo.hasLabel(Label.label(PHOTO.getLabelName()))) {
-                photos.add(photo);
-            }
-        }
-
-        Collections.sort(photos, new Comparator<Node>() {
-            @Override
-            public int compare(Node node1, Node node2) {
-                long photoCounter1 = (Long) node1.getProperty(PhotoProperties.LIKE_COUNTER.getPropertyName(), 0L);
-                long photoCounter2 = (Long) node2.getProperty(PhotoProperties.LIKE_COUNTER.getPropertyName(), 0L);
-                if (photoCounter1 > photoCounter2) {
-                    return -1;
-                } else if (photoCounter1 < photoCounter2) {
-                    return 1;
-                }
-
-                long uploadedAt1 = (Long) node1.getProperty(PhotoProperties.PHOTO_UPLOADED_AT.getPropertyName(), 0L);
-                long uploadedAt2 = (Long) node2.getProperty(PhotoProperties.PHOTO_UPLOADED_AT.getPropertyName(), 0L);
-                if (uploadedAt1 > uploadedAt2) {
-                    return -1;
-                } else if (uploadedAt1 < uploadedAt2) {
-                    return 1;
-                }
-                return 0;
-            }
-        });
-
-        List<String> result = new ArrayList<>(photos.size());
-        for (Node eachP : photos) {
-            result.add((String) eachP.getProperty(PhotoProperties.PHOTO_ID.getPropertyName()));
-        }
-        return result;
     }
 
     private static List<Node> loopBySeenPart(long sourceUserNodeId, String sourceUserId, String targetSex,

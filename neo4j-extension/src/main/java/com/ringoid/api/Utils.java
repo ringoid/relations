@@ -17,10 +17,8 @@ import org.neo4j.graphdb.RelationshipType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import static com.ringoid.Labels.HIDDEN;
 import static com.ringoid.Labels.PERSON;
@@ -124,22 +122,82 @@ public class Utils {
         return profile;
     }
 
-    public static List<Profile> sortForHellos(List<Profile> profiles) {
-        Collections.sort(profiles, new Comparator<Profile>() {
+    public static List<Node> commonSortProfilesSeenPart(Node sourceUser, List<Node> sourceList) {
+        List<NodeWrapper> wrapperList = new ArrayList<>(sourceList.size());
+        for (Node each : sourceList) {
+            long lastOnlineTime = (Long) each.getProperty(PersonProperties.LAST_ONLINE_TIME.getPropertyName(), 0L);
+            int photoCounter = 0;
+            int likeCounter = 0;
+            int viewedFromSource = 0;
+            Iterable<Relationship> uploads = each.getRelationships(RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()), Direction.OUTGOING);
+            for (Relationship eachUpload : uploads) {
+                Node photo = eachUpload.getOtherNode(each);
+                if (photo.hasLabel(Label.label(Labels.PHOTO.getLabelName()))) {
+                    Boolean onlyOwnerCanSee = (Boolean) photo.getProperty(PhotoProperties.ONLY_OWNER_CAN_SEE.getPropertyName(), false);
+                    if (!onlyOwnerCanSee) {
+                        photoCounter++;
+                        Iterable<Relationship> photoLikes = photo.getRelationships(RelationshipType.withName(Relationships.LIKE.name()), Direction.INCOMING);
+                        //todo:here we can check who liked this photo - hidden user or not, but mb later
+                        for (Relationship eachLike : photoLikes) {
+                            likeCounter++;
+                        }
+                        Iterable<Relationship> viewRels = photo.getRelationships(RelationshipType.withName(Relationships.VIEW.name()), Direction.INCOMING);
+                        for (Relationship eachView : viewRels) {
+                            Node other = eachView.getOtherNode(photo);
+                            if (other.hasLabel(Label.label(Labels.PERSON.getLabelName())) &&
+                                    other.getId() == sourceUser.getId()) {
+                                viewedFromSource++;
+                                break;
+                            }
+                        }
+                    }
+                }//end each single photo
+            }//end loop by all photos
+            NodeWrapper nodeWrapper = new NodeWrapper();
+            nodeWrapper.node = each;
+            nodeWrapper.allPhotoCount = photoCounter;
+            nodeWrapper.likes = likeCounter;
+            nodeWrapper.unseenPhotos = photoCounter - viewedFromSource;
+            nodeWrapper.onlineTime = lastOnlineTime;
+            wrapperList.add(nodeWrapper);
+        }//end
+        Collections.sort(wrapperList, new Comparator<NodeWrapper>() {
             @Override
-            public int compare(Profile profile1, Profile profile2) {
-                if (profile1.getLastMessageAt() > profile2.getLastMessageAt()) {
+            public int compare(NodeWrapper node1, NodeWrapper node2) {
+                if (node1.unseenPhotos > node2.unseenPhotos) {
                     return -1;
-                } else if (profile1.getLastMessageAt() < profile2.getLastMessageAt()) {
+                } else if (node1.unseenPhotos < node2.unseenPhotos) {
+                    return 1;
+                }
+
+                if (node1.allPhotoCount > node2.allPhotoCount) {
+                    return -1;
+                } else if (node1.allPhotoCount < node2.allPhotoCount) {
+                    return 1;
+                }
+
+                if (node1.likes > node2.likes) {
+                    return -1;
+                } else if (node1.likes < node2.likes) {
+                    return 1;
+                }
+
+                if (node1.onlineTime > node2.onlineTime) {
+                    return -1;
+                } else if (node1.onlineTime < node2.onlineTime) {
                     return 1;
                 }
                 return 0;
             }
         });
-        return profiles;
+        List<Node> result = new ArrayList<>(wrapperList.size());
+        for (NodeWrapper eachWrapper : wrapperList) {
+            result.add(eachWrapper.node);
+        }
+        return result;
     }
 
-    public static List<Profile> sortForInbox(List<Profile> profiles) {
+    public static List<Profile> sortLMHISProfilesForInbox(List<Profile> profiles) {
         Collections.sort(profiles, new Comparator<Profile>() {
             @Override
             public int compare(Profile profile1, Profile profile2) {
@@ -176,7 +234,7 @@ public class Utils {
         return profiles;
     }
 
-    public static List<Profile> sortForSent(List<Profile> profiles) {
+    public static List<Profile> sortLMHISProfilesForSent(List<Profile> profiles) {
         Collections.sort(profiles, new Comparator<Profile>() {
             @Override
             public int compare(Profile profile1, Profile profile2) {
@@ -249,51 +307,52 @@ public class Utils {
         return tmpResult;
     }
 
-    public static List<Node> sortLmmProfiles(Node sourceUser, List<Node> tmpResult, boolean isItMatchFeed) {
+    public static List<Node> sortLMHISUnseenPartProfiles(Node sourceUser, List<Node> tmpResult) {
         Collections.sort(tmpResult, new Comparator<Node>() {
             @Override
             public int compare(Node node1, Node node2) {
-                if (isItMatchFeed) {
-                    //special sorting step
-                    int likesThatSourceMakes1 = 0;
-                    Iterable<Relationship> uploads1 = node1.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()));
-                    for (Relationship each : uploads1) {
-                        Node photo = each.getOtherNode(node1);
-                        if (photo.hasLabel(Label.label(PHOTO.getLabelName())) &&
-                                !((Boolean) photo.getProperty(PhotoProperties.ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
-
-                            Iterable<Relationship> likes = photo.getRelationships(Direction.INCOMING, RelationshipType.withName(Relationships.LIKE.name()));
-                            for (Relationship rel : likes) {
-                                Node other = rel.getOtherNode(photo);
-                                if (other.hasLabel(Label.label(PERSON.getLabelName())) && other.getId() == sourceUser.getId()) {
-                                    likesThatSourceMakes1++;
-                                }
-                            }
-                        }
-                    }
-
-                    int likesThatSourceMakes2 = 0;
-                    Iterable<Relationship> uploads2 = node2.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()));
-                    for (Relationship each : uploads2) {
-                        Node photo = each.getOtherNode(node2);
-                        if (photo.hasLabel(Label.label(PHOTO.getLabelName())) &&
-                                !((Boolean) photo.getProperty(PhotoProperties.ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
-                            Iterable<Relationship> likes = photo.getRelationships(Direction.INCOMING, RelationshipType.withName(Relationships.LIKE.name()));
-                            for (Relationship rel : likes) {
-                                Node other = rel.getOtherNode(photo);
-                                if (other.hasLabel(Label.label(PERSON.getLabelName())) && other.getId() == sourceUser.getId()) {
-                                    likesThatSourceMakes2++;
-                                }
-                            }
-                        }
-                    }
-
-                    if (likesThatSourceMakes1 > likesThatSourceMakes2) {
-                        return -1;
-                    } else if (likesThatSourceMakes1 < likesThatSourceMakes2) {
-                        return 1;
-                    }
-                }
+                //comment this coz in new product's model - one like -> one profile
+//                if (isItMatchFeed) {
+//                    //special sorting step
+//                    int likesThatSourceMakes1 = 0;
+//                    Iterable<Relationship> uploads1 = node1.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()));
+//                    for (Relationship each : uploads1) {
+//                        Node photo = each.getOtherNode(node1);
+//                        if (photo.hasLabel(Label.label(PHOTO.getLabelName())) &&
+//                                !((Boolean) photo.getProperty(PhotoProperties.ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
+//
+//                            Iterable<Relationship> likes = photo.getRelationships(Direction.INCOMING, RelationshipType.withName(Relationships.LIKE.name()));
+//                            for (Relationship rel : likes) {
+//                                Node other = rel.getOtherNode(photo);
+//                                if (other.hasLabel(Label.label(PERSON.getLabelName())) && other.getId() == sourceUser.getId()) {
+//                                    likesThatSourceMakes1++;
+//                                }
+//                            }
+//                        }
+//                    }
+//
+//                    int likesThatSourceMakes2 = 0;
+//                    Iterable<Relationship> uploads2 = node2.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()));
+//                    for (Relationship each : uploads2) {
+//                        Node photo = each.getOtherNode(node2);
+//                        if (photo.hasLabel(Label.label(PHOTO.getLabelName())) &&
+//                                !((Boolean) photo.getProperty(PhotoProperties.ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
+//                            Iterable<Relationship> likes = photo.getRelationships(Direction.INCOMING, RelationshipType.withName(Relationships.LIKE.name()));
+//                            for (Relationship rel : likes) {
+//                                Node other = rel.getOtherNode(photo);
+//                                if (other.hasLabel(Label.label(PERSON.getLabelName())) && other.getId() == sourceUser.getId()) {
+//                                    likesThatSourceMakes2++;
+//                                }
+//                            }
+//                        }
+//                    }
+//
+//                    if (likesThatSourceMakes1 > likesThatSourceMakes2) {
+//                        return -1;
+//                    } else if (likesThatSourceMakes1 < likesThatSourceMakes2) {
+//                        return 1;
+//                    }
+//                }
 
                 long likeCounter1 = (Long) node1.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
                 long likeCounter2 = (Long) node2.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
@@ -327,39 +386,40 @@ public class Utils {
                     return 1;
                 }
 
+                //comment this coz in new product's model - one like -> one profile
                 //how many back likes
-                Set<Long> sourcePhotoIds = new HashSet<>();
-                Iterable<Relationship> uploads = sourceUser.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()));
-                for (Relationship rel : uploads) {
-                    Node other = rel.getOtherNode(sourceUser);
-                    if (other.hasLabel(Label.label(PHOTO.getLabelName()))) {
-                        sourcePhotoIds.add(other.getId());
-                    }
-                }
+//                Set<Long> sourcePhotoIds = new HashSet<>();
+//                Iterable<Relationship> uploads = sourceUser.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()));
+//                for (Relationship rel : uploads) {
+//                    Node other = rel.getOtherNode(sourceUser);
+//                    if (other.hasLabel(Label.label(PHOTO.getLabelName()))) {
+//                        sourcePhotoIds.add(other.getId());
+//                    }
+//                }
 
-                int howManyBackLikes1 = 0;
-                Iterable<Relationship> likes1 = node1.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.LIKE.name()));
-                for (Relationship each : likes1) {
-                    Node other = each.getOtherNode(node1);
-                    if (other.hasLabel(Label.label(PHOTO.getLabelName())) && sourcePhotoIds.contains(other.getId())) {
-                        howManyBackLikes1++;
-                    }
-                }
-
-                int howManyBackLikes2 = 0;
-                Iterable<Relationship> likes2 = node2.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.LIKE.name()));
-                for (Relationship each : likes2) {
-                    Node other = each.getOtherNode(node2);
-                    if (other.hasLabel(Label.label(PHOTO.getLabelName())) && sourcePhotoIds.contains(other.getId())) {
-                        howManyBackLikes2++;
-                    }
-                }
-
-                if (howManyBackLikes1 > howManyBackLikes2) {
-                    return -1;
-                } else if (howManyBackLikes1 < howManyBackLikes2) {
-                    return 1;
-                }
+//                int howManyBackLikes1 = 0;
+//                Iterable<Relationship> likes1 = node1.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.LIKE.name()));
+//                for (Relationship each : likes1) {
+//                    Node other = each.getOtherNode(node1);
+//                    if (other.hasLabel(Label.label(PHOTO.getLabelName())) && sourcePhotoIds.contains(other.getId())) {
+//                        howManyBackLikes1++;
+//                    }
+//                }
+//
+//                int howManyBackLikes2 = 0;
+//                Iterable<Relationship> likes2 = node2.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.LIKE.name()));
+//                for (Relationship each : likes2) {
+//                    Node other = each.getOtherNode(node2);
+//                    if (other.hasLabel(Label.label(PHOTO.getLabelName())) && sourcePhotoIds.contains(other.getId())) {
+//                        howManyBackLikes2++;
+//                    }
+//                }
+//
+//                if (howManyBackLikes1 > howManyBackLikes2) {
+//                    return -1;
+//                } else if (howManyBackLikes1 < howManyBackLikes2) {
+//                    return 1;
+//                }
 
                 //compare last online time
                 long lastOnline1 = (Long) node1.getProperty(LAST_ONLINE_TIME.getPropertyName(), 0L);
@@ -375,7 +435,7 @@ public class Utils {
         return tmpResult;
     }
 
-    public static List<String> sortLmmPhotos(Node sourceUser, Node each) {
+    public static List<String> sortLMHISPhotos(Node sourceUser, Node each) {
         List<Node> photos = new ArrayList<>();
 
         Iterable<Relationship> uploads = each.getRelationships(RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()), Direction.OUTGOING);
@@ -396,7 +456,8 @@ public class Utils {
                 long photoUploadedAt1 = 0L;
                 for (Relationship each : whoSeeItRel1) {
                     Node other = each.getOtherNode(node1);
-                    if (other.hasLabel(Label.label(PERSON.getLabelName())) && other.getId() == sourceUser.getId()) {
+                    if (Objects.equals(each.getType().name(), Relationships.VIEW.name()) &&
+                            other.hasLabel(Label.label(PERSON.getLabelName())) && other.getId() == sourceUser.getId()) {
                         seenCounter1++;
                     }
                     if (Objects.equals(each.getType().name(), Relationships.LIKE.name())) {
@@ -413,7 +474,8 @@ public class Utils {
                 long photoUploadedAt2 = 0L;
                 for (Relationship each : whoSeeItRel2) {
                     Node other = each.getOtherNode(node2);
-                    if (other.hasLabel(Label.label(PERSON.getLabelName())) && other.getId() == sourceUser.getId()) {
+                    if (Objects.equals(each.getType().name(), Relationships.VIEW.name()) &&
+                            other.hasLabel(Label.label(PERSON.getLabelName())) && other.getId() == sourceUser.getId()) {
                         seenCounter2++;
                     }
                     if (Objects.equals(each.getType().name(), Relationships.LIKE.name())) {
@@ -439,6 +501,45 @@ public class Utils {
                 if (photoUploadedAt1 > photoUploadedAt2) {
                     return -1;
                 } else if (photoUploadedAt1 < photoUploadedAt2) {
+                    return 1;
+                }
+                return 0;
+            }
+        });
+
+        List<String> result = new ArrayList<>(photos.size());
+        for (Node eachP : photos) {
+            result.add((String) eachP.getProperty(PhotoProperties.PHOTO_ID.getPropertyName()));
+        }
+        return result;
+    }
+
+    public static List<String> sortNewFacesUnseenPhotos(Node each) {
+        List<Node> photos = new ArrayList<>();
+        Iterable<Relationship> uploads = each.getRelationships(RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()), Direction.OUTGOING);
+        for (Relationship eachRel : uploads) {
+            Node photo = eachRel.getOtherNode(each);
+            if (photo.hasLabel(Label.label(PHOTO.getLabelName()))) {
+                photos.add(photo);
+            }
+        }
+
+        Collections.sort(photos, new Comparator<Node>() {
+            @Override
+            public int compare(Node node1, Node node2) {
+                long photoCounter1 = (Long) node1.getProperty(PhotoProperties.LIKE_COUNTER.getPropertyName(), 0L);
+                long photoCounter2 = (Long) node2.getProperty(PhotoProperties.LIKE_COUNTER.getPropertyName(), 0L);
+                if (photoCounter1 > photoCounter2) {
+                    return -1;
+                } else if (photoCounter1 < photoCounter2) {
+                    return 1;
+                }
+
+                long uploadedAt1 = (Long) node1.getProperty(PhotoProperties.PHOTO_UPLOADED_AT.getPropertyName(), 0L);
+                long uploadedAt2 = (Long) node2.getProperty(PhotoProperties.PHOTO_UPLOADED_AT.getPropertyName(), 0L);
+                if (uploadedAt1 > uploadedAt2) {
+                    return -1;
+                } else if (uploadedAt1 < uploadedAt2) {
                     return 1;
                 }
                 return 0;
@@ -500,4 +601,11 @@ public class Utils {
         return result;
     }
 
+    static class NodeWrapper {
+        Node node;
+        int unseenPhotos;
+        int allPhotoCount;
+        int likes;
+        long onlineTime;
+    }
 }

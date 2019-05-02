@@ -17,11 +17,12 @@ import java.util.Objects;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.USER_ID;
+import static com.ringoid.api.Utils.commonSortProfilesSeenPart;
 import static com.ringoid.api.Utils.markProfileWithLastMessageAt;
-import static com.ringoid.api.Utils.sortForHellos;
-import static com.ringoid.api.Utils.sortForInbox;
-import static com.ringoid.api.Utils.sortForSent;
-import static com.ringoid.api.Utils.sortLmmPhotos;
+import static com.ringoid.api.Utils.sortLMHISPhotos;
+import static com.ringoid.api.Utils.sortLMHISProfilesForInbox;
+import static com.ringoid.api.Utils.sortLMHISProfilesForSent;
+import static com.ringoid.api.Utils.sortLMHISUnseenPartProfiles;
 import static com.ringoid.api.Utils.whoHasLikeMatchOrMessageWithMe;
 
 public class LMHIS {
@@ -75,6 +76,12 @@ public class LMHIS {
         List<Node> whoInMessages = Utils.filterUsers(sourceUser, whoMessageWithMe, RelationshipType.withName(Relationships.VIEW_IN_HELLOS.name()), request.isRequestNewPart());
         List<Profile> profileList = new ArrayList<>(whoInMessages.size());
 
+        if (request.isRequestNewPart()) {
+            whoInMessages = sortLMHISUnseenPartProfiles(sourceUser, whoInMessages);
+        } else {
+            whoInMessages = commonSortProfilesSeenPart(sourceUser, whoInMessages);
+        }
+
         for (Node eachProfile : whoInMessages) {
             Profile prof = new Profile();
             prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
@@ -96,18 +103,14 @@ public class LMHIS {
             }
             prof.setMessages(msgs);
 
-            prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortLmmPhotos(sourceUser, eachProfile), request.getResolution(), database));
+            prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortLMHISPhotos(sourceUser, eachProfile), request.getResolution(), database));
             //if user don't have photo right now - then skip him
             if (Objects.isNull(prof.getPhotos()) || prof.getPhotos().size() == 0) {
                 continue;
             }
 
-            prof = markProfileWithLastMessageAt(sourceUser, eachProfile, prof);
-
             profileList.add(prof);
         }
-
-        profileList = sortForHellos(profileList);
 
         if (profileList.size() > MAX_PROFILES_IN_ONE_PART_OF_HELLOS) {
             profileList = profileList.subList(0, MAX_PROFILES_IN_ONE_PART_OF_HELLOS);
@@ -148,7 +151,7 @@ public class LMHIS {
             }
             prof.setMessages(msgs);
 
-            prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortLmmPhotos(sourceUser, eachProfile), request.getResolution(), database));
+            prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortLMHISPhotos(sourceUser, eachProfile), request.getResolution(), database));
             //if user don't have photo right now - then skip him
             if (Objects.isNull(prof.getPhotos()) || prof.getPhotos().size() == 0) {
                 continue;
@@ -157,7 +160,7 @@ public class LMHIS {
             profileList.add(prof);
         }
 
-        profileList = sortForInbox(profileList);
+        profileList = sortLMHISProfilesForInbox(profileList);
 
         if (profileList.size() > MAX_PROFILES_IN_INBOX) {
             profileList = profileList.subList(0, MAX_PROFILES_IN_INBOX);
@@ -193,7 +196,7 @@ public class LMHIS {
             }
             prof.setMessages(msgs);
 
-            prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortLmmPhotos(sourceUser, eachProfile), request.getResolution(), database));
+            prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortLMHISPhotos(sourceUser, eachProfile), request.getResolution(), database));
             //if user don't have photo right now - then skip him
             if (Objects.isNull(prof.getPhotos()) || prof.getPhotos().size() == 0) {
                 continue;
@@ -204,7 +207,7 @@ public class LMHIS {
             profileList.add(prof);
         }
 
-        profileList = sortForSent(profileList);
+        profileList = sortLMHISProfilesForSent(profileList);
 
         if (profileList.size() > MAX_PROFILES_IN_SENT) {
             profileList = profileList.subList(0, MAX_PROFILES_IN_SENT);
