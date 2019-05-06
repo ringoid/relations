@@ -90,7 +90,7 @@ public class ActionController {
     private static final int RETRIES = 5;
     private static final int BACKOFF = 100;
 
-    private static final int NEW_FACES_HARDCODE_LIMIT = 50;
+    private static final int NEW_FACES_HARDCODE_LIMIT = 100;
 
     private final GraphDatabaseService database;
 
