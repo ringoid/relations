@@ -1,5 +1,6 @@
 package com.ringoid.api;
 
+import com.codahale.metrics.MetricRegistry;
 import com.graphaware.common.log.LoggerFactory;
 import com.ringoid.Labels;
 import com.ringoid.Relationships;
@@ -163,7 +164,7 @@ public class NewFaces {
         DISTANCES.add(300_000);
     }
 
-    public static NewFacesResponse newFaces(NewFacesRequest request, GraphDatabaseService database) {
+    public static NewFacesResponse newFaces(NewFacesRequest request, GraphDatabaseService database, MetricRegistry metrics) {
         NewFacesResponse response = new NewFacesResponse();
         try (Transaction tx = database.beginTx()) {
             Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), request.getUserId());
@@ -182,24 +183,36 @@ public class NewFaces {
                     targetSex = "male";
                 }
 
+                long startLoop = System.currentTimeMillis();
                 List<Node> unseen = loopByUnseenPart(sourceUser.getId(), request.getUserId(), targetSex, request.getLimit(),
                         Collections.emptySet(), database);
+                long loopTime = System.currentTimeMillis() - startLoop;
+                metrics.histogram("new_faces_loopByUnseenPart").update(loopTime);
+
                 //now check that result <= limit
                 log.info("new_faces (not seen part) for userId [%s] size is [%s]", request.getUserId(), unseen.size());
 
                 List<Profile> profileList = new ArrayList<>();
-                profileList.addAll(profileList(request, unseen, true, sourceUser, database));
+                profileList.addAll(profileList(request, unseen, true, sourceUser, database, metrics));
 
                 if (unseen.size() < request.getLimit()) {
                     Set<Long> nodeIds = new HashSet<>(unseen.size());
                     for (Node each : unseen) {
                         nodeIds.add(each.getId());
                     }
+                    startLoop = System.currentTimeMillis();
                     List<Node> seen = loopBySeenPart(sourceUser.getId(), request.getUserId(), targetSex, request.getLimit(),
                             nodeIds, database);
+                    loopTime = System.currentTimeMillis() - startLoop;
+                    metrics.histogram("new_faces_loopBySeenPart").update(loopTime);
+
+                    long startSorting = System.currentTimeMillis();
                     seen = commonSortProfilesSeenPart(sourceUser, seen);
+                    long sortingTime = System.currentTimeMillis() - startSorting;
+                    metrics.histogram("new_faces_commonSortProfilesSeenPart").update(loopTime);
+
                     log.info("new_faces (seen part) for userId [%s] size is [%s]", request.getUserId(), seen.size());
-                    profileList.addAll(profileList(request, seen, false, sourceUser, database));
+                    profileList.addAll(profileList(request, seen, false, sourceUser, database, metrics));
                 }
 
                 if (profileList.size() > request.getLimit()) {
@@ -223,7 +236,9 @@ public class NewFaces {
     }
 
     private static List<Profile> profileList(NewFacesRequest request, List<Node> source,
-                                             boolean isItUnseenPart, Node sourceUser, GraphDatabaseService database) {
+                                             boolean isItUnseenPart, Node sourceUser, GraphDatabaseService database,
+                                             MetricRegistry metrics) {
+        long start = System.currentTimeMillis();
         List<Profile> profileList = new ArrayList<>(source.size());
         for (Node eachProfile : source) {
             Profile prof = new Profile();
@@ -237,6 +252,8 @@ public class NewFaces {
                 profileList.add(prof);
             }
         }
+        long fullTime = System.currentTimeMillis() - start;
+        metrics.histogram("new_faces_profileList").update(fullTime);
         return profileList;
     }
 

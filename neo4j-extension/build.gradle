@@ -21,7 +21,8 @@ dependencies {
             'com.amazonaws:aws-java-sdk-kinesis:1.11.487',
             'com.amazonaws:aws-java-sdk-sqs:1.11.487',
 
-            'com.google.code.gson:gson:2.8.5'
+            'com.google.code.gson:gson:2.8.5',
+            'io.dropwizard.metrics:metrics-core:4.0.0'
     )
 }
 

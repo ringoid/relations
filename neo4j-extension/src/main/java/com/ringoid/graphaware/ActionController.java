@@ -1,5 +1,6 @@
 package com.ringoid.graphaware;
 
+import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.graphaware.common.log.LoggerFactory;
@@ -93,10 +94,12 @@ public class ActionController {
     private static final int NEW_FACES_HARDCODE_LIMIT = 100;
 
     private final GraphDatabaseService database;
+    private final MetricRegistry metrics;
 
     @Autowired
-    public ActionController(GraphDatabaseService database) {
+    public ActionController(GraphDatabaseService database, MetricRegistry metrics) {
         this.database = database;
+        this.metrics = metrics;
     }
 
     @RequestMapping(value = "/hello", method = RequestMethod.GET)
@@ -104,6 +107,55 @@ public class ActionController {
     public String hello() {
         log.info("hello world endpoint");
         return "Hello World!";
+    }
+
+    @RequestMapping(value = "/get_metrics", method = RequestMethod.GET)
+    @ResponseBody
+    public String getMetrics() {
+        String result = metricsToString("likes_you_full");
+        result += ",\n";
+        result += metricsToString("matches_full");
+        result += ",\n";
+        result += metricsToString("messages_full");
+        result += ",\n";
+        result += metricsToString("lmhis_full");
+        result += ",\n";
+        result += metricsToString("new_faces_full");
+
+        result += ",\n";
+        result += metricsToString("new_faces_loopByUnseenPart");
+        result += ",\n";
+        result += metricsToString("new_faces_profileList");
+        result += ",\n";
+        result += metricsToString("new_faces_loopBySeenPart");
+        result += ",\n";
+        result += metricsToString("new_faces_commonSortProfilesSeenPart");
+        return result;
+    }
+
+    private String metricsToString(final String name) {
+        return String.format(
+                "{\"name\":\"%s\"," +
+                        "\"count\":%s," +
+                        "\"min\":%s," +
+                        "\"max\":%s," +
+                        "\"mean\":%s," +
+                        "\"median\":%s," +
+                        "\"75%%\":%s," +
+                        "\"95%%\":%s," +
+                        "\"98%%\":%s," +
+                        "\"99%%\":%s}",
+                name,
+                Long.toString(metrics.histogram(name).getCount()),
+                Long.toString(metrics.histogram(name).getSnapshot().getMin()),
+                Long.toString(metrics.histogram(name).getSnapshot().getMax()),
+                Double.toString(metrics.histogram(name).getSnapshot().getMean()),
+                Double.toString(metrics.histogram(name).getSnapshot().getMedian()),
+                Double.toString(metrics.histogram(name).getSnapshot().get75thPercentile()),
+                Double.toString(metrics.histogram(name).getSnapshot().get95thPercentile()),
+                Double.toString(metrics.histogram(name).getSnapshot().get98thPercentile()),
+                Double.toString(metrics.histogram(name).getSnapshot().get99thPercentile())
+        );
     }
 
     @RequestMapping(value = "/create_indexes", method = RequestMethod.GET)
@@ -120,7 +172,9 @@ public class ActionController {
         ObjectMapper objectMapper = new ObjectMapper();
         LMHISRequest request = objectMapper.readValue(body, LMHISRequest.class);
         LMHISResponse response = LikesYou.likesYou(request, database);
-        log.info("handle likes_you with result size %s in %s millis", response.getProfiles().size(), (System.currentTimeMillis() - start));
+        long fullTime = System.currentTimeMillis() - start;
+        log.info("handle likes_you with result size %s in %s millis", response.getProfiles().size(), fullTime);
+        metrics.histogram("likes_you_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
     }
 
@@ -131,7 +185,9 @@ public class ActionController {
         ObjectMapper objectMapper = new ObjectMapper();
         LMHISRequest request = objectMapper.readValue(body, LMHISRequest.class);
         LMHISResponse response = Matches.matches(request, database);
-        log.info("handle matches with result size %s in %s millis", response.getProfiles().size(), (System.currentTimeMillis() - start));
+        long fullTime = System.currentTimeMillis() - start;
+        log.info("handle matches with result size %s in %s millis", response.getProfiles().size(), fullTime);
+        metrics.histogram("matches_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
     }
 
@@ -142,7 +198,9 @@ public class ActionController {
         ObjectMapper objectMapper = new ObjectMapper();
         LMHISRequest request = objectMapper.readValue(body, LMHISRequest.class);
         LMHISResponse response = Messages.messages(request, database);
-        log.info("handle messages with result size %s in %s millis", response.getProfiles().size(), (System.currentTimeMillis() - start));
+        long fullTime = System.currentTimeMillis() - start;
+        log.info("handle messages with result size %s in %s millis", response.getProfiles().size(), fullTime);
+        metrics.histogram("messages_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
     }
 
@@ -153,7 +211,9 @@ public class ActionController {
         ObjectMapper objectMapper = new ObjectMapper();
         LMHISRequest request = objectMapper.readValue(body, LMHISRequest.class);
         LMHISResponse response = LMHIS.lmHis(request, database);
-        log.info("handle lmhis for %s part with result size %s in %s millis", request.getLmhisPart(), response.getProfiles().size(), (System.currentTimeMillis() - start));
+        long fullTime = System.currentTimeMillis() - start;
+        log.info("handle lmhis for %s part with result size %s in %s millis", request.getLmhisPart(), response.getProfiles().size(), fullTime);
+        metrics.histogram("lmhis_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
     }
 
@@ -165,8 +225,10 @@ public class ActionController {
         NewFacesRequest request = objectMapper.readValue(body, NewFacesRequest.class);
         //IGNORE CLIENT SIDE LIMIT AND HARDCODE OWN
         request.setLimit(NEW_FACES_HARDCODE_LIMIT);
-        NewFacesResponse response = NewFaces.newFaces(request, database);
-        log.info("handle new_faces with result size %s in %s millis", response.getNewFaces().size(), (System.currentTimeMillis() - start));
+        NewFacesResponse response = NewFaces.newFaces(request, database, metrics);
+        long fullTime = System.currentTimeMillis() - start;
+        log.info("handle new_faces with result size %s in %s millis", response.getNewFaces().size(), fullTime);
+        metrics.histogram("new_faces_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
     }
 
