@@ -25,6 +25,7 @@ import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
+import static com.ringoid.PhotoProperties.ONLY_OWNER_CAN_SEE;
 
 public class Utils {
 
@@ -301,6 +302,62 @@ public class Utils {
                     return 1;
                 }
 
+                return 0;
+            }
+        });
+        return tmpResult;
+    }
+
+    public static List<Node> sortNewFacesUnseenPartProfiles(List<Node> tmpResult) {
+        if (tmpResult.isEmpty()) {
+            return tmpResult;
+        }
+
+        Collections.sort(tmpResult, new Comparator<Node>() {
+            @Override
+            public int compare(Node node1, Node node2) {
+                //now count photos
+                int photoCounter1 = 0;
+                for (Relationship each : node1.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
+                    Node eachPhoto = each.getOtherNode(node1);
+                    if (Objects.nonNull(eachPhoto) && eachPhoto.hasLabel(Label.label(Labels.PHOTO.getLabelName()))) {
+                        if (!((Boolean) eachPhoto.getProperty(ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
+                            photoCounter1++;
+                        }
+                    }
+                }
+                int photoCounter2 = 0;
+                for (Relationship each : node2.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
+                    Node eachPhoto = each.getOtherNode(node2);
+                    if (Objects.nonNull(eachPhoto) && eachPhoto.hasLabel(Label.label(Labels.PHOTO.getLabelName()))) {
+                        if (!((Boolean) eachPhoto.getProperty(ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
+                            photoCounter2++;
+                        }
+                    }
+                }
+
+                if (photoCounter1 > photoCounter2) {
+                    return -1;
+                } else if (photoCounter1 < photoCounter2) {
+                    return 1;
+                }
+
+                long likeCounter1 = (Long) node1.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
+                long likeCounter2 = (Long) node2.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
+                if (likeCounter1 > likeCounter2) {
+                    return -1;
+                } else if (likeCounter1 < likeCounter2) {
+                    return 1;
+                }
+
+                //compare last online time
+//                long lastOnline1 = (Long) node1.getProperty(LAST_ONLINE_TIME.getPropertyName(), 0L);
+//                long lastOnline2 = (Long) node2.getProperty(LAST_ONLINE_TIME.getPropertyName(), 0L);
+//                if (lastOnline1 > lastOnline2) {
+//                    return -1;
+//                } else if (lastOnline1 < lastOnline2) {
+//                    return 1;
+//                }
                 return 0;
             }
         });

@@ -2,7 +2,6 @@ package com.ringoid.api;
 
 import com.codahale.metrics.MetricRegistry;
 import com.graphaware.common.log.LoggerFactory;
-import com.ringoid.Labels;
 import com.ringoid.Relationships;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -16,7 +15,6 @@ import org.neo4j.logging.Log;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -37,6 +35,7 @@ import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.PhotoProperties.ONLY_OWNER_CAN_SEE;
 import static com.ringoid.api.Utils.commonSortProfilesSeenPart;
 import static com.ringoid.api.Utils.sortLMHISPhotos;
+import static com.ringoid.api.Utils.sortNewFacesUnseenPartProfiles;
 import static com.ringoid.api.Utils.sortNewFacesUnseenPhotos;
 
 public class NewFaces {
@@ -185,7 +184,7 @@ public class NewFaces {
 
                 long startLoop = System.currentTimeMillis();
                 List<Node> unseen = loopByUnseenPart(sourceUser.getId(), request.getUserId(), targetSex, request.getLimit(),
-                        Collections.emptySet(), database);
+                        Collections.emptySet(), database, metrics);
                 long loopTime = System.currentTimeMillis() - startLoop;
                 metrics.histogram("new_faces_loopByUnseenPart").update(loopTime);
 
@@ -193,26 +192,26 @@ public class NewFaces {
                 log.info("new_faces (not seen part) for userId [%s] size is [%s]", request.getUserId(), unseen.size());
 
                 List<Profile> profileList = new ArrayList<>();
-                profileList.addAll(profileList(request, unseen, true, sourceUser, database, metrics));
+                profileList.addAll(createProfileListWithResizedAndSortedPhotos(request, unseen, true, sourceUser, database, metrics));
 
-                if (unseen.size() < request.getLimit()) {
+                if (profileList.size() < request.getLimit()) {
                     Set<Long> nodeIds = new HashSet<>(unseen.size());
                     for (Node each : unseen) {
                         nodeIds.add(each.getId());
                     }
                     startLoop = System.currentTimeMillis();
                     List<Node> seen = loopBySeenPart(sourceUser.getId(), request.getUserId(), targetSex, request.getLimit(),
-                            nodeIds, database);
+                            nodeIds, database, metrics);
                     loopTime = System.currentTimeMillis() - startLoop;
                     metrics.histogram("new_faces_loopBySeenPart").update(loopTime);
 
                     long startSorting = System.currentTimeMillis();
                     seen = commonSortProfilesSeenPart(sourceUser, seen);
                     long sortingTime = System.currentTimeMillis() - startSorting;
-                    metrics.histogram("new_faces_commonSortProfilesSeenPart").update(loopTime);
+                    metrics.histogram("new_faces_commonSortProfilesSeenPart").update(sortingTime);
 
                     log.info("new_faces (seen part) for userId [%s] size is [%s]", request.getUserId(), seen.size());
-                    profileList.addAll(profileList(request, seen, false, sourceUser, database, metrics));
+                    profileList.addAll(createProfileListWithResizedAndSortedPhotos(request, seen, false, sourceUser, database, metrics));
                 }
 
                 if (profileList.size() > request.getLimit()) {
@@ -235,9 +234,9 @@ public class NewFaces {
         return response;
     }
 
-    private static List<Profile> profileList(NewFacesRequest request, List<Node> source,
-                                             boolean isItUnseenPart, Node sourceUser, GraphDatabaseService database,
-                                             MetricRegistry metrics) {
+    private static List<Profile> createProfileListWithResizedAndSortedPhotos(NewFacesRequest request, List<Node> source,
+                                                                             boolean isItUnseenPart, Node sourceUser, GraphDatabaseService database,
+                                                                             MetricRegistry metrics) {
         long start = System.currentTimeMillis();
         List<Profile> profileList = new ArrayList<>(source.size());
         for (Node eachProfile : source) {
@@ -253,70 +252,15 @@ public class NewFaces {
             }
         }
         long fullTime = System.currentTimeMillis() - start;
-        metrics.histogram("new_faces_profileList").update(fullTime);
+        metrics.histogram("new_faces_createProfileListWithResizedAndSortedPhotos").update(fullTime);
         return profileList;
-    }
-
-    private static List<Node> sortProfiles(List<Node> tmpResult) {
-        if (tmpResult.isEmpty()) {
-            return tmpResult;
-        }
-
-        Collections.sort(tmpResult, new Comparator<Node>() {
-            @Override
-            public int compare(Node node1, Node node2) {
-                //now count photos
-                int photoCounter1 = 0;
-                for (Relationship each : node1.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
-                    Node eachPhoto = each.getOtherNode(node1);
-                    if (Objects.nonNull(eachPhoto) && eachPhoto.hasLabel(Label.label(Labels.PHOTO.getLabelName()))) {
-                        if (!((Boolean) eachPhoto.getProperty(ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
-                            photoCounter1++;
-                        }
-                    }
-                }
-                int photoCounter2 = 0;
-                for (Relationship each : node2.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
-                    Node eachPhoto = each.getOtherNode(node2);
-                    if (Objects.nonNull(eachPhoto) && eachPhoto.hasLabel(Label.label(Labels.PHOTO.getLabelName()))) {
-                        if (!((Boolean) eachPhoto.getProperty(ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
-                            photoCounter2++;
-                        }
-                    }
-                }
-
-                if (photoCounter1 > photoCounter2) {
-                    return -1;
-                } else if (photoCounter1 < photoCounter2) {
-                    return 1;
-                }
-
-                long likeCounter1 = (Long) node1.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
-                long likeCounter2 = (Long) node2.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
-                if (likeCounter1 > likeCounter2) {
-                    return -1;
-                } else if (likeCounter1 < likeCounter2) {
-                    return 1;
-                }
-
-                //compare last online time
-//                long lastOnline1 = (Long) node1.getProperty(LAST_ONLINE_TIME.getPropertyName(), 0L);
-//                long lastOnline2 = (Long) node2.getProperty(LAST_ONLINE_TIME.getPropertyName(), 0L);
-//                if (lastOnline1 > lastOnline2) {
-//                    return -1;
-//                } else if (lastOnline1 < lastOnline2) {
-//                    return 1;
-//                }
-                return 0;
-            }
-        });
-        return tmpResult;
     }
 
     private static List<Node> loopBySeenPart(long sourceUserNodeId, String sourceUserId, String targetSex,
                                              int limit,
                                              Set<Long> nodeIdsToExclude,
-                                             GraphDatabaseService database) {
+                                             GraphDatabaseService database,
+                                             MetricRegistry metrics) {
         long start = System.currentTimeMillis();
 
         List<Node> result = new ArrayList<>();
@@ -326,16 +270,30 @@ public class NewFaces {
             } else {
                 break;
             }
-            result.addAll(loopRequest(sourceUserNodeId, sourceUserId, targetSex, limit, eachD,
-                    GEO_SEEN_SORTED_BY_ONLINE_TIME_QUERY, null,
-                    nodeIdsToExclude,
-                    database));
+            if (Objects.equals("male", targetSex)) {
+                //it means that you are woman, so we search most recent for seen part
+                result.addAll(loopRequest(sourceUserNodeId, sourceUserId, targetSex, limit, eachD,
+                        GEO_SEEN_SORTED_BY_ONLINE_TIME_QUERY, null,
+                        nodeIdsToExclude,
+                        false,
+                        database));
+            } else if (Objects.equals("female", targetSex)) {
+                //it means that you are men so 75 popular, 25 recent
+                result.addAll(loopRequest(sourceUserNodeId, sourceUserId, targetSex, limit, eachD,
+                        GEO_SEEN_SORTED_BY_LIKES_QUERY, GEO_SEEN_SORTED_BY_ONLINE_TIME_QUERY,
+                        nodeIdsToExclude,
+                        true,
+                        database));
+            }
         }
+        long fullTime = System.currentTimeMillis() - start;
+        metrics.histogram("new_faces_loopBySeenPart_geo_full_target_" + targetSex).update(fullTime);
 
         log.info("loopBySeenPart : found [%s] profiles using location for userId [%s] in [%s] millis",
                 result.size(), sourceUserId, System.currentTimeMillis() - start);
 
-        result = sortProfiles(result);
+        //there is no reason for sorting here coz it's seen part
+//        result = sortNewFacesUnseenProfiles(result);
 
         if (result.size() >= limit) {
             return result;
@@ -350,15 +308,31 @@ public class NewFaces {
 
         start = System.currentTimeMillis();
 
-        List<Node> tmp = loopRequest(sourceUserNodeId, sourceUserId, targetSex, limit, 0,
-                SEEN_SORTED_BY_ONLINE_TIME_QUERY, null,
-                nodeIds,
-                database);
+        List<Node> tmp = new ArrayList<>();
+        if (Objects.equals("male", targetSex)) {
+            //it means that you are women so most recent for you
+            tmp.addAll(loopRequest(sourceUserNodeId, sourceUserId, targetSex, limit, 0,
+                    SEEN_SORTED_BY_ONLINE_TIME_QUERY, null,
+                    nodeIds,
+                    false,
+                    database));
+        } else if (Objects.equals("female", targetSex)) {
+            //it means that you are men so 75 popular, 25 recent
+            tmp.addAll(loopRequest(sourceUserNodeId, sourceUserId, targetSex, limit, 0,
+                    SEEN_SORTED_BY_LIKES_QUERY, SEEN_SORTED_BY_ONLINE_TIME_QUERY,
+                    nodeIdsToExclude,
+                    true,
+                    database));
+        }
+
+        fullTime = System.currentTimeMillis() - start;
+        metrics.histogram("new_faces_loopBySeenPart_without_geo_full_target_" + targetSex).update(fullTime);
 
         log.info("loopBySeenPart : found [%s] profiles without location for userId [%s] in [%s] millis",
                 tmp.size(), sourceUserId, System.currentTimeMillis() - start);
 
-        tmp = sortProfiles(tmp);
+        //there is no reason for sorting here coz it's seen part
+//        tmp = sortNewFacesUnseenProfiles(tmp);
 
         result.addAll(tmp);
 
@@ -368,7 +342,8 @@ public class NewFaces {
     private static List<Node> loopByUnseenPart(long sourceUserNodeId, String sourceUserId, String targetSex,
                                                int limit,
                                                Set<Long> nodeIdsToExclude,
-                                               GraphDatabaseService database) {
+                                               GraphDatabaseService database,
+                                               MetricRegistry metrics) {
 
         long start = System.currentTimeMillis();
 
@@ -382,13 +357,16 @@ public class NewFaces {
             result.addAll(loopRequest(sourceUserNodeId, sourceUserId, targetSex, limit, eachD,
                     GEO_NOT_SEEN_SORTED_BY_ONLINE_TIME_QUERY, GEO_NOT_SEEN_SORTED_BY_LIKES_QUERY,
                     nodeIdsToExclude,
+                    false,
                     database));
         }
+        long fullTime = System.currentTimeMillis() - start;
+        metrics.histogram("new_faces_loopByUnseenPart_geo_full").update(fullTime);
 
         log.info("loopByUnseenPart : found [%s] profiles using location for userId [%s] in [%s] millis",
                 result.size(), sourceUserId, System.currentTimeMillis() - start);
 
-        result = sortProfiles(result);
+        result = sortNewFacesUnseenPartProfiles(result);
 
         if (result.size() >= limit) {
             return result;
@@ -405,12 +383,16 @@ public class NewFaces {
         List<Node> tmp = loopRequest(sourceUserNodeId, sourceUserId, targetSex, limit, 0,
                 NOT_SEEN_SORTED_BY_ONLINE_TIME_QUERY, NOT_SEEN_SORTED_BY_LIKES_QUERY,
                 nodeIds,
+                false,
                 database);
+
+        fullTime = System.currentTimeMillis() - start;
+        metrics.histogram("new_faces_loopByUnseenPart_without_geo_full").update(fullTime);
 
         log.info("loopByUnseenPart : found [%s] profiles without location for userId [%s] in [%s] millis",
                 tmp.size(), sourceUserId, System.currentTimeMillis() - start);
 
-        tmp = sortProfiles(tmp);
+        tmp = sortNewFacesUnseenPartProfiles(tmp);
 
         result.addAll(tmp);
 
@@ -421,6 +403,7 @@ public class NewFaces {
                                           int limit, int distance,
                                           String queryFirst, String querySecond,
                                           Set<Long> nodeIdsToExclude,
+                                          boolean isItSeenForMen,
                                           GraphDatabaseService database) {
 
         int skip = 0;
@@ -429,7 +412,14 @@ public class NewFaces {
         List<Node> result = new ArrayList<>();
 
         while (result.size() < limit && loopCounter < MAX_LOOP_NUM) {
-            List<Node> unknowns = fetchProfiles(queryFirst, querySecond, sourceUserId, targetSex, skip, limit, distance, database);
+
+            List<Node> unknowns = new ArrayList<>();
+            if (isItSeenForMen) {
+                unknowns.addAll(fetchProfilesForMenSeenPart(queryFirst, querySecond, sourceUserId, targetSex, skip, limit, distance, 75, 25, database));
+            } else {
+                unknowns.addAll(fetchProfiles(queryFirst, querySecond, sourceUserId, targetSex, skip, limit, distance, database));
+            }
+
             if (unknowns.size() < limit) {
                 //there is no more users, exit from the loop
                 loopCounter = MAX_LOOP_NUM;
@@ -502,6 +492,47 @@ public class NewFaces {
             newUsers.addAll(popularUseIds);
             Collections.shuffle(newUsers);
         }
+
+        //todo:future place for optimization (we can ask only limit nodes)
+        result.addAll(collectNodes(newUsers, database));
+
+        return result;
+    }
+
+    private static List<Node> fetchProfilesForMenSeenPart(String queryFirstPart, String querySecondPart,
+                                                          String sourceUserId, String targetSex,
+                                                          int skip, int limit,
+                                                          int distance,
+                                                          int maxFirstPart, int maxSecondPart,
+                                                          GraphDatabaseService database) {
+        List<Node> result = new ArrayList<>();
+        Map<String, Object> params = new HashMap<>();
+        params.put("sourceUserId", sourceUserId);
+        params.put("skipParam", skip);
+        params.put("limitParam", limit);
+        params.put("sex", targetSex);
+        params.put("distance", distance);
+        List<String> newUsers = executeQueryAndReturnUserIds(queryFirstPart, params, database);
+        if (newUsers.size() < limit) {
+            //it means that we can skip popular request
+            return collectNodes(newUsers, database);
+        }
+
+        List<String> secondQueryUsers = new ArrayList<>();
+        if (Objects.nonNull(querySecondPart)) {
+            secondQueryUsers.addAll(executeQueryAndReturnUserIds(querySecondPart, params, database));
+        }
+
+        if (secondQueryUsers.size() > maxSecondPart) {
+            secondQueryUsers = secondQueryUsers.subList(0, maxSecondPart);
+        }
+
+        if (newUsers.size() > maxFirstPart) {
+            newUsers = newUsers.subList(0, maxFirstPart);
+        }
+
+        newUsers.addAll(secondQueryUsers);
+        Collections.shuffle(newUsers);
 
         //todo:future place for optimization (we can ask only limit nodes)
         result.addAll(collectNodes(newUsers, database));

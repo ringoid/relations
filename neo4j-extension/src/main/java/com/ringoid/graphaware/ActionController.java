@@ -125,11 +125,29 @@ public class ActionController {
         result += ",\n";
         result += metricsToString("new_faces_loopByUnseenPart");
         result += ",\n";
-        result += metricsToString("new_faces_profileList");
+        result += metricsToString("new_faces_createProfileListWithResizedAndSortedPhotos");
         result += ",\n";
         result += metricsToString("new_faces_loopBySeenPart");
         result += ",\n";
         result += metricsToString("new_faces_commonSortProfilesSeenPart");
+
+        result += ",\n";
+        result += metricsToString("new_faces_loopByUnseenPart_without_geo_full");
+
+        result += ",\n";
+        result += metricsToString("new_faces_loopByUnseenPart_geo_full");
+
+        result += ",\n";
+        result += metricsToString("new_faces_loopBySeenPart_without_geo_full_target_male");
+
+        result += ",\n";
+        result += metricsToString("new_faces_loopBySeenPart_without_geo_full_target_female");
+
+        result += ",\n";
+        result += metricsToString("new_faces_loopBySeenPart_geo_full_target_male");
+
+        result += ",\n";
+        result += metricsToString("new_faces_loopBySeenPart_geo_full_target_female");
         return result;
     }
 
