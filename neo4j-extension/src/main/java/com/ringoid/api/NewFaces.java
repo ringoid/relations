@@ -2,6 +2,8 @@ package com.ringoid.api;
 
 import com.codahale.metrics.MetricRegistry;
 import com.graphaware.common.log.LoggerFactory;
+import com.ringoid.Labels;
+import com.ringoid.PhotoProperties;
 import com.ringoid.Relationships;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -59,18 +61,34 @@ public class NewFaces {
 
     private static final String GEO_SEEN_SORTED_BY_LIKES_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
-                    "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
+                    "MATCH (target:%s {%s:$sex}) " +//2
                     "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
-                    "AND (NOT (target)-[:%s|%s|%s|%s]-(sourceUser)) " +//2.1
-                    "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
+                    "WITH sourceUser, target " +//2.01
+                    "WHERE (NOT (target)<-[:%s|%s|%s|%s]-(sourceUser)) " +//2.1
+                    "AND (target)-[:%s]->(:%s) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
-            PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
+            PERSON.getLabelName(), SEX.getPropertyName(),//2
             LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
             Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
-            ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
+            Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//2.2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
     );
+
+//    private static final String GEO_SEEN_SORTED_BY_LIKES_QUERY = String.format(
+//            "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
+//                    "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
+//                    "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
+//                    "AND (NOT (target)-[:%s|%s|%s|%s]-(sourceUser)) " +//2.1
+//                    "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
+//                    "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC, userId SKIP $skipParam LIMIT $limitParam",//3
+//            PERSON.getLabelName(), USER_ID.getPropertyName(),//1
+//            PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
+//            LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
+//            Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
+//            ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
+//            USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
+//    );
 
 
     private static final String SEEN_SORTED_BY_ONLINE_TIME_QUERY = String.format(
@@ -88,18 +106,34 @@ public class NewFaces {
 
     private static final String GEO_SEEN_SORTED_BY_ONLINE_TIME_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
-                    "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
+                    "MATCH (target:%s {%s:$sex}) " +//2
                     "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
-                    "AND (NOT (target)-[:%s|%s|%s|%s]-(sourceUser)) " +//2.1
-                    "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
+                    "WITH sourceUser, target " +//2.01
+                    "WHERE (NOT (target)<-[:%s|%s|%s|%s]-(sourceUser)) " +//2.1
+                    "AND (target)-[:%s]->(:%s) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes, target.%s AS onlineTime ORDER BY onlineTime DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
-            PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
+            PERSON.getLabelName(), SEX.getPropertyName(),//2
             LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
             Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
-            ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
+            Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//2.2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName(), LAST_ONLINE_TIME.getPropertyName()//3
     );
+
+//    private static final String GEO_SEEN_SORTED_BY_ONLINE_TIME_QUERY = String.format(
+//            "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
+//                    "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
+//                    "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
+//                    "AND (NOT (target)-[:%s|%s|%s|%s]-(sourceUser)) " +//2.1
+//                    "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
+//                    "RETURN DISTINCT target.%s AS userId, target.%s AS likes, target.%s AS onlineTime ORDER BY onlineTime DESC, userId SKIP $skipParam LIMIT $limitParam",//3
+//            PERSON.getLabelName(), USER_ID.getPropertyName(),//1
+//            PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
+//            LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
+//            Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
+//            ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
+//            USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName(), LAST_ONLINE_TIME.getPropertyName()//3
+//    );
 
     private static final String NOT_SEEN_SORTED_BY_LIKES_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
@@ -115,17 +149,32 @@ public class NewFaces {
 
     private static final String GEO_NOT_SEEN_SORTED_BY_LIKES_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
-                    "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
+                    "MATCH (target:%s {%s:$sex}) " +//2
                     "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
-                    "AND (NOT (target)<-[]-(sourceUser)) " +//2.1
-                    "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
+                    "WITH sourceUser, target " +
+                    "WHERE (NOT (target)<-[]-(sourceUser)) " +
+                    "AND (target)-[:%s]->(:%s) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
-            PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
+            PERSON.getLabelName(), SEX.getPropertyName(),//2
             LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
-            ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
+            Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//2.2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
     );
+
+//    private static final String GEO_NOT_SEEN_SORTED_BY_LIKES_QUERY = String.format(
+//            "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
+//                    "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
+//                    "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
+//                    "AND (NOT (target)<-[]-(sourceUser)) " +//2.1
+//                    "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
+//                    "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC, userId SKIP $skipParam LIMIT $limitParam",//3
+//            PERSON.getLabelName(), USER_ID.getPropertyName(),//1
+//            PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
+//            LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
+//            ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
+//            USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
+//    );
 
     private static final String NOT_SEEN_SORTED_BY_ONLINE_TIME_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
@@ -141,17 +190,33 @@ public class NewFaces {
 
     private static final String GEO_NOT_SEEN_SORTED_BY_ONLINE_TIME_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
-                    "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
+                    "MATCH (target:%s {%s:$sex}) " +//2
                     "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
-                    "AND (NOT (target)<-[]-(sourceUser)) " +//2.1
-                    "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
+                    "WITH sourceUser, target " +
+                    "WHERE (NOT (target)<-[]-(sourceUser)) " +
+                    "AND (target)-[:%s]->(:%s) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes, target.%s AS onlineTime ORDER BY onlineTime DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
-            PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
+            PERSON.getLabelName(), SEX.getPropertyName(),//2
             LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
-            ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
+            Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//2.2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName(), LAST_ONLINE_TIME.getPropertyName()//3
     );
+
+
+//    private static final String GEO_NOT_SEEN_SORTED_BY_ONLINE_TIME_QUERY = String.format(
+//            "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
+//                    "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
+//                    "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
+//                    "AND (NOT (target)<-[]-(sourceUser)) " +//2.1
+//                    "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
+//                    "RETURN DISTINCT target.%s AS userId, target.%s AS likes, target.%s AS onlineTime ORDER BY onlineTime DESC, userId SKIP $skipParam LIMIT $limitParam",//3
+//            PERSON.getLabelName(), USER_ID.getPropertyName(),//1
+//            PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
+//            LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
+//            ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
+//            USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName(), LAST_ONLINE_TIME.getPropertyName()//3
+//    );
 
     private static final List<Integer> DISTANCES = new ArrayList<>();
 
@@ -264,12 +329,14 @@ public class NewFaces {
         long start = System.currentTimeMillis();
 
         List<Node> result = new ArrayList<>();
+        int howManyStep = 0;
         for (int eachD : DISTANCES) {
             if (result.size() < limit) {
                 result.clear();
             } else {
                 break;
             }
+            howManyStep++;
             if (Objects.equals("male", targetSex)) {
                 //it means that you are woman, so we search most recent for seen part
                 result.addAll(loopRequest(sourceUserNodeId, sourceUserId, targetSex, limit, eachD,
@@ -288,6 +355,7 @@ public class NewFaces {
         }
         long fullTime = System.currentTimeMillis() - start;
         metrics.histogram("new_faces_loopBySeenPart_geo_full_target_" + targetSex).update(fullTime);
+        metrics.histogram("new_faces_loopBySeenPart_geo_steps").update(howManyStep);
 
         log.info("loopBySeenPart : found [%s] profiles using location for userId [%s] in [%s] millis",
                 result.size(), sourceUserId, System.currentTimeMillis() - start);
@@ -348,12 +416,14 @@ public class NewFaces {
         long start = System.currentTimeMillis();
 
         List<Node> result = new ArrayList<>();
+        int howManyStep = 0;
         for (int eachD : DISTANCES) {
             if (result.size() < limit) {
                 result.clear();
             } else {
                 break;
             }
+            howManyStep++;
             result.addAll(loopRequest(sourceUserNodeId, sourceUserId, targetSex, limit, eachD,
                     GEO_NOT_SEEN_SORTED_BY_ONLINE_TIME_QUERY, GEO_NOT_SEEN_SORTED_BY_LIKES_QUERY,
                     nodeIdsToExclude,
@@ -362,6 +432,7 @@ public class NewFaces {
         }
         long fullTime = System.currentTimeMillis() - start;
         metrics.histogram("new_faces_loopByUnseenPart_geo_full").update(fullTime);
+        metrics.histogram("new_faces_loopByUnseenPart_geo_steps").update(howManyStep);
 
         log.info("loopByUnseenPart : found [%s] profiles using location for userId [%s] in [%s] millis",
                 result.size(), sourceUserId, System.currentTimeMillis() - start);
@@ -445,6 +516,23 @@ public class NewFaces {
                     continue;
                 }
                 if (eachUnknown.hasLabel(Label.label(HIDDEN.getLabelName()))) {
+                    continue;
+                }
+
+                boolean dontHaveVisiblePhotos = true;
+                Iterable<Relationship> uploaded =
+                        eachUnknown.getRelationships(RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()), Direction.OUTGOING);
+                for (Relationship upls : uploaded) {
+                    Node photo = upls.getOtherNode(eachUnknown);
+                    if (photo.hasLabel(Label.label(Labels.PHOTO.getLabelName()))) {
+                        boolean onlyOwnerCanSee = (Boolean) photo.getProperty(PhotoProperties.ONLY_OWNER_CAN_SEE.getPropertyName(), false);
+                        if (!onlyOwnerCanSee) {
+                            dontHaveVisiblePhotos = false;
+                            break;
+                        }
+                    }
+                }
+                if (dontHaveVisiblePhotos) {
                     continue;
                 }
 
@@ -541,6 +629,7 @@ public class NewFaces {
     }
 
     private static List<String> executeQueryAndReturnUserIds(String query, Map<String, Object> params, GraphDatabaseService database) {
+        log.info("execute query [%s] for userId [%s]", query, params.get("sourceUserId"));
         List<String> ids = new ArrayList<>();
         Result result = database.execute(query, params);
         while (result.hasNext()) {

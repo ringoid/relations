@@ -148,6 +148,13 @@ public class ActionController {
 
         result += ",\n";
         result += metricsToString("new_faces_loopBySeenPart_geo_full_target_female");
+
+        result += ",\n";
+        result += metricsToString("new_faces_loopBySeenPart_geo_steps");
+
+        result += ",\n";
+        result += metricsToString("new_faces_loopByUnseenPart_geo_steps");
+
         return result;
     }
 
@@ -191,7 +198,8 @@ public class ActionController {
         LMHISRequest request = objectMapper.readValue(body, LMHISRequest.class);
         LMHISResponse response = LikesYou.likesYou(request, database);
         long fullTime = System.currentTimeMillis() - start;
-        log.info("handle likes_you with result size %s in %s millis", response.getProfiles().size(), fullTime);
+        log.info("handle likes_you for userId [%s] with result size %s in %s millis",
+                request.getUserId(), response.getProfiles().size(), fullTime);
         metrics.histogram("likes_you_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
     }
@@ -204,7 +212,8 @@ public class ActionController {
         LMHISRequest request = objectMapper.readValue(body, LMHISRequest.class);
         LMHISResponse response = Matches.matches(request, database);
         long fullTime = System.currentTimeMillis() - start;
-        log.info("handle matches with result size %s in %s millis", response.getProfiles().size(), fullTime);
+        log.info("handle matches for userId [%s] with result size %s in %s millis",
+                request.getUserId(), response.getProfiles().size(), fullTime);
         metrics.histogram("matches_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
     }
@@ -217,7 +226,8 @@ public class ActionController {
         LMHISRequest request = objectMapper.readValue(body, LMHISRequest.class);
         LMHISResponse response = Messages.messages(request, database);
         long fullTime = System.currentTimeMillis() - start;
-        log.info("handle messages with result size %s in %s millis", response.getProfiles().size(), fullTime);
+        log.info("handle messages for userId [%s] with result size %s in %s millis",
+                request.getUserId(), response.getProfiles().size(), fullTime);
         metrics.histogram("messages_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
     }
@@ -230,7 +240,8 @@ public class ActionController {
         LMHISRequest request = objectMapper.readValue(body, LMHISRequest.class);
         LMHISResponse response = LMHIS.lmHis(request, database);
         long fullTime = System.currentTimeMillis() - start;
-        log.info("handle lmhis for %s part with result size %s in %s millis", request.getLmhisPart(), response.getProfiles().size(), fullTime);
+        log.info("handle lmhis for userId [%s] for %s part with result size %s in %s millis",
+                request.getUserId(), request.getLmhisPart(), response.getProfiles().size(), fullTime);
         metrics.histogram("lmhis_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
     }
@@ -245,7 +256,8 @@ public class ActionController {
         request.setLimit(NEW_FACES_HARDCODE_LIMIT);
         NewFacesResponse response = NewFaces.newFaces(request, database, metrics);
         long fullTime = System.currentTimeMillis() - start;
-        log.info("handle new_faces with result size %s in %s millis", response.getNewFaces().size(), fullTime);
+        log.info("handle new_faces with for userId [%s] with result size %s in %s millis",
+                request.getUserId(), response.getNewFaces().size(), fullTime);
         metrics.histogram("new_faces_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
     }
