@@ -38,6 +38,7 @@ public class Utils {
 
             Node originNode = database.findNode(Label.label(Labels.PHOTO.getLabelName()), PhotoProperties.PHOTO_ID.getPropertyName(), eachOrigin);
             String resizedPhotoId = null;
+            String thumbnailPhotoLink = null;
             String link = null;
             if (Objects.nonNull(originNode) &&
                     !((Boolean) originNode.getProperty(PhotoProperties.ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
@@ -53,14 +54,20 @@ public class Utils {
                             if (!Objects.equals("n/a", rPhotoId) && !Objects.equals("n/a", rLink)) {
                                 resizedPhotoId = rPhotoId;
                                 link = rLink;
-                                break;
+                            }
+                        }
+                        if (res.endsWith("_thumbnail")) {
+                            String rLink = (String) other.getProperty(PhotoProperties.PHOTO_LINK.getPropertyName(), "n/a");
+                            if (!Objects.equals("n/a", rLink)) {
+                                thumbnailPhotoLink = rLink;
                             }
                         }
                     }
                 }
-                if (Objects.nonNull(resizedPhotoId) && Objects.nonNull(link)) {
+                if (Objects.nonNull(resizedPhotoId) && Objects.nonNull(link) && Objects.nonNull(thumbnailPhotoLink)) {
                     photo.setResizedPhotoId(resizedPhotoId);
                     photo.setLink(link);
+                    photo.setThumbnailLink(thumbnailPhotoLink);
                     result.add(photo);
                 }
             }

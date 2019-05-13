@@ -8,6 +8,7 @@ public class Photo {
     private String resizedPhotoId;
     private String link;
     private String resolution;
+    private String thumbnailLink;
 
     public String getOriginPhotoId() {
         return originPhotoId;
@@ -39,5 +40,13 @@ public class Photo {
 
     public void setResolution(String resolution) {
         this.resolution = resolution;
+    }
+
+    public String getThumbnailLink() {
+        return thumbnailLink;
+    }
+
+    public void setThumbnailLink(String thumbnailLink) {
+        this.thumbnailLink = thumbnailLink;
     }
 }
