@@ -64,7 +64,7 @@ public class Utils {
                         }
                     }
                 }
-                if (Objects.nonNull(resizedPhotoId) && Objects.nonNull(link) && Objects.nonNull(thumbnailPhotoLink)) {
+                if (Objects.nonNull(resizedPhotoId) && Objects.nonNull(link)) {
                     photo.setResizedPhotoId(resizedPhotoId);
                     photo.setLink(link);
                     photo.setThumbnailLink(thumbnailPhotoLink);

@@ -15,13 +15,14 @@ var Neo4jPassword string
 var Neo4jHosts []string
 
 const (
-	ActionExtensionSuffix       = ":7474/graphaware/actions"
-	NewFacesExtensionSuffix     = ":7474/graphaware/new_faces"
-	LikesYouExtensionSuffix     = ":7474/graphaware/likes_you"
-	MatchYouExtensionSuffix     = ":7474/graphaware/matches"
-	MessageYouExtensionSuffix   = ":7474/graphaware/messages"
-	ReadyForPushExtensionSuffix = ":7474/graphaware/ready_for_push"
-	LMHISExtensionSuffix        = ":7474/graphaware/lmhis"
+	ActionExtensionSuffix             = ":7474/graphaware/actions"
+	NewFacesExtensionSuffix           = ":7474/graphaware/new_faces"
+	LikesYouExtensionSuffix           = ":7474/graphaware/likes_you"
+	MatchYouExtensionSuffix           = ":7474/graphaware/matches"
+	MessageYouExtensionSuffix         = ":7474/graphaware/messages"
+	ReadyForPushExtensionSuffix       = ":7474/graphaware/ready_for_push"
+	FetchForConversionExtensionSuffix = ":7474/graphaware/fetch_for_convertion"
+	LMHISExtensionSuffix              = ":7474/graphaware/lmhis"
 )
 
 func InitLambdaVars(lambdaName string) {

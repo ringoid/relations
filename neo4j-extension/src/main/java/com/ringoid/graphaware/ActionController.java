@@ -21,6 +21,9 @@ import com.ringoid.api.NewFacesResponse;
 import com.ringoid.api.PushRequest;
 import com.ringoid.api.PushResponse;
 import com.ringoid.api.WhoReadyForPush;
+import com.ringoid.api.internaltmp.ConvertRequest;
+import com.ringoid.api.internaltmp.ConvertResponse;
+import com.ringoid.api.internaltmp.ConvertToThumbnailsFunction;
 import com.ringoid.events.actions.ActionsUtils;
 import com.ringoid.events.actions.UserBlockOtherEvent;
 import com.ringoid.events.actions.UserChangedLocationEvent;
@@ -270,6 +273,17 @@ public class ActionController {
         PushRequest request = objectMapper.readValue(body, PushRequest.class);
         PushResponse response = WhoReadyForPush.whoAreReady(request, database);
         log.info("handle ready_for_push with result size %s in %s millis", response.getUsers().size(), (System.currentTimeMillis() - start));
+        return objectMapper.writeValueAsString(response);
+    }
+
+    @RequestMapping(value = "/fetch_for_convertion", method = RequestMethod.GET)
+    @ResponseBody
+    public String fetchForConversion(@RequestBody String body) throws IOException {
+        long start = System.currentTimeMillis();
+        ObjectMapper objectMapper = new ObjectMapper();
+        ConvertRequest request = objectMapper.readValue(body, ConvertRequest.class);
+        ConvertResponse response = ConvertToThumbnailsFunction.fetchForConvertion(request, database);
+        log.info("handle fetch_for_convertion with result size %s in %s millis", response.getObjects().size(), (System.currentTimeMillis() - start));
         return objectMapper.writeValueAsString(response);
     }
 

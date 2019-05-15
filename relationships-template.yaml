@@ -53,6 +53,10 @@ Mappings:
       test: test-lmhis-relationships
       stage: stage-lmhis-relationships
       prod: prod-lmhis-relationships
+    FetchForConversionFunction:
+      test: test-internal-getConvertObjectsFunction-relationships
+      stage: stage-internal-getConvertObjectsFunction-relationships
+      prod: prod-internal-getConvertObjectsFunction-relationships
 
   BotSqsResourcesName:
     BotSqsQueue:
@@ -188,6 +192,17 @@ Resources:
       Policies:
         - SecretsManagerReadWrite
         - AmazonSQSFullAccess
+
+  FetchForConversionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: fetch_for_conversion
+      CodeUri: ./fetch_for_conversion.zip
+      FunctionName: !FindInMap [FunctionName, FetchForConversionFunction, !Ref Env]
+      Description: Fetch for Conversion Relationsips function
+      Policies:
+        - SecretsManagerReadWrite
 
   ModerationFunction:
     Type: AWS::Serverless::Function
