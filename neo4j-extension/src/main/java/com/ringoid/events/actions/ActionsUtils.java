@@ -37,6 +37,7 @@ import static com.ringoid.PersonProperties.LIKE_COUNTER;
 import static com.ringoid.PersonProperties.LOCATION;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.PhotoProperties.PHOTO_ID;
+import static com.ringoid.Relationships.VIEW_IN_MATCHES;
 import static com.ringoid.ViewProperties.VIEW_COUNT;
 import static com.ringoid.ViewProperties.VIEW_TIME;
 import static com.ringoid.ViewRelationshipSource.WHO_LIKED_ME;
@@ -293,7 +294,7 @@ public class ActionsUtils {
         if (!existOutgoingRelationshipsBetweenProfiles.contains(Relationships.VIEW) &&
                 !existOutgoingRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_LIKES_YOU) &&
                 !existOutgoingRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_MESSAGES) &&
-                !existOutgoingRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_MATCHES)) {
+                !existOutgoingRelationshipsBetweenProfiles.contains(VIEW_IN_MATCHES)) {
             log.warn("source user with userId [%s], try to block without any kind of VIEW with target (userId [%s])",
                     event.getUserId(), event.getTargetUserId());
             //todo:implement some kind of notifications later
@@ -396,7 +397,7 @@ public class ActionsUtils {
                 targetProfileRelationship = Relationships.VIEW_IN_LIKES_YOU;
                 break;
             case MATCHES:
-                targetProfileRelationship = Relationships.VIEW_IN_MATCHES;
+                targetProfileRelationship = VIEW_IN_MATCHES;
                 break;
             case MESSAGES:
                 targetProfileRelationship = Relationships.VIEW_IN_MESSAGES;
@@ -434,8 +435,6 @@ public class ActionsUtils {
             photoView.setProperty(VIEW_TIME.getPropertyName(), viewTimeSec);
         }
 
-        getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, targetProfileRelationship.name());
-
         Iterable<Relationship> allOutgoingRels = getAllRelationshipBetweenNodes(sourceUser, targetUser);
         Set<String> toDelete = new HashSet<>();
         toDelete.add(Relationships.VIEW.name());
@@ -446,15 +445,67 @@ public class ActionsUtils {
         toDelete.add(Relationships.VIEW_IN_INBOX.name());
         toDelete.add(Relationships.VIEW_IN_SENT.name());
 
+        String outgoingViewType = null;
+        for (Relationship each : allOutgoingRels) {
+            if (each.getStartNode().getId() == sourceUser.getId() && toDelete.contains(each.getType().name())) {
+                outgoingViewType = each.getType().name();
+            }
+        }
+
         if (targetProfileRelationship == Relationships.VIEW_IN_MESSAGES) {
             toDelete.remove(Relationships.VIEW_IN_MESSAGES.name());
-        } else if (targetProfileRelationship == Relationships.VIEW_IN_MATCHES) {
-            toDelete.remove(Relationships.VIEW_IN_MATCHES.name());
+        } else if (targetProfileRelationship == VIEW_IN_MATCHES) {
+            if (Objects.nonNull(outgoingViewType) &&
+                    (
+                            Objects.equals(outgoingViewType, Relationships.VIEW_IN_MESSAGES.name()) ||
+                                    Objects.equals(outgoingViewType, Relationships.VIEW_IN_HELLOS.name()) ||
+                                    Objects.equals(outgoingViewType, Relationships.VIEW_IN_INBOX.name()) ||
+                                    Objects.equals(outgoingViewType, Relationships.VIEW_IN_SENT.name())
+                    )) {
+                log.error("receive VIEW_IN_MATCHES after more strong view for source userId [%s] and target userId [%s]",
+                        event.getUserId(), event.getTargetUserId());
+                return;
+            }
+            toDelete.remove(VIEW_IN_MATCHES.name());
         } else if (targetProfileRelationship == Relationships.VIEW_IN_LIKES_YOU) {
+            if (Objects.nonNull(outgoingViewType) &&
+                    (
+                            Objects.equals(outgoingViewType, Relationships.VIEW_IN_MATCHES.name()) ||
+                                    Objects.equals(outgoingViewType, Relationships.VIEW_IN_MESSAGES.name()) ||
+                                    Objects.equals(outgoingViewType, Relationships.VIEW_IN_HELLOS.name()) ||
+                                    Objects.equals(outgoingViewType, Relationships.VIEW_IN_INBOX.name()) ||
+                                    Objects.equals(outgoingViewType, Relationships.VIEW_IN_SENT.name())
+                    )) {
+                log.error("receive VIEW_IN_LIKES_YOU after more strong view for source userId [%s] and target userId [%s]",
+                        event.getUserId(), event.getTargetUserId());
+                return;
+            }
             toDelete.remove(Relationships.VIEW_IN_LIKES_YOU.name());
         } else if (targetProfileRelationship == Relationships.VIEW) {
+            if (Objects.nonNull(outgoingViewType) &&
+                    (
+                            Objects.equals(outgoingViewType, Relationships.VIEW_IN_LIKES_YOU.name()) ||
+                                    Objects.equals(outgoingViewType, Relationships.VIEW_IN_MATCHES.name()) ||
+                                    Objects.equals(outgoingViewType, Relationships.VIEW_IN_MESSAGES.name()) ||
+                                    Objects.equals(outgoingViewType, Relationships.VIEW_IN_HELLOS.name()) ||
+                                    Objects.equals(outgoingViewType, Relationships.VIEW_IN_INBOX.name()) ||
+                                    Objects.equals(outgoingViewType, Relationships.VIEW_IN_SENT.name())
+                    )) {
+                log.error("receive VIEW after more strong view for source userId [%s] and target userId [%s]",
+                        event.getUserId(), event.getTargetUserId());
+                return;
+            }
             toDelete.remove(Relationships.VIEW.name());
         } else if (targetProfileRelationship == Relationships.VIEW_IN_HELLOS) {
+            if (Objects.nonNull(outgoingViewType) &&
+                    (
+                            Objects.equals(outgoingViewType, Relationships.VIEW_IN_INBOX.name()) ||
+                                    Objects.equals(outgoingViewType, Relationships.VIEW_IN_SENT.name())
+                    )) {
+                log.error("receive VIEW after more strong view for source userId [%s] and target userId [%s]",
+                        event.getUserId(), event.getTargetUserId());
+                return;
+            }
             toDelete.remove(Relationships.VIEW_IN_HELLOS.name());
         } else if (targetProfileRelationship == Relationships.VIEW_IN_INBOX) {
             toDelete.remove(Relationships.VIEW_IN_INBOX.name());
@@ -469,6 +520,8 @@ public class ActionsUtils {
                 each.delete();
             }
         }
+
+        getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, targetProfileRelationship.name());
     }
 
     public static void likePhoto(UserLikePhotoEvent event, GraphDatabaseService database) {
@@ -497,7 +550,7 @@ public class ActionsUtils {
         if (!existOutgoingRelationshipsBetweenProfiles.contains(Relationships.VIEW) &&
                 !existOutgoingRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_LIKES_YOU) &&
                 !existOutgoingRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_MESSAGES) &&
-                !existOutgoingRelationshipsBetweenProfiles.contains(Relationships.VIEW_IN_MATCHES)) {
+                !existOutgoingRelationshipsBetweenProfiles.contains(VIEW_IN_MATCHES)) {
             log.warn("source user with userId [%s], try to like without any kind of VIEW with target (userId [%s])",
                     event.getUserId(), event.getTargetUserId());
             //todo:implement some kind of notifications later
@@ -505,7 +558,7 @@ public class ActionsUtils {
         }
         existOutgoingRelationshipsBetweenProfiles.remove(Relationships.VIEW);
         existOutgoingRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_LIKES_YOU);
-        existOutgoingRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_MATCHES);
+        existOutgoingRelationshipsBetweenProfiles.remove(VIEW_IN_MATCHES);
         existOutgoingRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_MESSAGES);
 
         //todo:make defense more stronger and check that source has VIEW with photo also
@@ -534,7 +587,7 @@ public class ActionsUtils {
         Set<Relationships> existIncomingRelationshipsBetweenProfiles = getAllRelationshipTypes(sourceUser, targetUser, Direction.INCOMING);
         existIncomingRelationshipsBetweenProfiles.remove(Relationships.VIEW);
         existIncomingRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_LIKES_YOU);
-        existIncomingRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_MATCHES);
+        existIncomingRelationshipsBetweenProfiles.remove(VIEW_IN_MATCHES);
         existIncomingRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_MESSAGES);
 
         //now check which type of relationships we should create between profiles
@@ -625,7 +678,7 @@ public class ActionsUtils {
             // no priority for the sorting)
             ViewRelationshipSource source = ViewRelationshipSource.fromString(event.getSource());
             if (source == WHO_LIKED_ME) {
-                getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, Relationships.VIEW_IN_MATCHES.name());
+                getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, VIEW_IN_MATCHES.name());
                 Iterable<Relationship> allOutgoingRels = getAllRelationshipBetweenNodes(sourceUser, targetUser);
                 Set<String> toDelete = new HashSet<>();
                 toDelete.add(Relationships.VIEW.name());
