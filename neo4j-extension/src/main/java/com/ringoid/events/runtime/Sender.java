@@ -13,6 +13,7 @@ import com.ringoid.events.actions.UserBlockOtherEvent;
 import com.ringoid.events.actions.UserLikePhotoEvent;
 import com.ringoid.events.auth.UserCallDeleteHimselfEvent;
 import com.ringoid.events.internal.events.PhotoLikeEvent;
+import com.ringoid.events.internal.events.PushObjectEvent;
 import org.neo4j.logging.Log;
 
 import java.nio.ByteBuffer;
@@ -40,6 +41,14 @@ public class Sender {
 
         AmazonSQSClientBuilder sqsClientBuilder = AmazonSQSClientBuilder.standard().withRegion(Regions.EU_WEST_1);
         sqs = sqsClientBuilder.build();
+    }
+
+    public void sendPushObjectEvents(List<PushObjectEvent> events) {
+        long start = System.currentTimeMillis();
+        for (PushObjectEvent each : events) {
+            sendEventIntoInternalQueue(each, internalStreamName, each.getUserId());
+        }
+        log.info("(extension-report) successfully handle %s PushObjectEvent events in %s millis", events.size(), (System.currentTimeMillis() - start));
     }
 
     public void sendBlockEvents(List<UserBlockOtherEvent> events, long reportReasonMax) {

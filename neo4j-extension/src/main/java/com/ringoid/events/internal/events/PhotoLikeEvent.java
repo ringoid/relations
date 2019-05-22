@@ -5,7 +5,7 @@ import com.ringoid.events.BaseEvent;
 
 import static com.ringoid.events.EventTypes.INTERNAL_PHOTO_LIKE_EVENT;
 
-@JsonIgnoreProperties
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PhotoLikeEvent extends BaseEvent {
     private String userId;
     private String originPhotoId;

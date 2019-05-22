@@ -27,6 +27,9 @@ import static com.ringoid.PersonProperties.LIKE_COUNTER;
 import static com.ringoid.PersonProperties.PRIVATE_KEY;
 import static com.ringoid.PersonProperties.REFERRAL_ID;
 import static com.ringoid.PersonProperties.SETTINGS_LOCALE;
+import static com.ringoid.PersonProperties.SETTINGS_NEW_LIKE_PUSH;
+import static com.ringoid.PersonProperties.SETTINGS_NEW_MATCH_PUSH;
+import static com.ringoid.PersonProperties.SETTINGS_NEW_MESSAGE_PUSH;
 import static com.ringoid.PersonProperties.SETTINGS_PUSH;
 import static com.ringoid.PersonProperties.SETTINGS_TIMEZONE;
 import static com.ringoid.PersonProperties.SEX;
@@ -174,7 +177,7 @@ public class AuthUtilsInternaly {
     public static void updateSettings(UserSettingsUpdatedEvent event, GraphDatabaseService database) {
         final Map<String, Object> parameters = new HashMap<>();
         parameters.put("userIdValue", event.getUserId());
-        if (event.getWasLocaleChanged()) {
+        if (Objects.nonNull(event.getWasLocaleChanged()) && event.getWasLocaleChanged()) {
             parameters.put("locale", event.getLocale());
             String query = String.format(
                     "MATCH (n:%s {%s: $userIdValue}) SET n.%s = $locale",
@@ -182,7 +185,7 @@ public class AuthUtilsInternaly {
             );
             database.execute(query, parameters);
         }
-        if (event.getWasPushChanged()) {
+        if (Objects.nonNull(event.getWasPushChanged()) && event.getWasPushChanged()) {
             parameters.put("push", event.getPush());
             String query = String.format(
                     "MATCH (n:%s {%s: $userIdValue}) SET n.%s = $push",
@@ -190,7 +193,34 @@ public class AuthUtilsInternaly {
             );
             database.execute(query, parameters);
         }
-        if (event.getWasTimeZoneChanged()) {
+
+        if (Objects.nonNull(event.getWasPushNewLikeChanged()) && event.getWasPushNewLikeChanged()) {
+            parameters.put("pushNewLike", event.getPushNewLike());
+            String query = String.format(
+                    "MATCH (n:%s {%s: $userIdValue}) SET n.%s = $pushNewLike",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), SETTINGS_NEW_LIKE_PUSH.getPropertyName()
+            );
+            database.execute(query, parameters);
+        }
+
+        if (Objects.nonNull(event.getWasPushNewMatchChanged()) && event.getWasPushNewMatchChanged()) {
+            parameters.put("pushNewMatch", event.getPushNewMatch());
+            String query = String.format(
+                    "MATCH (n:%s {%s: $userIdValue}) SET n.%s = $pushNewMatch",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), SETTINGS_NEW_MATCH_PUSH.getPropertyName()
+            );
+            database.execute(query, parameters);
+        }
+
+        if (Objects.nonNull(event.getWasPushNewMessageChanged()) && event.getWasPushNewMessageChanged()) {
+            parameters.put("pushNewMessage", event.getPushNewMessage());
+            String query = String.format(
+                    "MATCH (n:%s {%s: $userIdValue}) SET n.%s = $pushNewMessage",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(), SETTINGS_NEW_MESSAGE_PUSH.getPropertyName()
+            );
+            database.execute(query, parameters);
+        }
+        if (Objects.nonNull(event.getWasTimeZoneChanged()) && event.getWasTimeZoneChanged()) {
             parameters.put("timezone", event.getTimeZone());
             String query = String.format(
                     "MATCH (n:%s {%s: $userIdValue}) SET n.%s = $timezone",

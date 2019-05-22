@@ -15,6 +15,9 @@ public enum PersonProperties {
     PRIVATE_KEY("private_key"),
     SETTINGS_LOCALE("settings_locale"),
     SETTINGS_PUSH("settings_push"),
+    SETTINGS_NEW_LIKE_PUSH("settings_new_like_push"),
+    SETTINGS_NEW_MATCH_PUSH("settings_new_match_push"),
+    SETTINGS_NEW_MESSAGE_PUSH("settings_new_message_push"),
     SETTINGS_TIMEZONE("settings_timezone"),
     PUSH_WAS_SENT_AT("push_was_sent_at"),
     LOCATION("location");

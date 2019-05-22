@@ -15,6 +15,7 @@ import org.neo4j.graphdb.Node;
 import java.util.ArrayList;
 import java.util.List;
 
+//for bots
 public class MessageModule extends BaseTxDrivenModule<List<MessageBotEvent>> {
 
     private final TxDrivenModuleConfiguration configuration;

@@ -3,7 +3,7 @@ package com.ringoid.events.internal.events;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.ringoid.events.BaseEvent;
 
-@JsonIgnoreProperties
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class MessageBotEvent extends BaseEvent {
     private String userId;
     private String targetUserId;
