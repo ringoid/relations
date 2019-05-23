@@ -36,6 +36,7 @@ import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.PhotoProperties.ONLY_OWNER_CAN_SEE;
 import static com.ringoid.api.Utils.commonSortProfilesSeenPart;
+import static com.ringoid.api.Utils.enrichProfile;
 import static com.ringoid.api.Utils.sortLMHISPhotos;
 import static com.ringoid.api.Utils.sortNewFacesUnseenPartProfiles;
 import static com.ringoid.api.Utils.sortNewFacesUnseenPhotos;
@@ -313,6 +314,7 @@ public class NewFaces {
                 prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortLMHISPhotos(sourceUser, eachProfile), request.getResolution(), database));
             }
             if (!prof.getPhotos().isEmpty()) {
+                prof = enrichProfile(eachProfile, sourceUser, prof);
                 profileList.add(prof);
             }
         }

@@ -18,6 +18,7 @@ import static com.ringoid.Labels.PERSON;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.api.Utils.commonSortProfilesSeenPart;
+import static com.ringoid.api.Utils.enrichProfile;
 import static com.ringoid.api.Utils.sortLMHISPhotos;
 import static com.ringoid.api.Utils.sortLMHISUnseenPartProfiles;
 import static com.ringoid.api.Utils.whoHasLikeMatchOrMessageWithMe;
@@ -61,6 +62,7 @@ public class Matches {
                     }
                     List<Message> messages = Utils.messages(sourceUser, eachProfile);
                     prof.setMessages(messages);
+                    prof = enrichProfile(eachProfile, sourceUser,prof);
                     profileList.add(prof);
                 }
 

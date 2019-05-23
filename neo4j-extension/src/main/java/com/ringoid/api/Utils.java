@@ -13,6 +13,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.spatial.Point;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,9 +26,35 @@ import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
+import static com.ringoid.PersonProperties.LOCATION;
+import static com.ringoid.PersonProperties.SETTINGS_LOCALE;
 import static com.ringoid.PhotoProperties.ONLY_OWNER_CAN_SEE;
 
 public class Utils {
+
+    public static Profile enrichProfile(Node node, Node sourceNode, Profile prof) {
+        if (Objects.isNull(node.getProperty(LOCATION.getPropertyName(), null)) ||
+                Objects.isNull(sourceNode.getProperty(LOCATION.getPropertyName(), null))) {
+            prof.setLocationExist(false);
+        } else {
+            prof.setLocationExist(true);
+            Point point = (Point) node.getProperty(LOCATION.getPropertyName());
+            List<Double> coords = point.getCoordinate().getCoordinate();
+            prof.setLat(coords.get(1));
+            prof.setLon(coords.get(0));
+            point = (Point) sourceNode.getProperty(LOCATION.getPropertyName());
+            coords = point.getCoordinate().getCoordinate();
+            prof.setSlon(coords.get(0));
+            prof.setSlat(coords.get(1));
+        }
+
+        long lastOnline = (Long) node.getProperty(LAST_ONLINE_TIME.getPropertyName(), 0L);
+        prof.setLastOnlineTime(lastOnline);
+
+        String sourceLocale = (String) sourceNode.getProperty(SETTINGS_LOCALE.getPropertyName(), "en");
+        prof.setSlocale(sourceLocale);
+        return prof;
+    }
 
     public static List<Photo> resizedAndVisibleToEveryOnePhotos(List<String> origins, String resolution, GraphDatabaseService database) {
         List<Photo> result = new ArrayList<>();

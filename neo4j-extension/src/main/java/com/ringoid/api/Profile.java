@@ -13,6 +13,14 @@ public class Profile {
     //need for sorting only inside engine
     private long lastMessageAt;
 
+    private double lat;
+    private double lon;
+    private long lastOnlineTime;
+    private double slat;
+    private double slon;
+    private String slocale;
+    private boolean locationExist;
+
     public Profile() {
         this.photos = new ArrayList<>();
         this.messages = new ArrayList<>();
@@ -48,5 +56,61 @@ public class Profile {
 
     public void setLastMessageAt(long lastMessageAt) {
         this.lastMessageAt = lastMessageAt;
+    }
+
+    public double getLat() {
+        return lat;
+    }
+
+    public void setLat(double lat) {
+        this.lat = lat;
+    }
+
+    public double getLon() {
+        return lon;
+    }
+
+    public void setLon(double lon) {
+        this.lon = lon;
+    }
+
+    public long getLastOnlineTime() {
+        return lastOnlineTime;
+    }
+
+    public void setLastOnlineTime(long lastOnlineTime) {
+        this.lastOnlineTime = lastOnlineTime;
+    }
+
+    public double getSlat() {
+        return slat;
+    }
+
+    public void setSlat(double slat) {
+        this.slat = slat;
+    }
+
+    public double getSlon() {
+        return slon;
+    }
+
+    public void setSlon(double slon) {
+        this.slon = slon;
+    }
+
+    public String getSlocale() {
+        return slocale;
+    }
+
+    public void setSlocale(String slocale) {
+        this.slocale = slocale;
+    }
+
+    public boolean isLocationExist() {
+        return locationExist;
+    }
+
+    public void setLocationExist(boolean locationExist) {
+        this.locationExist = locationExist;
     }
 }
