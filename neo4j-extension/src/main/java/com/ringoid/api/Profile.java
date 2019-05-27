@@ -20,6 +20,7 @@ public class Profile {
     private double slon;
     private String slocale;
     private boolean locationExist;
+    private int age;
 
     public Profile() {
         this.photos = new ArrayList<>();
@@ -112,5 +113,13 @@ public class Profile {
 
     public void setLocationExist(boolean locationExist) {
         this.locationExist = locationExist;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
     }
 }

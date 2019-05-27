@@ -15,6 +15,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.spatial.Point;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -28,6 +29,7 @@ import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
 import static com.ringoid.PersonProperties.LOCATION;
 import static com.ringoid.PersonProperties.SETTINGS_LOCALE;
+import static com.ringoid.PersonProperties.YEAR;
 import static com.ringoid.PhotoProperties.ONLY_OWNER_CAN_SEE;
 
 public class Utils {
@@ -53,6 +55,11 @@ public class Utils {
 
         String sourceLocale = (String) sourceNode.getProperty(SETTINGS_LOCALE.getPropertyName(), "en");
         prof.setSlocale(sourceLocale);
+
+        int yearOfBirth = (Integer) node.getProperty(YEAR.getPropertyName());
+        int age = LocalDate.now().getYear() - yearOfBirth;
+        prof.setAge(age);
+
         return prof;
     }
 
