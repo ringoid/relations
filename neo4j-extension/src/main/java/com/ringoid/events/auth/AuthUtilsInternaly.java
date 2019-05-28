@@ -21,10 +21,13 @@ import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.Labels.RESIZED_PHOTO;
 import static com.ringoid.PersonProperties.CREATED;
+import static com.ringoid.PersonProperties.HEIGHT;
+import static com.ringoid.PersonProperties.INCOME;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
 import static com.ringoid.PersonProperties.PRIVATE_KEY;
+import static com.ringoid.PersonProperties.PROPERTY;
 import static com.ringoid.PersonProperties.REFERRAL_ID;
 import static com.ringoid.PersonProperties.SETTINGS_LOCALE;
 import static com.ringoid.PersonProperties.SETTINGS_NEW_LIKE_PUSH;
@@ -33,6 +36,7 @@ import static com.ringoid.PersonProperties.SETTINGS_NEW_MESSAGE_PUSH;
 import static com.ringoid.PersonProperties.SETTINGS_PUSH;
 import static com.ringoid.PersonProperties.SETTINGS_TIMEZONE;
 import static com.ringoid.PersonProperties.SEX;
+import static com.ringoid.PersonProperties.TRANSPORT;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.PersonProperties.YEAR;
 import static com.ringoid.UserStatus.ACTIVE;
@@ -40,6 +44,14 @@ import static com.ringoid.UserStatus.HIDDEN;
 
 public class AuthUtilsInternaly {
     private static final String USER_ID_PROPERTY = "userIdProperty";
+
+    private final static String UPDATE_PROFILE =
+            String.format(
+                    "MATCH (n:%s {%s: $userIdValue}) " +
+                            "SET n.%s = $property, n.%s = $transport, n.%s = $income, n.%s = $height",
+                    PERSON.getLabelName(), USER_ID.getPropertyName(),
+                    PROPERTY.getPropertyName(), TRANSPORT.getPropertyName(), INCOME.getPropertyName(), HEIGHT.getPropertyName()
+            );
 
     private final static String HIDE_PROFILE =
             String.format(
@@ -172,6 +184,16 @@ public class AuthUtilsInternaly {
         parameters.put("userIdValue", event.getUserId());
         parameters.put("onlineUserTime", event.getUnixTime());
         database.execute(UPDATE_USER_ONLINE_TIME, parameters);
+    }
+
+    public static void updateProfile(UserUpdateProfileEvent event, GraphDatabaseService database) {
+        final Map<String, Object> parameters = new HashMap<>();
+        parameters.put("userIdValue", event.getUserId());
+        parameters.put("property", event.getProperty());
+        parameters.put("transport", event.getTransport());
+        parameters.put("income", event.getIncome());
+        parameters.put("height", event.getHeight());
+        database.execute(UPDATE_PROFILE, parameters);
     }
 
     public static void updateSettings(UserSettingsUpdatedEvent event, GraphDatabaseService database) {

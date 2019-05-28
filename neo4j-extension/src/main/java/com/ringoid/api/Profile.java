@@ -21,6 +21,11 @@ public class Profile {
     private String slocale;
     private boolean locationExist;
     private int age;
+    private int property;
+    private int transport;
+    private int income;
+    private int height;
+
 
     public Profile() {
         this.photos = new ArrayList<>();
@@ -121,5 +126,37 @@ public class Profile {
 
     public void setAge(int age) {
         this.age = age;
+    }
+
+    public int getProperty() {
+        return property;
+    }
+
+    public void setProperty(int property) {
+        this.property = property;
+    }
+
+    public int getTransport() {
+        return transport;
+    }
+
+    public void setTransport(int transport) {
+        this.transport = transport;
+    }
+
+    public int getIncome() {
+        return income;
+    }
+
+    public void setIncome(int income) {
+        this.income = income;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
     }
 }

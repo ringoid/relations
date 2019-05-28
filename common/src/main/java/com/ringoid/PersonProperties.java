@@ -20,7 +20,11 @@ public enum PersonProperties {
     SETTINGS_NEW_MESSAGE_PUSH("settings_new_message_push"),
     SETTINGS_TIMEZONE("settings_timezone"),
     PUSH_WAS_SENT_AT("push_was_sent_at"),
-    LOCATION("location");
+    LOCATION("location"),
+    PROPERTY("property"),
+    TRANSPORT("transport"),
+    INCOME("income"),
+    HEIGHT("height");
 
     private String propertyName;
 

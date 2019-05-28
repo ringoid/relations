@@ -25,10 +25,14 @@ import java.util.Objects;
 import static com.ringoid.Labels.HIDDEN;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
+import static com.ringoid.PersonProperties.HEIGHT;
+import static com.ringoid.PersonProperties.INCOME;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
 import static com.ringoid.PersonProperties.LOCATION;
+import static com.ringoid.PersonProperties.PROPERTY;
 import static com.ringoid.PersonProperties.SETTINGS_LOCALE;
+import static com.ringoid.PersonProperties.TRANSPORT;
 import static com.ringoid.PersonProperties.YEAR;
 import static com.ringoid.PhotoProperties.ONLY_OWNER_CAN_SEE;
 
@@ -59,6 +63,18 @@ public class Utils {
         int yearOfBirth = (Integer) node.getProperty(YEAR.getPropertyName());
         int age = LocalDate.now().getYear() - yearOfBirth;
         prof.setAge(age);
+
+        int property = (Integer) node.getProperty(PROPERTY.getPropertyName(), 0);
+        prof.setProperty(property);
+
+        int transport = (Integer) node.getProperty(TRANSPORT.getPropertyName(), 0);
+        prof.setTransport(transport);
+
+        int income = (Integer) node.getProperty(INCOME.getPropertyName(), 0);
+        prof.setIncome(income);
+
+        int height = (Integer) node.getProperty(HEIGHT.getPropertyName(), 0);
+        prof.setHeight(height);
 
         return prof;
     }

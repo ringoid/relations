@@ -38,6 +38,7 @@ import com.ringoid.events.auth.UserClaimReferralCodeEvent;
 import com.ringoid.events.auth.UserOnlineEvent;
 import com.ringoid.events.auth.UserProfileCreatedEvent;
 import com.ringoid.events.auth.UserSettingsUpdatedEvent;
+import com.ringoid.events.auth.UserUpdateProfileEvent;
 import com.ringoid.events.image.ImageUtilsInternaly;
 import com.ringoid.events.image.ResizePhotoEvent;
 import com.ringoid.events.image.UserDeletePhotoEvent;
@@ -77,6 +78,7 @@ import static com.ringoid.events.EventTypes.AUTH_USER_CLAIM_REFERRAL_CODE;
 import static com.ringoid.events.EventTypes.AUTH_USER_ONLINE;
 import static com.ringoid.events.EventTypes.AUTH_USER_PROFILE_CREATED;
 import static com.ringoid.events.EventTypes.AUTH_USER_SETTINGS_UPDATED;
+import static com.ringoid.events.EventTypes.AUTH_USER_UPDATE_PROFILE;
 import static com.ringoid.events.EventTypes.IMAGE_USER_DELETE_PHOTO;
 import static com.ringoid.events.EventTypes.IMAGE_USER_UPLOAD_PHOTO;
 import static com.ringoid.events.EventTypes.INTERNAL_RESIZE_PHOTO_EVENT;
@@ -398,6 +400,9 @@ public class ActionController {
         } else if (Objects.equals(eventType, ACTION_USER_CHANGE_LOCATION.name())) {
             UserChangedLocationEvent event = objectMapper.readValue(each.traverse(), UserChangedLocationEvent.class);
             ActionsUtils.updateLocation(event, database);
+        } else if (Objects.equals(eventType, AUTH_USER_UPDATE_PROFILE.name())) {
+            UserUpdateProfileEvent event = objectMapper.readValue(each.traverse(), UserUpdateProfileEvent.class);
+            AuthUtilsInternaly.updateProfile(event, database);
         }
     }
 
