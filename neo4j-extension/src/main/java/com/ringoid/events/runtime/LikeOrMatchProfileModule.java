@@ -18,7 +18,6 @@ import org.neo4j.graphdb.RelationshipType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 //for pushes
 public class LikeOrMatchProfileModule extends BaseTxDrivenModule<List<PushObjectEvent>> {
@@ -81,26 +80,29 @@ public class LikeOrMatchProfileModule extends BaseTxDrivenModule<List<PushObject
                         newMatchCount = 1L;
                         pushType = PushTypes.NewMatchInternalEventType.getName();
                     }
+
                     boolean newLikeEnabled = (Boolean) target.getProperty(PersonProperties.SETTINGS_NEW_LIKE_PUSH.getPropertyName(), false);
                     boolean newMatchEnabled = (Boolean) target.getProperty(PersonProperties.SETTINGS_NEW_MATCH_PUSH.getPropertyName(), false);
+                    boolean newMessageEnabled = (Boolean) target.getProperty(PersonProperties.SETTINGS_NEW_MESSAGE_PUSH.getPropertyName(), false);
+                    String oppositeUserId = (String) source.getProperty(PersonProperties.USER_ID.getPropertyName(), "n/a");
 
-                    if ((Objects.equals(pushType, PushTypes.NewLikeInternalEventType.getName()) && newLikeEnabled) ||
-                            (Objects.equals(pushType, PushTypes.NewMatchInternalEventType.getName()) && newMatchEnabled)) {
+                    PushObjectEvent event = new PushObjectEvent();
+                    event.setUserId(userId);
+                    event.setSex(sex);
+                    event.setLastOnlineTime(lastOnlineTime);
+                    event.setLocale(locale);
+                    event.setNewMessageCount(newMessageCount);
+                    event.setNewProfiles(newProfiles);
+                    event.setNewMatchCount(newMatchCount);
+                    event.setNewLikeCount(newLikeCount);
+                    event.setPushType(pushType);
+                    event.setEventType(pushType);
+                    event.setNewLikeEnabled(newLikeEnabled);
+                    event.setNewMatchEnabled(newMatchEnabled);
+                    event.setNewMessageEnabled(newMessageEnabled);
+                    event.setOppositeUserId(oppositeUserId);
 
-                        PushObjectEvent event = new PushObjectEvent();
-                        event.setUserId(userId);
-                        event.setSex(sex);
-                        event.setLastOnlineTime(lastOnlineTime);
-                        event.setLocale(locale);
-                        event.setNewMessageCount(newMessageCount);
-                        event.setNewProfiles(newProfiles);
-                        event.setNewMatchCount(newMatchCount);
-                        event.setNewLikeCount(newLikeCount);
-                        event.setPushType(pushType);
-                        event.setEventType(pushType);
-
-                        list.add(event);
-                    }
+                    list.add(event);
                 }
             }
         }

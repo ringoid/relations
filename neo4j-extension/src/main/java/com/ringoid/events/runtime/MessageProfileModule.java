@@ -59,33 +59,43 @@ public class MessageProfileModule extends BaseTxDrivenModule<List<PushObjectEven
             for (Node each : transactionData.getAllCreatedNodes()) {
                 if (each.hasLabel(Label.label(Labels.MESSAGE.getLabelName()))) {
                     String targetUserId = (String) each.getProperty(MessageProperties.MSG_TARGET_USER_ID.getPropertyName());
-                    if (Objects.nonNull(targetUserId)) {
-                        Node targetUser = database.findNode(Label.label(Labels.PERSON.getLabelName()), PersonProperties.USER_ID.getPropertyName(), targetUserId);
-                        if (Objects.nonNull(targetUser)) {
-                            boolean newMatchEnabled = (Boolean) targetUser.getProperty(PersonProperties.SETTINGS_NEW_MESSAGE_PUSH.getPropertyName(), false);
-                            if (newMatchEnabled) {
-                                String sex = (String) targetUser.getProperty(PersonProperties.SEX.getPropertyName(), "n/a");
-                                long lastOnlineTime = (Long) targetUser.getProperty(PersonProperties.LAST_ONLINE_TIME.getPropertyName(), 0L);
-                                String locale = (String) targetUser.getProperty(PersonProperties.SETTINGS_LOCALE.getPropertyName(), "n/a");
-                                long newMessageCount = 1L;
-                                long newProfiles = 0L;
-                                long newMatchCount = 0L;
-                                long newLikeCount = 0L;
-                                String pushType = PushTypes.NewMessageInternalEventType.getName();
-                                PushObjectEvent pushObjectEvent = new PushObjectEvent();
-                                pushObjectEvent.setUserId(targetUserId);
-                                pushObjectEvent.setSex(sex);
-                                pushObjectEvent.setLastOnlineTime(lastOnlineTime);
-                                pushObjectEvent.setLocale(locale);
-                                pushObjectEvent.setNewMessageCount(newMessageCount);
-                                pushObjectEvent.setNewProfiles(newProfiles);
-                                pushObjectEvent.setNewLikeCount(newLikeCount);
-                                pushObjectEvent.setNewMatchCount(newMatchCount);
-                                pushObjectEvent.setPushType(pushType);
-                                pushObjectEvent.setEventType(pushType);
+                    String oppositeUserId = (String) each.getProperty(MessageProperties.MSG_SOURCE_USER_ID.getPropertyName());
 
-                                result.add(pushObjectEvent);
-                            }
+                    if (Objects.nonNull(targetUserId) && Objects.nonNull(oppositeUserId)) {
+                        Node targetUser = database.findNode(Label.label(Labels.PERSON.getLabelName()), PersonProperties.USER_ID.getPropertyName(), targetUserId);
+
+                        if (Objects.nonNull(targetUser)) {
+
+                            boolean newLikeEnabled = (Boolean) targetUser.getProperty(PersonProperties.SETTINGS_NEW_LIKE_PUSH.getPropertyName(), false);
+                            boolean newMatchEnabled = (Boolean) targetUser.getProperty(PersonProperties.SETTINGS_NEW_MATCH_PUSH.getPropertyName(), false);
+                            boolean newMessageEnabled = (Boolean) targetUser.getProperty(PersonProperties.SETTINGS_NEW_MESSAGE_PUSH.getPropertyName(), false);
+
+                            String sex = (String) targetUser.getProperty(PersonProperties.SEX.getPropertyName(), "n/a");
+                            long lastOnlineTime = (Long) targetUser.getProperty(PersonProperties.LAST_ONLINE_TIME.getPropertyName(), 0L);
+                            String locale = (String) targetUser.getProperty(PersonProperties.SETTINGS_LOCALE.getPropertyName(), "n/a");
+                            long newMessageCount = 1L;
+                            long newProfiles = 0L;
+                            long newMatchCount = 0L;
+                            long newLikeCount = 0L;
+                            String pushType = PushTypes.NewMessageInternalEventType.getName();
+
+                            PushObjectEvent pushObjectEvent = new PushObjectEvent();
+                            pushObjectEvent.setUserId(targetUserId);
+                            pushObjectEvent.setSex(sex);
+                            pushObjectEvent.setLastOnlineTime(lastOnlineTime);
+                            pushObjectEvent.setLocale(locale);
+                            pushObjectEvent.setNewMessageCount(newMessageCount);
+                            pushObjectEvent.setNewProfiles(newProfiles);
+                            pushObjectEvent.setNewLikeCount(newLikeCount);
+                            pushObjectEvent.setNewMatchCount(newMatchCount);
+                            pushObjectEvent.setPushType(pushType);
+                            pushObjectEvent.setEventType(pushType);
+                            pushObjectEvent.setNewLikeEnabled(newLikeEnabled);
+                            pushObjectEvent.setNewMatchEnabled(newMatchEnabled);
+                            pushObjectEvent.setNewMessageEnabled(newMessageEnabled);
+                            pushObjectEvent.setOppositeUserId(oppositeUserId);
+
+                            result.add(pushObjectEvent);
                         }
                     }
                 }

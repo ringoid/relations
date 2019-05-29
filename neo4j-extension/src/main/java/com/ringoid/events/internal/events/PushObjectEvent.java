@@ -14,6 +14,10 @@ public class PushObjectEvent extends BaseEvent {
     private long newLikeCount;
     private long newProfiles;
     private String pushType;
+    private boolean newLikeEnabled;
+    private boolean newMatchEnabled;
+    private boolean newMessageEnabled;
+    private String oppositeUserId;
 
     public String getUserId() {
         return userId;
@@ -85,5 +89,37 @@ public class PushObjectEvent extends BaseEvent {
 
     public void setPushType(String pushType) {
         this.pushType = pushType;
+    }
+
+    public boolean getNewLikeEnabled() {
+        return newLikeEnabled;
+    }
+
+    public void setNewLikeEnabled(boolean newLikeEnabled) {
+        this.newLikeEnabled = newLikeEnabled;
+    }
+
+    public boolean getNewMatchEnabled() {
+        return newMatchEnabled;
+    }
+
+    public void setNewMatchEnabled(boolean newMatchEnabled) {
+        this.newMatchEnabled = newMatchEnabled;
+    }
+
+    public boolean getNewMessageEnabled() {
+        return newMessageEnabled;
+    }
+
+    public void setNewMessageEnabled(boolean newMessageEnabled) {
+        this.newMessageEnabled = newMessageEnabled;
+    }
+
+    public String getOppositeUserId() {
+        return oppositeUserId;
+    }
+
+    public void setOppositeUserId(String oppositeUserId) {
+        this.oppositeUserId = oppositeUserId;
     }
 }
