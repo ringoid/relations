@@ -21,6 +21,7 @@ public class Profile {
     private String slocale;
     private boolean locationExist;
     private int age;
+    private String sex;
     private int property;
     private int transport;
     private int income;
@@ -175,5 +176,13 @@ public class Profile {
 
     public void setHairColor(int hairColor) {
         this.hairColor = hairColor;
+    }
+
+    public String getSex() {
+        return sex;
+    }
+
+    public void setSex(String sex) {
+        this.sex = sex;
     }
 }

@@ -34,6 +34,7 @@ import static com.ringoid.PersonProperties.LIKE_COUNTER;
 import static com.ringoid.PersonProperties.LOCATION;
 import static com.ringoid.PersonProperties.PROPERTY;
 import static com.ringoid.PersonProperties.SETTINGS_LOCALE;
+import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.TRANSPORT;
 import static com.ringoid.PersonProperties.YEAR;
 import static com.ringoid.PhotoProperties.ONLY_OWNER_CAN_SEE;
@@ -65,6 +66,9 @@ public class Utils {
         int yearOfBirth = (Integer) node.getProperty(YEAR.getPropertyName());
         int age = LocalDate.now().getYear() - yearOfBirth;
         prof.setAge(age);
+
+        String sex = (String) node.getProperty(SEX.getPropertyName(), "unknown");
+        prof.setSex(sex);
 
         int property = (Integer) node.getProperty(PROPERTY.getPropertyName(), 0);
         prof.setProperty(property);
