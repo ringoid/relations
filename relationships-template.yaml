@@ -53,6 +53,10 @@ Mappings:
       test: test-lmhis-relationships
       stage: stage-lmhis-relationships
       prod: prod-lmhis-relationships
+    ChatFunction:
+      test: test-chat-relationships
+      stage: stage-chat-relationships
+      prod: prod-chat-relationships
     FetchForConversionFunction:
       test: test-internal-getConvertObjectsFunction-relationships
       stage: stage-internal-getConvertObjectsFunction-relationships
@@ -181,6 +185,17 @@ Resources:
       Policies:
         - SecretsManagerReadWrite
 
+  ChatFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: chat
+      CodeUri: ./chat.zip
+      FunctionName: !FindInMap [FunctionName, ChatFunction, !Ref Env]
+      Description: Chats Relationships function
+      Policies:
+        - SecretsManagerReadWrite
+
   RedyForPushFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -244,6 +259,10 @@ Outputs:
     Value: !FindInMap [FunctionName, LMHISFunction, !Ref Env]
     Export:
       Name: !Join [ "-", [ !Ref Env, LMHISFunctionExport] ]
+  ChatFunctionExport:
+    Value: !FindInMap [FunctionName, ChatFunction, !Ref Env]
+    Export:
+      Name: !Join [ "-", [ !Ref Env, ChatFunctionExport] ]
   RedyForPushFunctionExport:
     Value: !FindInMap [FunctionName, RedyForPushFunction, !Ref Env]
     Export:

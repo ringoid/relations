@@ -9,6 +9,9 @@ import com.ringoid.Labels;
 import com.ringoid.MessageProperties;
 import com.ringoid.PersonProperties;
 import com.ringoid.PhotoProperties;
+import com.ringoid.api.ChatRequest;
+import com.ringoid.api.ChatResponse;
+import com.ringoid.api.Chats;
 import com.ringoid.api.LMHIS;
 import com.ringoid.api.LMHISRequest;
 import com.ringoid.api.LMHISResponse;
@@ -125,6 +128,8 @@ public class ActionController {
         result += ",\n";
         result += metricsToString("lmhis_full");
         result += ",\n";
+        result += metricsToString("chat_full");
+        result += ",\n";
         result += metricsToString("new_faces_full");
 
         result += ",\n";
@@ -234,6 +239,24 @@ public class ActionController {
         log.info("handle messages for userId [%s] with result size %s in %s millis",
                 request.getUserId(), response.getProfiles().size(), fullTime);
         metrics.histogram("messages_full").update(fullTime);
+        return objectMapper.writeValueAsString(response);
+    }
+
+    @RequestMapping(value = "/chat", method = RequestMethod.GET)
+    @ResponseBody
+    public String chat(@RequestBody String body) throws IOException {
+        long start = System.currentTimeMillis();
+        ObjectMapper objectMapper = new ObjectMapper();
+        ChatRequest request = objectMapper.readValue(body, ChatRequest.class);
+        ChatResponse response = Chats.chat(request, database);
+        long fullTime = System.currentTimeMillis() - start;
+        int msgCount = 0;
+        if (Objects.nonNull(response.getProfile()) && Objects.nonNull(response.getProfile().getMessages())) {
+            msgCount = response.getProfile().getMessages().size();
+        }
+        log.info("handle chat for userId [%s] and oppositeUserId [%s] with result size %s in %s millis",
+                request.getUserId(), request.getOppositeUserId(), msgCount, fullTime);
+        metrics.histogram("chat_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
     }
 

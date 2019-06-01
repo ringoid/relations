@@ -25,6 +25,8 @@ import java.util.Objects;
 import static com.ringoid.Labels.HIDDEN;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
+import static com.ringoid.PersonProperties.EDU_LEVEL;
+import static com.ringoid.PersonProperties.HAIR_COLOR;
 import static com.ringoid.PersonProperties.HEIGHT;
 import static com.ringoid.PersonProperties.INCOME;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
@@ -75,6 +77,12 @@ public class Utils {
 
         int height = (Integer) node.getProperty(HEIGHT.getPropertyName(), 0);
         prof.setHeight(height);
+
+        int eduLevel = (Integer) node.getProperty(EDU_LEVEL.getPropertyName(), 0);
+        prof.setEducationLevel(eduLevel);
+
+        int hairColor = (Integer) node.getProperty(HAIR_COLOR.getPropertyName(), 0);
+        prof.setHairColor(hairColor);
 
         return prof;
     }

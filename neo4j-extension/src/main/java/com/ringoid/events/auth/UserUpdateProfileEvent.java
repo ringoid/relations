@@ -10,6 +10,8 @@ public class UserUpdateProfileEvent extends BaseEvent {
     private int transport;
     private int income;
     private int height;
+    private int educationLevel;
+    private int hairColor;
 
     public String getUserId() {
         return userId;
@@ -49,5 +51,21 @@ public class UserUpdateProfileEvent extends BaseEvent {
 
     public void setHeight(int height) {
         this.height = height;
+    }
+
+    public int getEducationLevel() {
+        return educationLevel;
+    }
+
+    public void setEducationLevel(int educationLevel) {
+        this.educationLevel = educationLevel;
+    }
+
+    public int getHairColor() {
+        return hairColor;
+    }
+
+    public void setHairColor(int hairColor) {
+        this.hairColor = hairColor;
     }
 }

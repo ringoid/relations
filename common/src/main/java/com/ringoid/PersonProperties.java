@@ -24,7 +24,9 @@ public enum PersonProperties {
     PROPERTY("property"),
     TRANSPORT("transport"),
     INCOME("income"),
-    HEIGHT("height");
+    HEIGHT("height"),
+    EDU_LEVEL("education_level"),
+    HAIR_COLOR("hair_color");
 
     private String propertyName;
 

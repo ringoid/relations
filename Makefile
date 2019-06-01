@@ -12,6 +12,7 @@ build-go:
 	GOOS=linux go build ready-for-push/ready_for_push.go
 	GOOS=linux go build lmhis-you/lmhis.go
 	GOOS=linux go build fetch-for-conversion/fetch_for_conversion.go
+	GOOS=linux go build chats/chat.go
 
 zip-go: build-go
 	@echo '--- Zip Go modules ---'
@@ -23,6 +24,7 @@ zip-go: build-go
 	zip ready_for_push.zip ./ready_for_push
 	zip lmhis.zip ./lmhis
 	zip fetch_for_conversion.zip ./fetch_for_conversion
+	zip chat.zip ./chat
 
 buildgradle:
 	@echo '--- Building kinesis-consumer-relationships function ---'
@@ -77,4 +79,6 @@ clean:
 	rm -rf lmhis.zip
 	rm -rf fetch_for_conversion.zip
 	rm -rf fetch_for_conversion
+	rm -rf chat
+	rm -rf chat.zip
 

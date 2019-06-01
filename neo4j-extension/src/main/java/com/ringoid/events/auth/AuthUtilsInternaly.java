@@ -21,6 +21,8 @@ import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.Labels.RESIZED_PHOTO;
 import static com.ringoid.PersonProperties.CREATED;
+import static com.ringoid.PersonProperties.EDU_LEVEL;
+import static com.ringoid.PersonProperties.HAIR_COLOR;
 import static com.ringoid.PersonProperties.HEIGHT;
 import static com.ringoid.PersonProperties.INCOME;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
@@ -48,9 +50,9 @@ public class AuthUtilsInternaly {
     private final static String UPDATE_PROFILE =
             String.format(
                     "MATCH (n:%s {%s: $userIdValue}) " +
-                            "SET n.%s = $property, n.%s = $transport, n.%s = $income, n.%s = $height",
+                            "SET n.%s = $property, n.%s = $transport, n.%s = $income, n.%s = $height, n.%s = $educationLevel, n.%s = $hairColor",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
-                    PROPERTY.getPropertyName(), TRANSPORT.getPropertyName(), INCOME.getPropertyName(), HEIGHT.getPropertyName()
+                    PROPERTY.getPropertyName(), TRANSPORT.getPropertyName(), INCOME.getPropertyName(), HEIGHT.getPropertyName(), EDU_LEVEL.getPropertyName(), HAIR_COLOR.getPropertyName()
             );
 
     private final static String HIDE_PROFILE =
@@ -193,6 +195,8 @@ public class AuthUtilsInternaly {
         parameters.put("transport", event.getTransport());
         parameters.put("income", event.getIncome());
         parameters.put("height", event.getHeight());
+        parameters.put("educationLevel", event.getEducationLevel());
+        parameters.put("hairColor", event.getHairColor());
         database.execute(UPDATE_PROFILE, parameters);
     }
 
