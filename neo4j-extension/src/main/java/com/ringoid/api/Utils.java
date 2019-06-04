@@ -15,12 +15,16 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.spatial.Point;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.TimeZone;
 
 import static com.ringoid.Labels.HIDDEN;
 import static com.ringoid.Labels.PERSON;
@@ -229,11 +233,29 @@ public class Utils {
             nodeWrapper.likes = likeCounter;
             nodeWrapper.unseenPhotos = photoCounter - viewedFromSource;
             nodeWrapper.onlineTime = lastOnlineTime;
+
+            LocalDateTime timeOnline =
+                    LocalDateTime.ofInstant(Instant.ofEpochMilli(lastOnlineTime),
+                            TimeZone.getDefault().toZoneId());
+            LocalDateTime timeNow = LocalDateTime.now();
+            int days = Long.valueOf(ChronoUnit.DAYS.between(timeOnline, timeNow)).intValue();
+            if (days < 0) {
+                days = days * (-1);
+            }
+            nodeWrapper.dayNum = days;
+
             wrapperList.add(nodeWrapper);
         }//end
         Collections.sort(wrapperList, new Comparator<NodeWrapper>() {
             @Override
             public int compare(NodeWrapper node1, NodeWrapper node2) {
+
+                if (node1.dayNum > node2.dayNum) {
+                    return 1;
+                } else if (node1.dayNum < node2.dayNum) {
+                    return -1;
+                }
+
                 if (node1.unseenPhotos > node2.unseenPhotos) {
                     return -1;
                 } else if (node1.unseenPhotos < node2.unseenPhotos) {
@@ -729,6 +751,7 @@ public class Utils {
 
     static class NodeWrapper {
         Node node;
+        int dayNum;
         int unseenPhotos;
         int allPhotoCount;
         int likes;
