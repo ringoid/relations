@@ -222,9 +222,11 @@ public class NewFaces {
     private static final List<Integer> DISTANCES = new ArrayList<>();
 
     static {
-        DISTANCES.add(5_000);
-        DISTANCES.add(10_000);
+//        DISTANCES.add(5_000);
+//        DISTANCES.add(10_000);
         DISTANCES.add(25_000);
+        DISTANCES.add(50_000);
+//        DISTANCES.add(100_000);
         DISTANCES.add(100_000);
         DISTANCES.add(300_000);
     }
