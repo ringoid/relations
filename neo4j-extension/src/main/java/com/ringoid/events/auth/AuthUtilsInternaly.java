@@ -20,6 +20,7 @@ import java.util.Objects;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.Labels.RESIZED_PHOTO;
+import static com.ringoid.PersonProperties.CHILDREN;
 import static com.ringoid.PersonProperties.CREATED;
 import static com.ringoid.PersonProperties.EDU_LEVEL;
 import static com.ringoid.PersonProperties.HAIR_COLOR;
@@ -50,9 +51,9 @@ public class AuthUtilsInternaly {
     private final static String UPDATE_PROFILE =
             String.format(
                     "MATCH (n:%s {%s: $userIdValue}) " +
-                            "SET n.%s = $property, n.%s = $transport, n.%s = $income, n.%s = $height, n.%s = $educationLevel, n.%s = $hairColor",
+                            "SET n.%s = $property, n.%s = $transport, n.%s = $income, n.%s = $height, n.%s = $educationLevel, n.%s = $hairColor, n.%s = $children",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
-                    PROPERTY.getPropertyName(), TRANSPORT.getPropertyName(), INCOME.getPropertyName(), HEIGHT.getPropertyName(), EDU_LEVEL.getPropertyName(), HAIR_COLOR.getPropertyName()
+                    PROPERTY.getPropertyName(), TRANSPORT.getPropertyName(), INCOME.getPropertyName(), HEIGHT.getPropertyName(), EDU_LEVEL.getPropertyName(), HAIR_COLOR.getPropertyName(), CHILDREN.getPropertyName()
             );
 
     private final static String HIDE_PROFILE =
@@ -197,6 +198,7 @@ public class AuthUtilsInternaly {
         parameters.put("height", event.getHeight());
         parameters.put("educationLevel", event.getEducationLevel());
         parameters.put("hairColor", event.getHairColor());
+        parameters.put("children", event.getChildren());
         database.execute(UPDATE_PROFILE, parameters);
     }
 

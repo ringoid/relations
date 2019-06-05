@@ -28,6 +28,7 @@ public class Profile {
     private int height;
     private int educationLevel;
     private int hairColor;
+    private int children;
 
     public Profile() {
         this.photos = new ArrayList<>();
@@ -184,5 +185,13 @@ public class Profile {
 
     public void setSex(String sex) {
         this.sex = sex;
+    }
+
+    public int getChildren() {
+        return children;
+    }
+
+    public void setChildren(int children) {
+        this.children = children;
     }
 }

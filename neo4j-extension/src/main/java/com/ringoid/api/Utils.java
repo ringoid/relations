@@ -29,6 +29,7 @@ import java.util.TimeZone;
 import static com.ringoid.Labels.HIDDEN;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
+import static com.ringoid.PersonProperties.CHILDREN;
 import static com.ringoid.PersonProperties.EDU_LEVEL;
 import static com.ringoid.PersonProperties.HAIR_COLOR;
 import static com.ringoid.PersonProperties.HEIGHT;
@@ -91,6 +92,9 @@ public class Utils {
 
         int hairColor = (Integer) node.getProperty(HAIR_COLOR.getPropertyName(), 0);
         prof.setHairColor(hairColor);
+
+        int children = (Integer) node.getProperty(CHILDREN.getPropertyName(), 0);
+        prof.setChildren(children);
 
         return prof;
     }
