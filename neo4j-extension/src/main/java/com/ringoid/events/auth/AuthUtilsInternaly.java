@@ -20,15 +20,21 @@ import java.util.Objects;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.Labels.RESIZED_PHOTO;
+import static com.ringoid.PersonProperties.ABOUT;
 import static com.ringoid.PersonProperties.CHILDREN;
+import static com.ringoid.PersonProperties.COMPANY;
 import static com.ringoid.PersonProperties.CREATED;
+import static com.ringoid.PersonProperties.EDUCATION_TEXT;
 import static com.ringoid.PersonProperties.EDU_LEVEL;
 import static com.ringoid.PersonProperties.HAIR_COLOR;
 import static com.ringoid.PersonProperties.HEIGHT;
 import static com.ringoid.PersonProperties.INCOME;
+import static com.ringoid.PersonProperties.INSTAGRAM;
+import static com.ringoid.PersonProperties.JOB_TITLE;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
+import static com.ringoid.PersonProperties.NAME;
 import static com.ringoid.PersonProperties.PRIVATE_KEY;
 import static com.ringoid.PersonProperties.PROPERTY;
 import static com.ringoid.PersonProperties.REFERRAL_ID;
@@ -39,8 +45,11 @@ import static com.ringoid.PersonProperties.SETTINGS_NEW_MESSAGE_PUSH;
 import static com.ringoid.PersonProperties.SETTINGS_PUSH;
 import static com.ringoid.PersonProperties.SETTINGS_TIMEZONE;
 import static com.ringoid.PersonProperties.SEX;
+import static com.ringoid.PersonProperties.TIKTOK;
 import static com.ringoid.PersonProperties.TRANSPORT;
 import static com.ringoid.PersonProperties.USER_ID;
+import static com.ringoid.PersonProperties.WHERE_I_FROM;
+import static com.ringoid.PersonProperties.WHERE_I_LIVE;
 import static com.ringoid.PersonProperties.YEAR;
 import static com.ringoid.UserStatus.ACTIVE;
 import static com.ringoid.UserStatus.HIDDEN;
@@ -51,9 +60,11 @@ public class AuthUtilsInternaly {
     private final static String UPDATE_PROFILE =
             String.format(
                     "MATCH (n:%s {%s: $userIdValue}) " +
-                            "SET n.%s = $property, n.%s = $transport, n.%s = $income, n.%s = $height, n.%s = $educationLevel, n.%s = $hairColor, n.%s = $children",
+                            "SET n.%s = $property, n.%s = $transport, n.%s = $income, n.%s = $height, n.%s = $educationLevel, n.%s = $hairColor, n.%s = $children, " +
+                            "n.%s = $name, n.%s = $jobTitle, n.%s = $company, n.%s = $education, n.%s = $about, n.%s = $instagram, n.%s = $tikTok, n.%s = $whereLive, n.%s = $whereFrom",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
-                    PROPERTY.getPropertyName(), TRANSPORT.getPropertyName(), INCOME.getPropertyName(), HEIGHT.getPropertyName(), EDU_LEVEL.getPropertyName(), HAIR_COLOR.getPropertyName(), CHILDREN.getPropertyName()
+                    PROPERTY.getPropertyName(), TRANSPORT.getPropertyName(), INCOME.getPropertyName(), HEIGHT.getPropertyName(), EDU_LEVEL.getPropertyName(), HAIR_COLOR.getPropertyName(), CHILDREN.getPropertyName(),
+                    NAME.getPropertyName(), JOB_TITLE.getPropertyName(), COMPANY.getPropertyName(), EDUCATION_TEXT.getPropertyName(), ABOUT.getPropertyName(), INSTAGRAM.getPropertyName(), TIKTOK.getPropertyName(), WHERE_I_LIVE.getPropertyName(), WHERE_I_FROM.getPropertyName()
             );
 
     private final static String HIDE_PROFILE =
@@ -199,6 +210,17 @@ public class AuthUtilsInternaly {
         parameters.put("educationLevel", event.getEducationLevel());
         parameters.put("hairColor", event.getHairColor());
         parameters.put("children", event.getChildren());
+
+        parameters.put("name", event.getName());
+        parameters.put("jobTitle", event.getJobTitle());
+        parameters.put("company", event.getCompany());
+        parameters.put("education", event.getEducation());
+        parameters.put("about", event.getAbout());
+        parameters.put("instagram", event.getInstagram());
+        parameters.put("tikTok", event.getTikTok());
+        parameters.put("whereLive", event.getWhereLive());
+        parameters.put("whereFrom", event.getWhereFrom());
+
         database.execute(UPDATE_PROFILE, parameters);
     }
 

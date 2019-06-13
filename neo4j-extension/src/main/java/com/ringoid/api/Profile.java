@@ -30,6 +30,16 @@ public class Profile {
     private int hairColor;
     private int children;
 
+    private String name;
+    private String jobTitle;
+    private String company;
+    private String education;
+    private String about;
+    private String instagram;
+    private String tikTok;
+    private String whereLive;
+    private String whereFrom;
+
     public Profile() {
         this.photos = new ArrayList<>();
         this.messages = new ArrayList<>();
@@ -193,5 +203,77 @@ public class Profile {
 
     public void setChildren(int children) {
         this.children = children;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getJobTitle() {
+        return jobTitle;
+    }
+
+    public void setJobTitle(String jobTitle) {
+        this.jobTitle = jobTitle;
+    }
+
+    public String getCompany() {
+        return company;
+    }
+
+    public void setCompany(String company) {
+        this.company = company;
+    }
+
+    public String getEducation() {
+        return education;
+    }
+
+    public void setEducation(String education) {
+        this.education = education;
+    }
+
+    public String getAbout() {
+        return about;
+    }
+
+    public void setAbout(String about) {
+        this.about = about;
+    }
+
+    public String getInstagram() {
+        return instagram;
+    }
+
+    public void setInstagram(String instagram) {
+        this.instagram = instagram;
+    }
+
+    public String getTikTok() {
+        return tikTok;
+    }
+
+    public void setTikTok(String tikTok) {
+        this.tikTok = tikTok;
+    }
+
+    public String getWhereLive() {
+        return whereLive;
+    }
+
+    public void setWhereLive(String whereLive) {
+        this.whereLive = whereLive;
+    }
+
+    public String getWhereFrom() {
+        return whereFrom;
+    }
+
+    public void setWhereFrom(String whereFrom) {
+        this.whereFrom = whereFrom;
     }
 }

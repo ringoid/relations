@@ -29,18 +29,27 @@ import java.util.TimeZone;
 import static com.ringoid.Labels.HIDDEN;
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
+import static com.ringoid.PersonProperties.ABOUT;
 import static com.ringoid.PersonProperties.CHILDREN;
+import static com.ringoid.PersonProperties.COMPANY;
+import static com.ringoid.PersonProperties.EDUCATION_TEXT;
 import static com.ringoid.PersonProperties.EDU_LEVEL;
 import static com.ringoid.PersonProperties.HAIR_COLOR;
 import static com.ringoid.PersonProperties.HEIGHT;
 import static com.ringoid.PersonProperties.INCOME;
+import static com.ringoid.PersonProperties.INSTAGRAM;
+import static com.ringoid.PersonProperties.JOB_TITLE;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
 import static com.ringoid.PersonProperties.LOCATION;
+import static com.ringoid.PersonProperties.NAME;
 import static com.ringoid.PersonProperties.PROPERTY;
 import static com.ringoid.PersonProperties.SETTINGS_LOCALE;
 import static com.ringoid.PersonProperties.SEX;
+import static com.ringoid.PersonProperties.TIKTOK;
 import static com.ringoid.PersonProperties.TRANSPORT;
+import static com.ringoid.PersonProperties.WHERE_I_FROM;
+import static com.ringoid.PersonProperties.WHERE_I_LIVE;
 import static com.ringoid.PersonProperties.YEAR;
 import static com.ringoid.PhotoProperties.ONLY_OWNER_CAN_SEE;
 
@@ -95,6 +104,33 @@ public class Utils {
 
         int children = (Integer) node.getProperty(CHILDREN.getPropertyName(), 0);
         prof.setChildren(children);
+
+        String name = (String) node.getProperty(NAME.getPropertyName(), "unknown");
+        prof.setName(name);
+
+        String jobTitle = (String) node.getProperty(JOB_TITLE.getPropertyName(), "unknown");
+        prof.setJobTitle(jobTitle);
+
+        String company = (String) node.getProperty(COMPANY.getPropertyName(), "unknown");
+        prof.setCompany(company);
+
+        String educationText = (String) node.getProperty(EDUCATION_TEXT.getPropertyName(), "unknown");
+        prof.setEducation(educationText);
+
+        String about = (String) node.getProperty(ABOUT.getPropertyName(), "unknown");
+        prof.setAbout(about);
+
+        String instagram = (String) node.getProperty(INSTAGRAM.getPropertyName(), "unknown");
+        prof.setInstagram(instagram);
+
+        String tiktok = (String) node.getProperty(TIKTOK.getPropertyName(), "unknown");
+        prof.setTikTok(tiktok);
+
+        String whereILive = (String) node.getProperty(WHERE_I_LIVE.getPropertyName(), "unknown");
+        prof.setWhereLive(whereILive);
+
+        String whereIFrom = (String) node.getProperty(WHERE_I_FROM.getPropertyName(), "unknown");
+        prof.setWhereFrom(whereIFrom);
 
         return prof;
     }

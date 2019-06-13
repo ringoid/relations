@@ -27,7 +27,17 @@ public enum PersonProperties {
     HEIGHT("height"),
     EDU_LEVEL("education_level"),
     HAIR_COLOR("hair_color"),
-    CHILDREN("children");
+    CHILDREN("children"),
+
+    NAME("name"),
+    JOB_TITLE("job_title"),
+    COMPANY("company"),
+    EDUCATION_TEXT("education_text"),
+    ABOUT("about"),
+    INSTAGRAM("instagram"),
+    TIKTOK("tikTok"),
+    WHERE_I_LIVE("where_i_live"),
+    WHERE_I_FROM("where_i_from");
 
     private String propertyName;
 
