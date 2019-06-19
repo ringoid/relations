@@ -2,6 +2,7 @@ package com.ringoid;
 
 public enum MessageProperties {
     MSG_ID("msg_id"),
+    CLIENT_MSG_ID("client_msg_id"),
     MSG_SOURCE_USER_ID("msg_source_user_id"),
     MSG_TARGET_USER_ID("msg_target_user_id"),
     MSG_TEXT("msg_text"),

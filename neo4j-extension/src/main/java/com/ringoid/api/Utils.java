@@ -779,9 +779,11 @@ public class Utils {
             boolean wasYouSender = Objects.equals(originSenderId, msgSourceUser);
             String text = (String) each.getProperty(MessageProperties.MSG_TEXT.getPropertyName());
             long sentAt = (Long) each.getProperty(MessageProperties.MSG_AT.getPropertyName(), 0L);
-            String msgId = (String) each.getProperty(MessageProperties.MSG_ID.getPropertyName());
+            String msgId = (String) each.getProperty(MessageProperties.MSG_ID.getPropertyName(), "");
+            String clientMsgId = (String) each.getProperty(MessageProperties.CLIENT_MSG_ID.getPropertyName(), "");
             Message msg = new Message();
             msg.setMsgId(msgId);
+            msg.setClientMsgId(clientMsgId);
             msg.setWasYouSender(wasYouSender);
             msg.setText(text);
             msg.setMsgAt(sentAt);

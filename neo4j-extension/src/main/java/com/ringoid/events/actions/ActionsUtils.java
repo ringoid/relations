@@ -153,6 +153,7 @@ public class ActionsUtils {
 
         Node lastMessage = database.createNode(Label.label(Labels.MESSAGE.getLabelName()));
         lastMessage.setProperty(MessageProperties.MSG_ID.getPropertyName(), event.getMessageId());
+        lastMessage.setProperty(MessageProperties.CLIENT_MSG_ID.getPropertyName(), event.getClientMsgId());
         lastMessage.setProperty(MessageProperties.MSG_PHOTO_ID.getPropertyName(), event.getOriginPhotoId());
         lastMessage.setProperty(MessageProperties.MSG_SOURCE_USER_ID.getPropertyName(), event.getUserId());
         lastMessage.setProperty(MessageProperties.MSG_TARGET_USER_ID.getPropertyName(), event.getTargetUserId());

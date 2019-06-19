@@ -8,9 +8,18 @@ public class Message {
     private String text;
     private String msgId;
     private long msgAt;
+    private String clientMsgId;
 
     //use this property only for sorting inside engine
     private long wasSentAt;
+
+    public String getClientMsgId() {
+        return clientMsgId;
+    }
+
+    public void setClientMsgId(String clientMsgId) {
+        this.clientMsgId = clientMsgId;
+    }
 
     public boolean isWasYouSender() {
         return wasYouSender;

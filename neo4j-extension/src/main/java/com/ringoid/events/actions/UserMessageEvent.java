@@ -14,6 +14,7 @@ public class UserMessageEvent extends BaseEvent {
     private long messageAt;
     private String source;
     private long unixTime;
+    private String clientMsgId;
 
     public UserMessageEvent botEvent() {
         UserMessageEvent botEvent = new UserMessageEvent();
@@ -25,8 +26,16 @@ public class UserMessageEvent extends BaseEvent {
         botEvent.setSource(source);
         botEvent.setUnixTime(unixTime);
         botEvent.setEventType("BOT_" + eventType);
-
+        botEvent.setClientMsgId(clientMsgId);
         return botEvent;
+    }
+
+    public String getClientMsgId() {
+        return clientMsgId;
+    }
+
+    public void setClientMsgId(String clientMsgId) {
+        this.clientMsgId = clientMsgId;
     }
 
     public String getMessageId() {
