@@ -60,14 +60,16 @@ public class Chats {
                     tx.success();
                     return response;
                 }
+                prof = enrichProfile(oppositeUser, sourceUser, prof);
+                response.setProfile(prof);
+
                 List<Message> msgs = Utils.messages(sourceUser, oppositeUser);
                 if (Objects.isNull(msgs) || msgs.isEmpty()) {
                     tx.success();
                     return response;
                 }
-                prof = enrichProfile(oppositeUser, sourceUser, prof);
+                
                 prof.setMessages(msgs);
-                response.setProfile(prof);
                 response.setChatExists(true);
             }
 
