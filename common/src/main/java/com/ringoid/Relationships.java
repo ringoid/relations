@@ -19,7 +19,9 @@ public enum Relationships {
     TAKE_PART_IN_CONVERSATION,
     PASS_MESSAGE,
     RESIZED,
-    UNSUPPORTED;
+    UNSUPPORTED,
+
+    PREPARE_NF;
 
     public static Relationships fromString(String str) {
         switch (str.toUpperCase()) {
@@ -55,6 +57,8 @@ public enum Relationships {
                 return VIEW_IN_INBOX;
             case "VIEW_IN_SENT":
                 return VIEW_IN_SENT;
+            case "PREPARE_NF":
+                return PREPARE_NF;
             default:
                 return UNSUPPORTED;
         }

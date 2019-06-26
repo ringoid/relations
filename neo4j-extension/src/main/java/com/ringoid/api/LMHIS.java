@@ -27,9 +27,9 @@ import static com.ringoid.api.Utils.sortLMHISUnseenPartProfiles;
 import static com.ringoid.api.Utils.whoHasLikeMatchOrMessageWithMe;
 
 public class LMHIS {
-    private static final int MAX_PROFILES_IN_ONE_PART_OF_HELLOS = 100;
-    private static final int MAX_PROFILES_IN_INBOX = 100;
-    private static final int MAX_PROFILES_IN_SENT = 100;
+    private static final int MAX_PROFILES_IN_ONE_PART_OF_HELLOS = 200;
+    private static final int MAX_PROFILES_IN_INBOX = 200;
+    private static final int MAX_PROFILES_IN_SENT = 200;
 
     private static final Log log = LoggerFactory.getLogger(LMHIS.class);
 

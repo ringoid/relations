@@ -3,6 +3,7 @@ package com.ringoid.api;
 import com.codahale.metrics.MetricRegistry;
 import com.graphaware.common.log.LoggerFactory;
 import com.ringoid.Labels;
+import com.ringoid.PersonProperties;
 import com.ringoid.PhotoProperties;
 import com.ringoid.Relationships;
 import org.neo4j.graphdb.Direction;
@@ -229,6 +230,55 @@ public class NewFaces {
 //        DISTANCES.add(100_000);
         DISTANCES.add(100_000);
         DISTANCES.add(300_000);
+    }
+
+    public static PrepareNewFacesResponse prepareNewFaces(PrepareNewFacesRequest request, GraphDatabaseService database, MetricRegistry metrics) {
+        PrepareNewFacesResponse response = new PrepareNewFacesResponse();
+        try (Transaction tx = database.beginTx()) {
+            Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), request.getUserId());
+            if (Objects.isNull(sourceUser)) {
+                log.warn("request prepare new_faces for user that not exist, userId [%s]", request.getUserId());
+                tx.success();
+                return response;
+            }
+
+            String sex = (String) sourceUser.getProperty(SEX.getPropertyName(), "male");
+            String targetSex = "female";
+            if (Objects.equals("female", sex)) {
+                targetSex = "male";
+            }
+
+            long startLoop = System.currentTimeMillis();
+            List<Node> nodes = loopByUnseenPart(sourceUser.getId(), request.getUserId(), targetSex, request.getLimit(),
+                    Collections.emptySet(), database, metrics);
+            long loopTime = System.currentTimeMillis() - startLoop;
+            metrics.histogram("prepare_new_faces_loopByUnseenPart").update(loopTime);
+
+            if (nodes.size() < request.getLimit()) {
+                Set<Long> nodeIds = new HashSet<>(nodes.size());
+                for (Node each : nodes) {
+                    nodeIds.add(each.getId());
+                }
+                startLoop = System.currentTimeMillis();
+                nodes.addAll(loopBySeenPart(sourceUser.getId(), request.getUserId(), targetSex, request.getLimit(),
+                        nodeIds, database, metrics));
+                loopTime = System.currentTimeMillis() - startLoop;
+                metrics.histogram("prepare_new_faces_loopBySeenPart").update(loopTime);
+            }
+
+            if (nodes.size() > request.getLimit()) {
+                nodes = nodes.subList(0, request.getLimit());
+            }
+            log.info("prepare_new_faces (full) for userId [%s] size is [%s]", request.getUserId(), nodes.size());
+
+            for (Node each : nodes) {
+                String targetUserId = (String) each.getProperty(PersonProperties.USER_ID.getPropertyName());
+                response.getTargetUserIds().add(targetUserId);
+            }
+
+            tx.success();
+        }
+        return response;
     }
 
     public static NewFacesResponse newFaces(NewFacesRequest request, GraphDatabaseService database, MetricRegistry metrics) {

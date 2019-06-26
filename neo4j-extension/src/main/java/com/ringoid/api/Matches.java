@@ -26,7 +26,7 @@ import static com.ringoid.api.Utils.whoHasLikeMatchOrMessageWithMe;
 public class Matches {
     private static final Log log = LoggerFactory.getLogger(Matches.class);
 
-    private static final int MAX_MATCH_PROFILES_NUM = 100;
+    private static final int MAX_MATCH_PROFILES_NUM = 200;
 
     public static LMHISResponse matches(LMHISRequest request, GraphDatabaseService database) {
         LMHISResponse response = new LMHISResponse();

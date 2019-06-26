@@ -21,6 +21,8 @@ import com.ringoid.api.Messages;
 import com.ringoid.api.NewFaces;
 import com.ringoid.api.NewFacesRequest;
 import com.ringoid.api.NewFacesResponse;
+import com.ringoid.api.PrepareNewFacesRequest;
+import com.ringoid.api.PrepareNewFacesResponse;
 import com.ringoid.api.PushRequest;
 import com.ringoid.api.PushResponse;
 import com.ringoid.api.WhoReadyForPush;
@@ -46,6 +48,8 @@ import com.ringoid.events.image.ImageUtilsInternaly;
 import com.ringoid.events.image.ResizePhotoEvent;
 import com.ringoid.events.image.UserDeletePhotoEvent;
 import com.ringoid.events.image.UserUploadedPhotoEvent;
+import com.ringoid.events.preparenf.PrepareNFEvent;
+import com.ringoid.events.preparenf.PrepareNFUtils;
 import com.ringoid.events.push.PushUtils;
 import com.ringoid.events.push.PushWasSentEvent;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -85,6 +89,7 @@ import static com.ringoid.events.EventTypes.AUTH_USER_UPDATE_PROFILE;
 import static com.ringoid.events.EventTypes.IMAGE_USER_DELETE_PHOTO;
 import static com.ringoid.events.EventTypes.IMAGE_USER_UPLOAD_PHOTO;
 import static com.ringoid.events.EventTypes.INTERNAL_RESIZE_PHOTO_EVENT;
+import static com.ringoid.events.EventTypes.PREPARE_NEW_FACES_EVENT;
 import static com.ringoid.events.EventTypes.PUSH_WAS_SENT;
 
 /**
@@ -100,6 +105,7 @@ public class ActionController {
     private static final int BACKOFF = 100;
 
     private static final int NEW_FACES_HARDCODE_LIMIT = 100;
+    private static final int PREPARE_NEW_FACES_HARDCORE_LIMIT = 100;
 
     private final GraphDatabaseService database;
     private final MetricRegistry metrics;
@@ -165,6 +171,14 @@ public class ActionController {
         result += ",\n";
         result += metricsToString("new_faces_loopByUnseenPart_geo_steps");
 
+        result += ",\n";
+        result += metricsToString("prepare_new_faces_loopByUnseenPart");
+
+        result += ",\n";
+        result += metricsToString("prepare_new_faces_loopBySeenPart");
+
+        result += ",\n";
+        result += metricsToString("prepare_new_faces_full");
         return result;
     }
 
@@ -287,6 +301,22 @@ public class ActionController {
         log.info("handle new_faces with for userId [%s] with result size %s in %s millis",
                 request.getUserId(), response.getNewFaces().size(), fullTime);
         metrics.histogram("new_faces_full").update(fullTime);
+        return objectMapper.writeValueAsString(response);
+    }
+
+    @RequestMapping(value = "/prepare_new_faces", method = RequestMethod.GET)
+    @ResponseBody
+    public String prepareNewFaces(@RequestBody String body) throws IOException {
+        long start = System.currentTimeMillis();
+        ObjectMapper objectMapper = new ObjectMapper();
+        PrepareNewFacesRequest request = objectMapper.readValue(body, PrepareNewFacesRequest.class);
+        //IGNORE CLIENT SIDE LIMIT AND HARDCODE OWN
+        request.setLimit(PREPARE_NEW_FACES_HARDCORE_LIMIT);
+        PrepareNewFacesResponse response = NewFaces.prepareNewFaces(request, database, metrics);
+        long fullTime = System.currentTimeMillis() - start;
+        log.info("handle prepare_new_faces with for userId [%s] with result size %s in %s millis",
+                request.getUserId(), response.getTargetUserIds().size(), fullTime);
+        metrics.histogram("prepare_new_faces_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
     }
 
@@ -426,6 +456,9 @@ public class ActionController {
         } else if (Objects.equals(eventType, AUTH_USER_UPDATE_PROFILE.name())) {
             UserUpdateProfileEvent event = objectMapper.readValue(each.traverse(), UserUpdateProfileEvent.class);
             AuthUtilsInternaly.updateProfile(event, database);
+        } else if (Objects.equals(eventType, PREPARE_NEW_FACES_EVENT.name())) {
+            PrepareNFEvent event = objectMapper.readValue(each.traverse(), PrepareNFEvent.class);
+            PrepareNFUtils.prepareNF(event, database);
         }
     }
 
