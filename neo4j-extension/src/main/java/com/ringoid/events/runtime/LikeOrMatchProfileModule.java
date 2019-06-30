@@ -25,9 +25,9 @@ public class LikeOrMatchProfileModule extends BaseTxDrivenModule<List<PushObject
     private final TxDrivenModuleConfiguration configuration;
     private final Sender sender;
 
-    public LikeOrMatchProfileModule(String moduleId, String internalStreamName, String botSqsQueueUrl) {
+    public LikeOrMatchProfileModule(String moduleId, String internalStreamName, String botSqsQueueUrl, String botStream) {
         super(moduleId);
-        this.sender = new Sender(internalStreamName, botSqsQueueUrl);
+        this.sender = new Sender(internalStreamName, botSqsQueueUrl, botStream);
         this.configuration = FluentTxDrivenModuleConfiguration
                 .defaultConfiguration()
                 .with(

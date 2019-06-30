@@ -22,9 +22,9 @@ public class MessageModule extends BaseTxDrivenModule<List<MessageBotEvent>> {
     private final Sender sender;
     private final boolean botEnabled;
 
-    public MessageModule(String moduleId, String internalStreamName, String botSqsQueueUrl, boolean botEnabled) {
+    public MessageModule(String moduleId, String internalStreamName, String botSqsQueueUrl, boolean botEnabled, String botStream) {
         super(moduleId);
-        this.sender = new Sender(internalStreamName, botSqsQueueUrl);
+        this.sender = new Sender(internalStreamName, botSqsQueueUrl, botStream);
         this.botEnabled = botEnabled;
         this.configuration = FluentTxDrivenModuleConfiguration
                 .defaultConfiguration()

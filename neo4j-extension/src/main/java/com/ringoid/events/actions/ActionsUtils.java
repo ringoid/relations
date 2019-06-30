@@ -104,16 +104,17 @@ public class ActionsUtils {
         }
 
         List<Relationship> allRels = getAllRelationshipBetweenNodes(sourceUser, targetUser);
+
         Relationship existingMessage = null;
         for (Relationship each : allRels) {
             //could be only match or message, not both
             if (each.isType(RelationshipType.withName(Relationships.MATCH.name()))) {
                 each.delete();
                 existingMessage = getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, Relationships.MESSAGE.name());
-                break;
             } else if (each.isType(RelationshipType.withName(Relationships.MESSAGE.name()))) {
                 existingMessage = each;
-                break;
+            } else if (each.isType(RelationshipType.withName(Relationships.PREPARE_NF.name()))) {
+                each.delete();
             }
         }
 
@@ -163,6 +164,7 @@ public class ActionsUtils {
         getOrCreateRelationship(start, lastMessage, Direction.OUTGOING, Relationships.PASS_MESSAGE.name());
     }
 
+    //deprecated
     public static void unlike(UserUnlikePhotoEvent event, GraphDatabaseService database) {
         Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getUserId());
         if (Objects.nonNull(sourceUser)) {
@@ -445,6 +447,7 @@ public class ActionsUtils {
         toDelete.add(Relationships.VIEW_IN_HELLOS.name());
         toDelete.add(Relationships.VIEW_IN_INBOX.name());
         toDelete.add(Relationships.VIEW_IN_SENT.name());
+        toDelete.add(Relationships.PREPARE_NF.name());
 
         String outgoingViewType = null;
         for (Relationship each : allOutgoingRels) {
@@ -563,6 +566,13 @@ public class ActionsUtils {
         existOutgoingRelationshipsBetweenProfiles.remove(Relationships.VIEW_IN_MESSAGES);
 
         //todo:make defense more stronger and check that source has VIEW with photo also
+
+        List<Relationship> allRels = getAllRelationshipBetweenNodes(sourceUser, targetUser);
+        for (Relationship each : allRels) {
+            if (each.isType(RelationshipType.withName(Relationships.PREPARE_NF.name()))) {
+                each.delete();
+            }
+        }
 
         //first like photo if it exist
         Optional<Node> targetPhotoOpt = getUploadedPhoto(targetUser, event.getOriginPhotoId());

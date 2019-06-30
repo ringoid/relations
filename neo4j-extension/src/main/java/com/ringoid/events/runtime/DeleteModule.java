@@ -23,9 +23,9 @@ public class DeleteModule extends BaseTxDrivenModule<List<UserCallDeleteHimselfE
     private final TxDrivenModuleConfiguration configuration;
     private final Sender sender;
 
-    public DeleteModule(String moduleId, String internalStreamName, String botSqsQueueUrl) {
+    public DeleteModule(String moduleId, String internalStreamName, String botSqsQueueUrl, String botKinesis) {
         super(moduleId);
-        this.sender = new Sender(internalStreamName, botSqsQueueUrl);
+        this.sender = new Sender(internalStreamName, botSqsQueueUrl, botKinesis);
         this.configuration = FluentTxDrivenModuleConfiguration
                 .defaultConfiguration()
                 .with(new BaseNodeInclusionPolicy() {

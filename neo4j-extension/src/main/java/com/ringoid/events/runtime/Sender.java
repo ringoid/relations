@@ -18,6 +18,7 @@ import org.neo4j.logging.Log;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.UUID;
 
 import static com.ringoid.events.EventTypes.ACTION_USER_LIKE_PHOTO;
 
@@ -27,14 +28,16 @@ public class Sender {
 
     private final ObjectMapper objectMapper;
     private final String internalStreamName;
+    private final String botStreamName;
     private final String botSqsQueueUrl;
     private final AmazonKinesis kinesis;
     private final AmazonSQS sqs;
 
-    public Sender(String internalStreamName, String botSqsQueueUrl) {
+    public Sender(String internalStreamName, String botSqsQueueUrl, String botStreamName) {
         this.objectMapper = new ObjectMapper();
         this.internalStreamName = internalStreamName;
         this.botSqsQueueUrl = botSqsQueueUrl;
+        this.botStreamName = botStreamName;
 
         AmazonKinesisClientBuilder clientBuilder = AmazonKinesisClientBuilder.standard().withRegion(Regions.EU_WEST_1);
         kinesis = clientBuilder.build();
@@ -102,10 +105,19 @@ public class Sender {
         }
     }
 
+    private void sendEventIntoBotStreamQueue(String event) {
+        PutRecordRequest putRecordRequest = new PutRecordRequest();
+        putRecordRequest.setStreamName(botStreamName);
+        putRecordRequest.setData(ByteBuffer.wrap(event.getBytes()));
+        putRecordRequest.setPartitionKey(UUID.randomUUID().toString());
+        kinesis.putRecord(putRecordRequest);
+    }
+
     public void sendBotEvent(Object event) {
         try {
             String strRep = objectMapper.writeValueAsString(event);
-            sqs.sendMessage(botSqsQueueUrl, strRep);
+            //sqs.sendMessage(botSqsQueueUrl, strRep);
+            sendEventIntoBotStreamQueue(strRep);
         } catch (JsonProcessingException e) {
             log.error("error sending bot's event", e);
         }

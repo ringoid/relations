@@ -26,10 +26,10 @@ public class MessageProfileModule extends BaseTxDrivenModule<List<PushObjectEven
     private final TxDrivenModuleConfiguration configuration;
     private final Sender sender;
 
-    public MessageProfileModule(GraphDatabaseService database, String moduleId, String internalStreamName, String botSqsQueueUrl) {
+    public MessageProfileModule(GraphDatabaseService database, String moduleId, String internalStreamName, String botSqsQueueUrl, String botStream) {
         super(moduleId);
         this.database = database;
-        this.sender = new Sender(internalStreamName, botSqsQueueUrl);
+        this.sender = new Sender(internalStreamName, botSqsQueueUrl, botStream);
         this.configuration = FluentTxDrivenModuleConfiguration
                 .defaultConfiguration()
                 .with(new BaseNodeInclusionPolicy() {

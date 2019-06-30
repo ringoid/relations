@@ -32,10 +32,10 @@ public class LikeModule extends BaseTxDrivenModule<List<PhotoLikeEvent>> {
     private final Sender sender;
     private final boolean botEnabled;
 
-    public LikeModule(GraphDatabaseService database, String moduleId, String internalStreamName, String botSqsQueueUrl, boolean botEnabled) {
+    public LikeModule(GraphDatabaseService database, String moduleId, String internalStreamName, String botSqsQueueUrl, boolean botEnabled, String botKinesis) {
         super(moduleId);
         this.database = database;
-        this.sender = new Sender(internalStreamName, botSqsQueueUrl);
+        this.sender = new Sender(internalStreamName, botSqsQueueUrl, botKinesis);
         this.botEnabled = botEnabled;
         this.configuration = FluentTxDrivenModuleConfiguration
                 .defaultConfiguration()

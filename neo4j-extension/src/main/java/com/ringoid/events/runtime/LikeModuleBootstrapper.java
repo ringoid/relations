@@ -17,8 +17,9 @@ public class LikeModuleBootstrapper implements RuntimeModuleBootstrapper {
         String internalStreamName = config.get("internal_stream_name");
         Boolean botsEnabled = Boolean.valueOf(config.get("bots_enable"));
         String botsSqsQueue = config.get("bots_sqs_queue");
-        log.info("bootstrap module with internal stream name [%s], bots enabled [%s] and bots sqs url [%s]",
-                internalStreamName, botsEnabled, botsSqsQueue);
-        return new LikeModule(database, moduleId, internalStreamName, botsSqsQueue, botsEnabled);
+        String botStream = config.get("bots_kinesis_queue");
+        log.info("bootstrap module with internal stream name [%s], bots enabled [%s] and bots sqs url [%s] and botKinesis [%s]",
+                internalStreamName, botsEnabled, botsSqsQueue, botStream);
+        return new LikeModule(database, moduleId, internalStreamName, botsSqsQueue, botsEnabled, botStream);
     }
 }

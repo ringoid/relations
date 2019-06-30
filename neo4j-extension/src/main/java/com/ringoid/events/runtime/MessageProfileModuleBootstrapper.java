@@ -16,8 +16,9 @@ public class MessageProfileModuleBootstrapper implements RuntimeModuleBootstrapp
     public RuntimeModule bootstrapModule(String moduleId, Map<String, String> config, GraphDatabaseService database) {
         String internalStreamName = config.get("internal_stream_name");
         String botsSqsQueue = config.get("bots_sqs_queue");
-        log.info("bootstrap module with internal stream name [%s] and bots sqs url [%s]",
-                internalStreamName, botsSqsQueue);
-        return new MessageProfileModule(database, moduleId, internalStreamName, botsSqsQueue);
+        String botStream = config.get("bots_kinesis_queue");
+        log.info("bootstrap module with internal stream name [%s] and bots sqs url [%s], bot stream [%s]",
+                internalStreamName, botsSqsQueue, botStream);
+        return new MessageProfileModule(database, moduleId, internalStreamName, botsSqsQueue, botStream);
     }
 }
