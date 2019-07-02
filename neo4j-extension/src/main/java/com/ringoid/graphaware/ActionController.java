@@ -48,6 +48,7 @@ import com.ringoid.events.image.ImageUtilsInternaly;
 import com.ringoid.events.image.ResizePhotoEvent;
 import com.ringoid.events.image.UserDeletePhotoEvent;
 import com.ringoid.events.image.UserUploadedPhotoEvent;
+import com.ringoid.events.preparenf.DeletePreviousPreparedNFEvent;
 import com.ringoid.events.preparenf.PrepareNFEvent;
 import com.ringoid.events.preparenf.PrepareNFUtils;
 import com.ringoid.events.push.PushUtils;
@@ -86,6 +87,7 @@ import static com.ringoid.events.EventTypes.AUTH_USER_ONLINE;
 import static com.ringoid.events.EventTypes.AUTH_USER_PROFILE_CREATED;
 import static com.ringoid.events.EventTypes.AUTH_USER_SETTINGS_UPDATED;
 import static com.ringoid.events.EventTypes.AUTH_USER_UPDATE_PROFILE;
+import static com.ringoid.events.EventTypes.DELETE_PREPARED_NEW_FACES_EVENT;
 import static com.ringoid.events.EventTypes.IMAGE_USER_DELETE_PHOTO;
 import static com.ringoid.events.EventTypes.IMAGE_USER_UPLOAD_PHOTO;
 import static com.ringoid.events.EventTypes.INTERNAL_RESIZE_PHOTO_EVENT;
@@ -104,8 +106,9 @@ public class ActionController {
     private static final int RETRIES = 5;
     private static final int BACKOFF = 100;
 
-    private static final int NEW_FACES_HARDCODE_LIMIT = 100;
-    private static final int PREPARE_NEW_FACES_HARDCORE_LIMIT = 100;
+    private static final int NEW_FACES_HARDCODE_LIMIT_FOR_FAST_SEARCH = 10;
+//    private static final int NEW_FACES_HARDCODE_LIMIT = 40;
+//    private static final int PREPARE_NEW_FACES_HARDCORE_LIMIT = 100;
 
     private final GraphDatabaseService database;
     private final MetricRegistry metrics;
@@ -179,6 +182,13 @@ public class ActionController {
 
         result += ",\n";
         result += metricsToString("prepare_new_faces_full");
+
+        result += ",\n";
+        result += metricsToString("new_faces_no_prepared_full");
+
+        result += ",\n";
+        result += metricsToString("new_faces_prepared_full");
+
         return result;
     }
 
@@ -295,11 +305,22 @@ public class ActionController {
         ObjectMapper objectMapper = new ObjectMapper();
         NewFacesRequest request = objectMapper.readValue(body, NewFacesRequest.class);
         //IGNORE CLIENT SIDE LIMIT AND HARDCODE OWN
-        request.setLimit(NEW_FACES_HARDCODE_LIMIT);
-        NewFacesResponse response = NewFaces.newFaces(request, database, metrics);
+//        request.setLimit(NEW_FACES_HARDCODE_LIMIT);
+        NewFacesResponse response = NewFaces.newFacesWithPreparedNodes(request, database, metrics);
+        if (response.getNewFaces().isEmpty()) {
+            request.setLimit(NEW_FACES_HARDCODE_LIMIT_FOR_FAST_SEARCH);
+            response = NewFaces.newFaces(request, database, metrics);
+            long fullTime = System.currentTimeMillis() - start;
+            metrics.histogram("new_faces_prepared_full").update(fullTime);
+            log.info("handle new_faces WITHOUT prepared profiles for userId [%s] with result size %s in %s millis",
+                    request.getUserId(), response.getNewFaces().size(), fullTime);
+        } else {
+            long fullTime = System.currentTimeMillis() - start;
+            metrics.histogram("new_faces_no_prepared_full").update(fullTime);
+            log.info("handle new_faces with prepared profiles for userId [%s] with result size %s in %s millis",
+                    request.getUserId(), response.getNewFaces().size(), fullTime);
+        }
         long fullTime = System.currentTimeMillis() - start;
-        log.info("handle new_faces with for userId [%s] with result size %s in %s millis",
-                request.getUserId(), response.getNewFaces().size(), fullTime);
         metrics.histogram("new_faces_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
     }
@@ -311,11 +332,11 @@ public class ActionController {
         ObjectMapper objectMapper = new ObjectMapper();
         PrepareNewFacesRequest request = objectMapper.readValue(body, PrepareNewFacesRequest.class);
         //IGNORE CLIENT SIDE LIMIT AND HARDCODE OWN
-        request.setLimit(PREPARE_NEW_FACES_HARDCORE_LIMIT);
+//        request.setLimit(PREPARE_NEW_FACES_HARDCORE_LIMIT);
         PrepareNewFacesResponse response = NewFaces.prepareNewFaces(request, database, metrics);
         long fullTime = System.currentTimeMillis() - start;
         log.info("handle prepare_new_faces with for userId [%s] with result size %s in %s millis",
-                request.getUserId(), response.getTargetUserIds().size(), fullTime);
+                request.getUserId(), response.getTargetUserIndexMap().size(), fullTime);
         metrics.histogram("prepare_new_faces_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
     }
@@ -459,6 +480,9 @@ public class ActionController {
         } else if (Objects.equals(eventType, PREPARE_NEW_FACES_EVENT.name())) {
             PrepareNFEvent event = objectMapper.readValue(each.traverse(), PrepareNFEvent.class);
             PrepareNFUtils.prepareNF(event, database);
+        } else if (Objects.equals(eventType, DELETE_PREPARED_NEW_FACES_EVENT.name())) {
+            DeletePreviousPreparedNFEvent event = objectMapper.readValue(each.traverse(), DeletePreviousPreparedNFEvent.class);
+            PrepareNFUtils.deletePreparedNF(event, database);
         }
     }
 

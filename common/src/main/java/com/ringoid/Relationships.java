@@ -3,25 +3,28 @@ package com.ringoid;
 public enum Relationships {
     UPLOAD_PHOTO,
     HIDE_PHOTO,
-    LIKE,
+    RESIZED,
+
     VIEW,
     VIEW_IN_LIKES_YOU,
     VIEW_IN_MATCHES,
     VIEW_IN_MESSAGES,
 
+    LIKE,
+    BLOCK,
+    MATCH,
+    MESSAGE,
+
+    TAKE_PART_IN_CONVERSATION,
+    PASS_MESSAGE,
+
     VIEW_IN_HELLOS,
     VIEW_IN_INBOX,
     VIEW_IN_SENT,
 
-    BLOCK,
-    MATCH,
-    MESSAGE,
-    TAKE_PART_IN_CONVERSATION,
-    PASS_MESSAGE,
-    RESIZED,
-    UNSUPPORTED,
+    PREPARE_NF,
 
-    PREPARE_NF;
+    UNSUPPORTED;
 
     public static Relationships fromString(String str) {
         switch (str.toUpperCase()) {

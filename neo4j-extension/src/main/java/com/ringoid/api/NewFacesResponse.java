@@ -9,6 +9,15 @@ import java.util.List;
 public class NewFacesResponse {
     private List<Profile> newFaces;
     private long lastActionTime;
+    private long howMuchPrepared;
+
+    public long getHowMuchPrepared() {
+        return howMuchPrepared;
+    }
+
+    public void setHowMuchPrepared(long howMuchPrepared) {
+        this.howMuchPrepared = howMuchPrepared;
+    }
 
     public NewFacesResponse() {
         this.newFaces = new ArrayList<>();

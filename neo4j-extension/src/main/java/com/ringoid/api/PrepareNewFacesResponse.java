@@ -2,22 +2,22 @@ package com.ringoid.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PrepareNewFacesResponse {
-    private List<String> targetUserIds;
+    private Map<String, Integer> targetUserIndexMap;
 
     public PrepareNewFacesResponse() {
-        this.targetUserIds = new ArrayList<>();
+        this.targetUserIndexMap = new HashMap<>();
     }
 
-    public List<String> getTargetUserIds() {
-        return targetUserIds;
+    public Map<String, Integer> getTargetUserIndexMap() {
+        return targetUserIndexMap;
     }
 
-    public void setTargetUserIds(List<String> targetUserIds) {
-        this.targetUserIds = targetUserIds;
+    public void setTargetUserIndexMap(Map<String, Integer> targetUserIndexMap) {
+        this.targetUserIndexMap = targetUserIndexMap;
     }
 }

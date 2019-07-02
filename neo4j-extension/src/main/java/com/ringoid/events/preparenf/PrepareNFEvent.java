@@ -3,17 +3,11 @@ package com.ringoid.events.preparenf;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.ringoid.events.BaseEvent;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PrepareNFEvent extends BaseEvent {
     private String userId;
-    private List<String> targetUserIds;
-
-    public PrepareNFEvent() {
-        this.targetUserIds = new ArrayList<>();
-    }
+    private String targetUserId;
+    private long index;
 
     public String getUserId() {
         return userId;
@@ -23,11 +17,19 @@ public class PrepareNFEvent extends BaseEvent {
         this.userId = userId;
     }
 
-    public List<String> getTargetUserIds() {
-        return targetUserIds;
+    public String getTargetUserId() {
+        return targetUserId;
     }
 
-    public void setTargetUserIds(List<String> targetUserIds) {
-        this.targetUserIds = targetUserIds;
+    public void setTargetUserId(String targetUserId) {
+        this.targetUserId = targetUserId;
+    }
+
+    public long getIndex() {
+        return index;
+    }
+
+    public void setIndex(long index) {
+        this.index = index;
     }
 }

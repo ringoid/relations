@@ -5,6 +5,7 @@ import com.graphaware.common.log.LoggerFactory;
 import com.ringoid.Labels;
 import com.ringoid.PersonProperties;
 import com.ringoid.PhotoProperties;
+import com.ringoid.PrepareNFRelationshipProperties;
 import com.ringoid.Relationships;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -18,6 +19,7 @@ import org.neo4j.logging.Log;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -77,22 +79,6 @@ public class NewFaces {
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
     );
 
-//    private static final String GEO_SEEN_SORTED_BY_LIKES_QUERY = String.format(
-//            "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
-//                    "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
-//                    "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
-//                    "AND (NOT (target)-[:%s|%s|%s|%s]-(sourceUser)) " +//2.1
-//                    "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
-//                    "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC, userId SKIP $skipParam LIMIT $limitParam",//3
-//            PERSON.getLabelName(), USER_ID.getPropertyName(),//1
-//            PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
-//            LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
-//            Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
-//            ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
-//            USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
-//    );
-
-
     private static final String SEEN_SORTED_BY_ONLINE_TIME_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
@@ -122,29 +108,16 @@ public class NewFaces {
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName(), LAST_ONLINE_TIME.getPropertyName()//3
     );
 
-//    private static final String GEO_SEEN_SORTED_BY_ONLINE_TIME_QUERY = String.format(
-//            "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
-//                    "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
-//                    "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
-//                    "AND (NOT (target)-[:%s|%s|%s|%s]-(sourceUser)) " +//2.1
-//                    "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
-//                    "RETURN DISTINCT target.%s AS userId, target.%s AS likes, target.%s AS onlineTime ORDER BY onlineTime DESC, userId SKIP $skipParam LIMIT $limitParam",//3
-//            PERSON.getLabelName(), USER_ID.getPropertyName(),//1
-//            PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
-//            LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
-//            Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
-//            ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
-//            USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName(), LAST_ONLINE_TIME.getPropertyName()//3
-//    );
-
     private static final String NOT_SEEN_SORTED_BY_LIKES_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
-                    "WHERE NOT (target)<-[]-(sourceUser) " +//2.1
+                    "WHERE NOT (target)<-[:%s|%s|%s|%s|%s|%s|%s|%s]-(sourceUser) " +//2.1
                     "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
+            //we need this line to enable preparenf relationships take part in new preparation
+            Relationships.VIEW, Relationships.VIEW_IN_LIKES_YOU, Relationships.VIEW_IN_MATCHES, Relationships.VIEW_IN_MESSAGES, Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
             ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
     );
@@ -154,38 +127,28 @@ public class NewFaces {
                     "MATCH (target:%s {%s:$sex}) " +//2
                     "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
                     "WITH sourceUser, target " +
-                    "WHERE (NOT (target)<-[]-(sourceUser)) " +
+                    "WHERE NOT (target)<-[:%s|%s|%s|%s|%s|%s|%s|%s]-(sourceUser) " +//2.1
                     "AND (target)-[:%s]->(:%s) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), SEX.getPropertyName(),//2
             LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
+            //we need this line to enable preparenf relationships take part in new preparation
+            Relationships.VIEW, Relationships.VIEW_IN_LIKES_YOU, Relationships.VIEW_IN_MATCHES, Relationships.VIEW_IN_MESSAGES, Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
             Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//2.2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
     );
 
-//    private static final String GEO_NOT_SEEN_SORTED_BY_LIKES_QUERY = String.format(
-//            "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
-//                    "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
-//                    "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
-//                    "AND (NOT (target)<-[]-(sourceUser)) " +//2.1
-//                    "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
-//                    "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC, userId SKIP $skipParam LIMIT $limitParam",//3
-//            PERSON.getLabelName(), USER_ID.getPropertyName(),//1
-//            PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
-//            LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
-//            ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
-//            USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
-//    );
-
     private static final String NOT_SEEN_SORTED_BY_ONLINE_TIME_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
-                    "WHERE NOT (target)<-[]-(sourceUser) " +//2.1
+                    "WHERE NOT (target)<-[:%s|%s|%s|%s|%s|%s|%s|%s]-(sourceUser) " +//2.1
                     "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes, target.%s AS onlineTime ORDER BY onlineTime DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
+            //we need this line to enable preparenf relationships take part in new preparation
+            Relationships.VIEW, Relationships.VIEW_IN_LIKES_YOU, Relationships.VIEW_IN_MATCHES, Relationships.VIEW_IN_MESSAGES, Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
             ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName(), LAST_ONLINE_TIME.getPropertyName()//3
     );
@@ -195,30 +158,17 @@ public class NewFaces {
                     "MATCH (target:%s {%s:$sex}) " +//2
                     "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
                     "WITH sourceUser, target " +
-                    "WHERE (NOT (target)<-[]-(sourceUser)) " +
+                    "WHERE NOT (target)<-[:%s|%s|%s|%s|%s|%s|%s|%s]-(sourceUser) " +//2.1
                     "AND (target)-[:%s]->(:%s) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes, target.%s AS onlineTime ORDER BY onlineTime DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), SEX.getPropertyName(),//2
             LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
+            //we need this line to enable preparenf relationships take part in new preparation
+            Relationships.VIEW, Relationships.VIEW_IN_LIKES_YOU, Relationships.VIEW_IN_MATCHES, Relationships.VIEW_IN_MESSAGES, Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
             Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//2.2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName(), LAST_ONLINE_TIME.getPropertyName()//3
     );
-
-
-//    private static final String GEO_NOT_SEEN_SORTED_BY_ONLINE_TIME_QUERY = String.format(
-//            "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
-//                    "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
-//                    "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
-//                    "AND (NOT (target)<-[]-(sourceUser)) " +//2.1
-//                    "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
-//                    "RETURN DISTINCT target.%s AS userId, target.%s AS likes, target.%s AS onlineTime ORDER BY onlineTime DESC, userId SKIP $skipParam LIMIT $limitParam",//3
-//            PERSON.getLabelName(), USER_ID.getPropertyName(),//1
-//            PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
-//            LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
-//            ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
-//            USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName(), LAST_ONLINE_TIME.getPropertyName()//3
-//    );
 
     private static final List<Integer> DISTANCES = new ArrayList<>();
 
@@ -260,8 +210,10 @@ public class NewFaces {
                     nodeIds.add(each.getId());
                 }
                 startLoop = System.currentTimeMillis();
-                nodes.addAll(loopBySeenPart(sourceUser.getId(), request.getUserId(), targetSex, request.getLimit(),
-                        nodeIds, database, metrics));
+                List<Node> seenPart = loopBySeenPart(sourceUser.getId(), request.getUserId(), targetSex, request.getLimit(),
+                        nodeIds, database, metrics);
+                seenPart = commonSortProfilesSeenPart(sourceUser, seenPart);
+                nodes.addAll(seenPart);
                 loopTime = System.currentTimeMillis() - startLoop;
                 metrics.histogram("prepare_new_faces_loopBySeenPart").update(loopTime);
             }
@@ -271,11 +223,65 @@ public class NewFaces {
             }
             log.info("prepare_new_faces (full) for userId [%s] size is [%s]", request.getUserId(), nodes.size());
 
+            int index = 0;
             for (Node each : nodes) {
                 String targetUserId = (String) each.getProperty(PersonProperties.USER_ID.getPropertyName());
-                response.getTargetUserIds().add(targetUserId);
+                response.getTargetUserIndexMap().put(targetUserId, index++);
             }
 
+            tx.success();
+        }
+        return response;
+    }
+
+    public static NewFacesResponse newFacesWithPreparedNodes(NewFacesRequest request, GraphDatabaseService database, MetricRegistry metrics) {
+        NewFacesResponse response = new NewFacesResponse();
+        List<PreparedNode> nodes = new ArrayList<>();
+        try (Transaction tx = database.beginTx()) {
+            Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), request.getUserId());
+            if (Objects.isNull(sourceUser)) {
+                log.warn("request new_faces_with_prepared_nodes for user that not exist, userId [%s]", request.getUserId());
+                response.setLastActionTime(request.getRequestedLastActionTime() - 1);
+                tx.success();
+                return response;
+            }
+            long actionTime = (Long) sourceUser.getProperty(LAST_ACTION_TIME.getPropertyName(), 0L);
+            response.setLastActionTime(actionTime);
+            if (request.getRequestedLastActionTime() <= actionTime) {
+                Iterable<Relationship> prepared = sourceUser.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.PREPARE_NF.name()));
+                for (Relationship eachP : prepared) {
+                    Node other = eachP.getOtherNode(sourceUser);
+                    if (other.hasLabel(Label.label(PERSON.getLabelName()))) {
+                        long index = (Long) eachP.getProperty(PrepareNFRelationshipProperties.INDEX.getPropertyName(), 1L);
+                        PreparedNode preparedNode = new PreparedNode();
+                        preparedNode.node = other;
+                        preparedNode.index = index;
+                        nodes.add(preparedNode);
+                    }
+                }
+                Collections.sort(nodes, new Comparator<PreparedNode>() {
+                    @Override
+                    public int compare(PreparedNode o1, PreparedNode o2) {
+                        return Long.compare(o1.index, o2.index);
+                    }
+                });
+                List<Node> resultList = new ArrayList<>(nodes.size());
+                for (PreparedNode each : nodes) {
+                    resultList.add(each.node);
+                }
+                int howMuchPreparedWeHave = resultList.size();
+
+                if (resultList.size() > request.getLimit()) {
+                    resultList = resultList.subList(0, request.getLimit());
+                }
+                howMuchPreparedWeHave -= resultList.size();
+
+                List<Profile> profileList = new ArrayList<>();
+                profileList.addAll(createProfileListWithResizedAndSortedPhotos(request, resultList, true, sourceUser, database, metrics));
+                response.setNewFaces(profileList);
+                response.setHowMuchPrepared(howMuchPreparedWeHave);
+                log.info("new_faces_with_prepared_nodes (full) for userId [%s] size is [%s]", request.getUserId(), profileList.size());
+            }
             tx.success();
         }
         return response;
@@ -705,4 +711,9 @@ public class NewFaces {
         return result;
     }
 
+}
+
+class PreparedNode {
+    public Node node;
+    public long index;
 }
