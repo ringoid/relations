@@ -7,23 +7,27 @@ import (
 	"strings"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/kinesis"
 )
 
 var Anlogger *commons.Logger
 var Neo4jUser string
 var Neo4jPassword string
 var Neo4jHosts []string
+var CommonStreamName string
+var AwsKinesisStreamClient *kinesis.Kinesis
 
 const (
 	ActionExtensionSuffix             = ":7474/graphaware/actions"
 	NewFacesExtensionSuffix           = ":7474/graphaware/new_faces"
+	PrepareNewFacesExtensionSuffix    = ":7474/graphaware/prepare_new_faces"
 	LikesYouExtensionSuffix           = ":7474/graphaware/likes_you"
 	MatchYouExtensionSuffix           = ":7474/graphaware/matches"
 	MessageYouExtensionSuffix         = ":7474/graphaware/messages"
 	ReadyForPushExtensionSuffix       = ":7474/graphaware/ready_for_push"
 	FetchForConversionExtensionSuffix = ":7474/graphaware/fetch_for_convertion"
 	LMHISExtensionSuffix              = ":7474/graphaware/lmhis"
-	ChatExtensionSuffix              = ":7474/graphaware/chat"
+	ChatExtensionSuffix               = ":7474/graphaware/chat"
 )
 
 func InitLambdaVars(lambdaName string) {
@@ -55,6 +59,12 @@ func InitLambdaVars(lambdaName string) {
 	}
 	Anlogger.Debugf(nil, "lambda-initialization : service_common.go : logger was successfully initialized")
 
+	CommonStreamName, ok = os.LookupEnv("COMMON_STREAM")
+	if !ok {
+		Anlogger.Fatalf(nil, "lambda-initialization : service_common.go : env can not be empty COMMON_STREAM")
+	}
+	Anlogger.Debugf(nil, "lambda-initialization : service_common.go : start with COMMON_STREAM = [%s]", CommonStreamName)
+
 	awsSession, err = session.NewSession(aws.NewConfig().
 		WithRegion(commons.Region).WithMaxRetries(commons.MaxRetries).
 		WithLogger(aws.LoggerFunc(func(args ...interface{}) { Anlogger.AwsLog(args) })).WithLogLevel(aws.LogOff))
@@ -62,6 +72,9 @@ func InitLambdaVars(lambdaName string) {
 		Anlogger.Fatalf(nil, "lambda-initialization : service_common.go : error during initialization : %v", err)
 	}
 	Anlogger.Debugf(nil, "lambda-initialization : service_common.go : aws session was successfully initialized")
+
+	AwsKinesisStreamClient = kinesis.New(awsSession)
+	Anlogger.Debugf(nil, "lambda-initialization : service_common.go : kinesis client was successfully initialized")
 
 	Neo4jUser, ok = os.LookupEnv("NEO4J_USER")
 	if !ok {

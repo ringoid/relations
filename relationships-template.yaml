@@ -61,6 +61,10 @@ Mappings:
       test: test-internal-getConvertObjectsFunction-relationships
       stage: stage-internal-getConvertObjectsFunction-relationships
       prod: prod-internal-getConvertObjectsFunction-relationships
+    PrepareNewFacesFunction:
+      test: test-internal-prepare-new-faces-relationships
+      stage: stage-internal-prepare-new-faces-relationships
+      prod: prod-internal-prepare-new-faces-relationships
 
   BotSqsResourcesName:
     BotSqsQueue:
@@ -96,6 +100,9 @@ Globals:
             INTERNAL_STREAM_NAME:
               Fn::ImportValue:
                 !Join [ "-", [ !Ref Env, InternalEventStreamExportName] ]
+            COMMON_STREAM:
+              Fn::ImportValue:
+                !Join [ "-", [ !Ref Env, CommonEventStreamExportName] ]
             NEO4J_URIS: !FindInMap [Neo4jMap, Neo4jUris, !Ref Env]
             NEO4J_USER: !FindInMap [Neo4jMap, Neo4jUser, !Ref Env]
             BOTS_ENABLED: !FindInMap [BotEnabledMap, BotEnableValue, !Ref Env]
@@ -106,7 +113,6 @@ Globals:
           Environment: !Ref Env
 
 Resources:
-
   KinesisConsumerFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -140,6 +146,18 @@ Resources:
       Policies:
         - SecretsManagerReadWrite
 
+  PrepareNewFacesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: prepare_new_faces
+      CodeUri: ./prepare_new_faces.zip
+      FunctionName: !FindInMap [FunctionName, PrepareNewFacesFunction, !Ref Env]
+      Description: Prepare New Faces Relationsips function
+      Policies:
+        - SecretsManagerReadWrite
+        - AmazonKinesisFullAccess
+        - AmazonDynamoDBFullAccess
 
   LikesYouFunction:
     Type: AWS::Serverless::Function
