@@ -16,7 +16,8 @@ public class BlockModuleBootstrapper implements RuntimeModuleBootstrapper {
     public RuntimeModule bootstrapModule(String moduleId, Map<String, String> config, GraphDatabaseService database) {
         String internalStreamName = config.get("internal_stream_name");
         String botsSqsQueue = config.get("bots_sqs_queue");
-        String botStream = config.get("bots_kinesis_queue");
+        String botStream = "fake";
+        //String botStream = config.get("bots_kinesis_queue");
         log.info("bootstrap module with internal stream name [%s] and bots sqs url [%s] and botKinesis [%s]",
                 internalStreamName, botsSqsQueue, botStream);
         return new BlockModule(moduleId, internalStreamName, botsSqsQueue, botStream);

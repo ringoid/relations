@@ -116,8 +116,8 @@ public class Sender {
     public void sendBotEvent(Object event) {
         try {
             String strRep = objectMapper.writeValueAsString(event);
-            //sqs.sendMessage(botSqsQueueUrl, strRep);
-            sendEventIntoBotStreamQueue(strRep);
+            sqs.sendMessage(botSqsQueueUrl, strRep);
+//            sendEventIntoBotStreamQueue(strRep);
         } catch (JsonProcessingException e) {
             log.error("error sending bot's event", e);
         }
