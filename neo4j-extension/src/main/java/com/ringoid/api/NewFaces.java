@@ -37,6 +37,7 @@ import static com.ringoid.PersonProperties.LIKE_COUNTER;
 import static com.ringoid.PersonProperties.LOCATION;
 import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
+import static com.ringoid.PersonProperties.YEAR;
 import static com.ringoid.PhotoProperties.ONLY_OWNER_CAN_SEE;
 import static com.ringoid.api.Utils.commonSortProfilesSeenPart;
 import static com.ringoid.api.Utils.enrichProfile;
@@ -198,9 +199,11 @@ public class NewFaces {
                 targetSex = "male";
             }
 
+            int yearOfBirth = (Integer) sourceUser.getProperty(YEAR.getPropertyName(), 0);
+
             long startLoop = System.currentTimeMillis();
             List<Node> nodes = loopByUnseenPart(sourceUser.getId(), request.getUserId(), targetSex, request.getLimit(),
-                    Collections.emptySet(), database, metrics);
+                    Collections.emptySet(), yearOfBirth, database, metrics);
             long loopTime = System.currentTimeMillis() - startLoop;
             metrics.histogram("prepare_new_faces_loopByUnseenPart").update(loopTime);
 
@@ -306,9 +309,11 @@ public class NewFaces {
                     targetSex = "male";
                 }
 
+                int yearOfBirth = (Integer) sourceUser.getProperty(YEAR.getPropertyName(), 0);
+
                 long startLoop = System.currentTimeMillis();
                 List<Node> unseen = loopByUnseenPart(sourceUser.getId(), request.getUserId(), targetSex, request.getLimit(),
-                        Collections.emptySet(), database, metrics);
+                        Collections.emptySet(), yearOfBirth, database, metrics);
                 long loopTime = System.currentTimeMillis() - startLoop;
                 metrics.histogram("new_faces_loopByUnseenPart").update(loopTime);
 
@@ -470,6 +475,7 @@ public class NewFaces {
     private static List<Node> loopByUnseenPart(long sourceUserNodeId, String sourceUserId, String targetSex,
                                                int limit,
                                                Set<Long> nodeIdsToExclude,
+                                               int yearOfBirth,
                                                GraphDatabaseService database,
                                                MetricRegistry metrics) {
 
@@ -497,7 +503,7 @@ public class NewFaces {
         log.info("loopByUnseenPart : found [%s] profiles using location for userId [%s] in [%s] millis",
                 result.size(), sourceUserId, System.currentTimeMillis() - start);
 
-        result = sortNewFacesUnseenPartProfiles(result);
+        result = sortNewFacesUnseenPartProfiles(result, targetSex, yearOfBirth);
 
         if (result.size() >= limit) {
             return result;
@@ -523,7 +529,7 @@ public class NewFaces {
         log.info("loopByUnseenPart : found [%s] profiles without location for userId [%s] in [%s] millis",
                 tmp.size(), sourceUserId, System.currentTimeMillis() - start);
 
-        tmp = sortNewFacesUnseenPartProfiles(tmp);
+        tmp = sortNewFacesUnseenPartProfiles(tmp, targetSex, yearOfBirth);
 
         result.addAll(tmp);
 

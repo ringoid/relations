@@ -237,8 +237,29 @@ public class Utils {
     }
 
     public static List<Node> commonSortProfilesSeenPart(Node sourceUser, List<Node> sourceList) {
+        String sex = (String)sourceUser.getProperty(SEX.getPropertyName(), "male");
+        String targetSex = "female";
+        if (Objects.equals("female", sex)) {
+            targetSex = "male";
+        }
+
+        int sourceYearOfBirth = (Integer) sourceUser.getProperty(YEAR.getPropertyName(), 0);
+
         List<NodeWrapper> wrapperList = new ArrayList<>(sourceList.size());
         for (Node each : sourceList) {
+
+            int targetYearMarker = 0;
+            int yearOfBirth = (Integer) each.getProperty(YEAR.getPropertyName(), 0);
+            if (Objects.equals("male", targetSex)) {
+                if (yearOfBirth >= sourceYearOfBirth - 5 && yearOfBirth <= sourceYearOfBirth) {
+                    targetYearMarker++;
+                }
+            } else if (Objects.equals("female", targetSex)) {
+                if (yearOfBirth >= sourceYearOfBirth && yearOfBirth <= sourceYearOfBirth + 7) {
+                    targetYearMarker++;
+                }
+            }
+
             long lastOnlineTime = (Long) each.getProperty(PersonProperties.LAST_ONLINE_TIME.getPropertyName(), 0L);
             int photoCounter = 0;
             int likeCounter = 0;
@@ -273,6 +294,7 @@ public class Utils {
             nodeWrapper.likes = likeCounter;
             nodeWrapper.unseenPhotos = photoCounter - viewedFromSource;
             nodeWrapper.onlineTime = lastOnlineTime;
+            nodeWrapper.targetYear = targetYearMarker;
 
             LocalDateTime timeOnline =
                     LocalDateTime.ofInstant(Instant.ofEpochMilli(lastOnlineTime),
@@ -289,6 +311,12 @@ public class Utils {
         Collections.sort(wrapperList, new Comparator<NodeWrapper>() {
             @Override
             public int compare(NodeWrapper node1, NodeWrapper node2) {
+
+                if (node1.targetYear > node2.targetYear) {
+                    return -1;
+                } else if (node1.targetYear < node2.targetYear) {
+                    return 1;
+                }
 
                 if (node1.dayNum > node2.dayNum) {
                     return 1;
@@ -439,7 +467,9 @@ public class Utils {
         return tmpResult;
     }
 
-    public static List<Node> sortNewFacesUnseenPartProfiles(List<Node> tmpResult) {
+    public static List<Node> sortNewFacesUnseenPartProfiles(List<Node> tmpResult,
+                                                            String targetSex,
+                                                            int sourceYearOfBirth) {
         if (tmpResult.isEmpty()) {
             return tmpResult;
         }
@@ -447,6 +477,32 @@ public class Utils {
         Collections.sort(tmpResult, new Comparator<Node>() {
             @Override
             public int compare(Node node1, Node node2) {
+                int yearIn1 = 0;
+                int yearIn2 = 0;
+                int yearOfBirth1 = (Integer) node1.getProperty(YEAR.getPropertyName(), 0);
+                int yearOfBirth2 = (Integer) node2.getProperty(YEAR.getPropertyName(), 0);
+                if (Objects.equals("male", targetSex)) {
+                    if (yearOfBirth1 >= sourceYearOfBirth - 5 && yearOfBirth1 <= sourceYearOfBirth) {
+                        yearIn1++;
+                    }
+                    if (yearOfBirth2 >= sourceYearOfBirth - 5 && yearOfBirth2 <= sourceYearOfBirth) {
+                        yearIn2++;
+                    }
+                } else if (Objects.equals("female", targetSex)) {
+                    if (yearOfBirth1 >= sourceYearOfBirth && yearOfBirth1 <= sourceYearOfBirth + 7) {
+                        yearIn1++;
+                    }
+                    if (yearOfBirth2 >= sourceYearOfBirth && yearOfBirth2 <= sourceYearOfBirth + 7) {
+                        yearIn2++;
+                    }
+                }
+
+                if (yearIn1 > yearIn2) {
+                    return -1;
+                } else if (yearIn1 < yearIn2) {
+                    return 1;
+                }
+
                 //now count photos
                 int photoCounter1 = 0;
                 for (Relationship each : node1.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
@@ -541,6 +597,40 @@ public class Utils {
 //                        return 1;
 //                    }
 //                }
+
+                String sex = (String)sourceUser.getProperty(SEX.getPropertyName(), "male");
+                String targetSex = "female";
+                if (Objects.equals("female", sex)) {
+                    targetSex = "male";
+                }
+
+                int sourceYearOfBirth = (Integer) sourceUser.getProperty(YEAR.getPropertyName(), 0);
+
+                int yearIn1 = 0;
+                int yearIn2 = 0;
+                int yearOfBirth1 = (Integer) node1.getProperty(YEAR.getPropertyName(), 0);
+                int yearOfBirth2 = (Integer) node2.getProperty(YEAR.getPropertyName(), 0);
+                if (Objects.equals("male", targetSex)) {
+                    if (yearOfBirth1 >= sourceYearOfBirth - 5 && yearOfBirth1 <= sourceYearOfBirth) {
+                        yearIn1++;
+                    }
+                    if (yearOfBirth2 >= sourceYearOfBirth - 5 && yearOfBirth2 <= sourceYearOfBirth) {
+                        yearIn2++;
+                    }
+                } else if (Objects.equals("female", targetSex)) {
+                    if (yearOfBirth1 >= sourceYearOfBirth && yearOfBirth1 <= sourceYearOfBirth + 7) {
+                        yearIn1++;
+                    }
+                    if (yearOfBirth2 >= sourceYearOfBirth && yearOfBirth2 <= sourceYearOfBirth + 7) {
+                        yearIn2++;
+                    }
+                }
+
+                if (yearIn1 > yearIn2) {
+                    return -1;
+                } else if (yearIn1 < yearIn2) {
+                    return 1;
+                }
 
                 long likeCounter1 = (Long) node1.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
                 long likeCounter2 = (Long) node2.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
@@ -801,5 +891,6 @@ public class Utils {
         int allPhotoCount;
         int likes;
         long onlineTime;
+        int targetYear;
     }
 }

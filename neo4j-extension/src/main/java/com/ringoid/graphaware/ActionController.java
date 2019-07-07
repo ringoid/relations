@@ -305,24 +305,36 @@ public class ActionController {
         ObjectMapper objectMapper = new ObjectMapper();
         NewFacesRequest request = objectMapper.readValue(body, NewFacesRequest.class);
         //IGNORE CLIENT SIDE LIMIT AND HARDCODE OWN
-//        request.setLimit(NEW_FACES_HARDCODE_LIMIT);
-        NewFacesResponse response = NewFaces.newFacesWithPreparedNodes(request, database, metrics);
-        if (response.getNewFaces().isEmpty()) {
-            request.setLimit(NEW_FACES_HARDCODE_LIMIT_FOR_FAST_SEARCH);
-            response = NewFaces.newFaces(request, database, metrics);
-            long fullTime = System.currentTimeMillis() - start;
-            metrics.histogram("new_faces_prepared_full").update(fullTime);
-            log.info("handle new_faces WITHOUT prepared profiles for userId [%s] with result size %s in %s millis",
-                    request.getUserId(), response.getNewFaces().size(), fullTime);
-        } else {
-            long fullTime = System.currentTimeMillis() - start;
-            metrics.histogram("new_faces_no_prepared_full").update(fullTime);
-            log.info("handle new_faces with prepared profiles for userId [%s] with result size %s in %s millis",
-                    request.getUserId(), response.getNewFaces().size(), fullTime);
-        }
+        request.setLimit(100);
+        NewFacesResponse response = NewFaces.newFaces(request, database, metrics);
         long fullTime = System.currentTimeMillis() - start;
+        log.info("handle new_faces with for userId [%s] with result size %s in %s millis",
+                request.getUserId(), response.getNewFaces().size(), fullTime);
         metrics.histogram("new_faces_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
+
+//        long start = System.currentTimeMillis();
+//        ObjectMapper objectMapper = new ObjectMapper();
+//        NewFacesRequest request = objectMapper.readValue(body, NewFacesRequest.class);
+//        NewFacesResponse response = NewFaces.newFacesWithPreparedNodes(request, database, metrics);
+//        if (response.getNewFaces().isEmpty()) {
+//            if(request.getLimit() > NEW_FACES_HARDCODE_LIMIT_FOR_FAST_SEARCH){
+//                request.setLimit(NEW_FACES_HARDCODE_LIMIT_FOR_FAST_SEARCH);
+//            }
+//            response = NewFaces.newFaces(request, database, metrics);
+//            long fullTime = System.currentTimeMillis() - start;
+//            metrics.histogram("new_faces_prepared_full").update(fullTime);
+//            log.info("handle new_faces WITHOUT prepared profiles for userId [%s] with result size %s in %s millis",
+//                    request.getUserId(), response.getNewFaces().size(), fullTime);
+//        } else {
+//            long fullTime = System.currentTimeMillis() - start;
+//            metrics.histogram("new_faces_no_prepared_full").update(fullTime);
+//            log.info("handle new_faces with prepared profiles for userId [%s] with result size %s in %s millis",
+//                    request.getUserId(), response.getNewFaces().size(), fullTime);
+//        }
+//        long fullTime = System.currentTimeMillis() - start;
+//        metrics.histogram("new_faces_full").update(fullTime);
+//        return objectMapper.writeValueAsString(response);
     }
 
     @RequestMapping(value = "/prepare_new_faces", method = RequestMethod.GET)

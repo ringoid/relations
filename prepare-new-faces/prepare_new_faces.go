@@ -17,7 +17,7 @@ import (
 var tmpNeo4jHosts []string
 
 const (
-	PrepareLimit = 100
+	PrepareLimit = 10
 )
 
 func init() {
