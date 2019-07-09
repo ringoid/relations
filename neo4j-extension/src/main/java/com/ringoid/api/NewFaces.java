@@ -551,11 +551,13 @@ public class NewFaces {
         while (result.size() < limit && loopCounter < MAX_LOOP_NUM) {
 
             List<Node> unknowns = new ArrayList<>();
-            if (isItSeenForMen) {
-                unknowns.addAll(fetchProfilesForMenSeenPart(queryFirst, querySecond, sourceUserId, targetSex, skip, limit, distance, 75, 25, database));
-            } else {
-                unknowns.addAll(fetchProfiles(queryFirst, querySecond, sourceUserId, targetSex, skip, limit, distance, database));
-            }
+//            if (isItSeenForMen) {
+//                unknowns.addAll(fetchProfilesForMenSeenPart(queryFirst, querySecond, sourceUserId, targetSex, skip, limit, distance, 75, 25, database));
+//            } else {
+//                unknowns.addAll(fetchProfiles(queryFirst, querySecond, sourceUserId, targetSex, skip, limit, distance, database));
+//            }
+            //try to add 2/3 active and 1/3 popular for everybody
+            unknowns.addAll(fetchProfilesForMenSeenPart(queryFirst, querySecond, sourceUserId, targetSex, skip, limit, distance, 75, 25, database));
 
             if (unknowns.size() < limit) {
                 //there is no more users, exit from the loop
