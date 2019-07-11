@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/kinesis"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
 var Anlogger *commons.Logger
@@ -16,6 +17,8 @@ var Neo4jPassword string
 var Neo4jHosts []string
 var CommonStreamName string
 var AwsKinesisStreamClient *kinesis.Kinesis
+var AwsDynamoDbClient *dynamodb.DynamoDB
+var AlreadyStartedPreparedProcessTable string
 
 const (
 	ActionExtensionSuffix             = ":7474/graphaware/actions"
@@ -65,6 +68,12 @@ func InitLambdaVars(lambdaName string) {
 	}
 	Anlogger.Debugf(nil, "lambda-initialization : service_common.go : start with COMMON_STREAM = [%s]", CommonStreamName)
 
+	AlreadyStartedPreparedProcessTable, ok = os.LookupEnv("ALREADY_STARTED_PREPARE_NF_TABLE")
+	if !ok {
+		Anlogger.Fatalf(nil, "lambda-initialization : service_common.go : env can not be empty ALREADY_STARTED_PREPARE_NF_TABLE")
+	}
+	Anlogger.Debugf(nil, "lambda-initialization : service_common.go : start with ALREADY_STARTED_PREPARE_NF_TABLE = [%s]", AlreadyStartedPreparedProcessTable)
+
 	awsSession, err = session.NewSession(aws.NewConfig().
 		WithRegion(commons.Region).WithMaxRetries(commons.MaxRetries).
 		WithLogger(aws.LoggerFunc(func(args ...interface{}) { Anlogger.AwsLog(args) })).WithLogLevel(aws.LogOff))
@@ -75,6 +84,9 @@ func InitLambdaVars(lambdaName string) {
 
 	AwsKinesisStreamClient = kinesis.New(awsSession)
 	Anlogger.Debugf(nil, "lambda-initialization : service_common.go : kinesis client was successfully initialized")
+
+	AwsDynamoDbClient = dynamodb.New(awsSession)
+	Anlogger.Debugf(nil, "lambda-initialization : service_common.go : dynamodb client was successfully initialized")
 
 	Neo4jUser, ok = os.LookupEnv("NEO4J_USER")
 	if !ok {

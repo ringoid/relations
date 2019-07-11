@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.ringoid.Labels.PERSON;
+import static com.ringoid.PersonProperties.PREPARED_NF_UNIX_TIME_IN_MILLIS;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.common.UtilsInternaly.getAllRelationshipBetweenNodes;
 import static com.ringoid.common.UtilsInternaly.getOrCreateRelationship;
@@ -59,10 +60,16 @@ public class PrepareNFUtils {
                         "userId [%s], targetUserId [%s]", event.getUserId(), event.getTargetUserId());
                 return;
             }
-            if ((each.isType(RelationshipType.withName(Relationships.VIEW.name())) ||
-                    each.isType(RelationshipType.withName(Relationships.VIEW_IN_LIKES_YOU.name())) ||
+            if ((each.isType(RelationshipType.withName(Relationships.VIEW_IN_LIKES_YOU.name())) ||
                     each.isType(RelationshipType.withName(Relationships.VIEW_IN_MATCHES.name())) ||
                     each.isType(RelationshipType.withName(Relationships.VIEW_IN_MESSAGES.name()))) &&
+                    each.getStartNode().getId() == sourceUser.getId()) {
+                log.warn("cann't prepare new faces, already seen profile, userId [%s], targetUserId [%s]", event.getUserId(), event.getTargetUserId());
+                return;
+            }
+
+            if (!event.getAlreadySeen() &&
+                    each.isType(RelationshipType.withName(Relationships.VIEW.name())) &&
                     each.getStartNode().getId() == sourceUser.getId()) {
                 log.warn("cann't prepare new faces, already seen profile, userId [%s], targetUserId [%s]", event.getUserId(), event.getTargetUserId());
                 return;
@@ -71,6 +78,7 @@ public class PrepareNFUtils {
 
         Relationship prRel = getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, Relationships.PREPARE_NF.name());
         prRel.setProperty(PrepareNFRelationshipProperties.INDEX.getPropertyName(), event.getIndex());
+        sourceUser.setProperty(PREPARED_NF_UNIX_TIME_IN_MILLIS.getPropertyName(), System.currentTimeMillis());
         log.debug("prepare node for new faces, userId [%s]", event.getUserId());
     }
 }

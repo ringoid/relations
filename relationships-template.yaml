@@ -78,6 +78,12 @@ Mappings:
       stage: true
       prod: false
 
+  TableName:
+    AlreadyStartedPrepareNFProcessTable:
+      test: test-Relationships-AlreadyStartedPrepareNFProccess
+      stage: stage-Relationships-AlreadyStartedPrepareNFProccess
+      prod: prod-Relationships-AlreadyStartedPrepareNFProccess
+
 Parameters:
   Env:
     Type: String
@@ -107,6 +113,7 @@ Globals:
             NEO4J_USER: !FindInMap [Neo4jMap, Neo4jUser, !Ref Env]
             BOTS_ENABLED: !FindInMap [BotEnabledMap, BotEnableValue, !Ref Env]
             BOT_SQS_QUEUE_URL: !Ref BotSqsQueue
+            ALREADY_STARTED_PREPARE_NF_TABLE: !FindInMap [TableName, AlreadyStartedPrepareNFProcessTable, !Ref Env]
         Tags:
           Company: Ringoid
           Service: relationships
@@ -248,6 +255,22 @@ Resources:
         - SecretsManagerReadWrite
         - AmazonKinesisFullAccess
 
+  AlreadyStartedPrepareNFProcessTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !FindInMap [TableName, AlreadyStartedPrepareNFProcessTable, !Ref Env]
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        -
+          AttributeName: user_id
+          AttributeType: S
+      KeySchema:
+        -
+          AttributeName: user_id
+          KeyType: HASH
+
   #----------------- Bots section ------------------------
   BotSqsQueue:
     Type: AWS::SQS::Queue
@@ -289,3 +312,7 @@ Outputs:
     Value: !GetAtt BotSqsQueue.Arn
     Export:
       Name: !Join [ "-", [ !Ref Env, BotSqsQueueArnExport] ]
+  PrepareNewFacesFunctionExport:
+    Value: !FindInMap [FunctionName, PrepareNewFacesFunction, !Ref Env]
+    Export:
+      Name: !Join [ "-", [ !Ref Env, PrepareNewFacesFunctionExport] ]

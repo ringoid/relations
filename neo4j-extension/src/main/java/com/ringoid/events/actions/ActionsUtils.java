@@ -447,7 +447,7 @@ public class ActionsUtils {
         toDelete.add(Relationships.VIEW_IN_HELLOS.name());
         toDelete.add(Relationships.VIEW_IN_INBOX.name());
         toDelete.add(Relationships.VIEW_IN_SENT.name());
-        toDelete.add(Relationships.PREPARE_NF.name());
+        //toDelete.add(Relationships.PREPARE_NF.name());
 
         String outgoingViewType = null;
         for (Relationship each : allOutgoingRels) {
@@ -519,6 +519,8 @@ public class ActionsUtils {
             toDelete.remove(Relationships.VIEW_IN_SENT.name());
         }
 
+        //add this relationship to the list of deleted
+        toDelete.add(Relationships.PREPARE_NF.name());
         for (Relationship each : allOutgoingRels) {
             if (each.getStartNode().getId() == sourceUser.getId() && toDelete.contains(each.getType().name())) {
                 each.delete();

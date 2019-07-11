@@ -35,6 +35,7 @@ import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
 import static com.ringoid.PersonProperties.LOCATION;
+import static com.ringoid.PersonProperties.PREPARED_NF_UNIX_TIME_IN_MILLIS;
 import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
 import static com.ringoid.PersonProperties.YEAR;
@@ -50,6 +51,8 @@ public class NewFaces {
     private final static Log log = LoggerFactory.getLogger(NewFaces.class);
 
     private static final int MAX_LOOP_NUM = 4;
+
+    private static final long MAX_AGE_FOR_PREPARED_NF = 1000 * 60 * 10;//10 mins
 
     private static final String SEEN_SORTED_BY_LIKES_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
@@ -207,14 +210,14 @@ public class NewFaces {
             long loopTime = System.currentTimeMillis() - startLoop;
             metrics.histogram("prepare_new_faces_loopByUnseenPart").update(loopTime);
 
+            Set<Long> unseenNodeIds = new HashSet<>(nodes.size());
             if (nodes.size() < request.getLimit()) {
-                Set<Long> nodeIds = new HashSet<>(nodes.size());
                 for (Node each : nodes) {
-                    nodeIds.add(each.getId());
+                    unseenNodeIds.add(each.getId());
                 }
                 startLoop = System.currentTimeMillis();
                 List<Node> seenPart = loopBySeenPart(sourceUser.getId(), request.getUserId(), targetSex, request.getLimit(),
-                        nodeIds, database, metrics);
+                        unseenNodeIds, database, metrics);
                 seenPart = commonSortProfilesSeenPart(sourceUser, seenPart);
                 nodes.addAll(seenPart);
                 loopTime = System.currentTimeMillis() - startLoop;
@@ -229,7 +232,11 @@ public class NewFaces {
             int index = 0;
             for (Node each : nodes) {
                 String targetUserId = (String) each.getProperty(PersonProperties.USER_ID.getPropertyName());
-                response.getTargetUserIndexMap().put(targetUserId, index++);
+                if (!unseenNodeIds.contains(each.getId())) {
+                    response.getTargetUserIndexMap().put(targetUserId + "_ALREADY_SEEN", index++);
+                } else {
+                    response.getTargetUserIndexMap().put(targetUserId, index++);
+                }
             }
 
             tx.success();
@@ -251,6 +258,15 @@ public class NewFaces {
             long actionTime = (Long) sourceUser.getProperty(LAST_ACTION_TIME.getPropertyName(), 0L);
             response.setLastActionTime(actionTime);
             if (request.getRequestedLastActionTime() <= actionTime) {
+
+                //check that recommendations not too old
+                long lastPreparedNf = (Long) sourceUser.getProperty(PREPARED_NF_UNIX_TIME_IN_MILLIS.getPropertyName(), 0L);
+                long preparedAgeInMillis = System.currentTimeMillis() - lastPreparedNf;
+                if (preparedAgeInMillis > MAX_AGE_FOR_PREPARED_NF) {
+                    log.debug("too old prepared new faces, return 0 instead [%s]", Long.toString(preparedAgeInMillis));
+                    tx.success();
+                    return response;
+                }
                 Iterable<Relationship> prepared = sourceUser.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.PREPARE_NF.name()));
                 for (Relationship eachP : prepared) {
                     Node other = eachP.getOtherNode(sourceUser);

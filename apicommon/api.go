@@ -40,17 +40,19 @@ type InternalPrepareNewFaces struct {
 	TargetUserId string `json:"targetUserId"`
 	Index        int    `json:"index"`
 	EventType    string `json:"eventType"`
+	AlreadySeen  bool   `json:"alreadySeen"`
 }
 
 func (req InternalPrepareNewFaces) String() string {
 	return fmt.Sprintf("%#v", req)
 }
 
-func NewInternalPrepareNewFaces(userId, targetUserId string, index int) *InternalPrepareNewFaces {
+func NewInternalPrepareNewFaces(userId, targetUserId string, index int, alreadySeen bool) *InternalPrepareNewFaces {
 	return &InternalPrepareNewFaces{
 		UserId:       userId,
 		TargetUserId: targetUserId,
 		Index:        index,
+		AlreadySeen:  alreadySeen,
 		EventType:    "PREPARE_NEW_FACES_EVENT",
 	}
 }

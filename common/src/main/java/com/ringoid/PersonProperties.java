@@ -37,7 +37,9 @@ public enum PersonProperties {
     INSTAGRAM("instagram"),
     TIKTOK("tikTok"),
     WHERE_I_LIVE("where_i_live"),
-    WHERE_I_FROM("where_i_from");
+    WHERE_I_FROM("where_i_from"),
+
+    PREPARED_NF_UNIX_TIME_IN_MILLIS("prepare_nf_time");
 
     private String propertyName;
 
