@@ -106,7 +106,7 @@ public class ActionController {
     private static final int RETRIES = 5;
     private static final int BACKOFF = 100;
 
-    private static final int NEW_FACES_HARDCODE_LIMIT_FOR_FAST_SEARCH = 10;
+    private static final int NEW_FACES_HARDCODE_LIMIT_FOR_FAST_SEARCH = 20;
 //    private static final int NEW_FACES_HARDCODE_LIMIT = 40;
 //    private static final int PREPARE_NEW_FACES_HARDCORE_LIMIT = 100;
 
