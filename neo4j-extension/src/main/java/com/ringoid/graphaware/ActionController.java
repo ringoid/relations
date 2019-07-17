@@ -12,6 +12,7 @@ import com.ringoid.PhotoProperties;
 import com.ringoid.api.ChatRequest;
 import com.ringoid.api.ChatResponse;
 import com.ringoid.api.Chats;
+import com.ringoid.api.DiscoverRequest;
 import com.ringoid.api.LMHIS;
 import com.ringoid.api.LMHISRequest;
 import com.ringoid.api.LMHISResponse;
@@ -189,6 +190,9 @@ public class ActionController {
         result += ",\n";
         result += metricsToString("new_faces_prepared_full");
 
+        result += ",\n";
+        result += metricsToString("discover_full");
+
         return result;
     }
 
@@ -295,6 +299,20 @@ public class ActionController {
         log.info("handle lmhis for userId [%s] for %s part with result size %s in %s millis",
                 request.getUserId(), request.getLmhisPart(), response.getProfiles().size(), fullTime);
         metrics.histogram("lmhis_full").update(fullTime);
+        return objectMapper.writeValueAsString(response);
+    }
+
+    @RequestMapping(value = "/discover", method = RequestMethod.GET)
+    @ResponseBody
+    public String discover(@RequestBody String body) throws IOException {
+        long start = System.currentTimeMillis();
+        ObjectMapper objectMapper = new ObjectMapper();
+        DiscoverRequest request = objectMapper.readValue(body, DiscoverRequest.class);
+        NewFacesResponse response = null;
+        long fullTime = System.currentTimeMillis() - start;
+        log.info("handle discover for userId [%s] with result size %s in %s millis",
+                request.getUserId(), response.getNewFaces().size(), fullTime);
+        metrics.histogram("discover_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
     }
 

@@ -296,7 +296,7 @@ public class NewFaces {
                 howMuchPreparedWeHave -= resultList.size();
 
                 List<Profile> profileList = new ArrayList<>();
-                profileList.addAll(createProfileListWithResizedAndSortedPhotos(request, resultList, true, sourceUser, database, metrics));
+                profileList.addAll(createProfileListWithResizedAndSortedPhotos(request.getResolution(), resultList, true, sourceUser, database, metrics));
                 response.setNewFaces(profileList);
                 response.setHowMuchPrepared(howMuchPreparedWeHave);
                 log.info("new_faces_with_prepared_nodes (full) for userId [%s] size is [%s]", request.getUserId(), profileList.size());
@@ -337,7 +337,7 @@ public class NewFaces {
                 log.info("new_faces (not seen part) for userId [%s] size is [%s]", request.getUserId(), unseen.size());
 
                 List<Profile> profileList = new ArrayList<>();
-                profileList.addAll(createProfileListWithResizedAndSortedPhotos(request, unseen, true, sourceUser, database, metrics));
+                profileList.addAll(createProfileListWithResizedAndSortedPhotos(request.getResolution(), unseen, true, sourceUser, database, metrics));
 
                 if (profileList.size() < request.getLimit()) {
                     Set<Long> nodeIds = new HashSet<>(unseen.size());
@@ -356,7 +356,7 @@ public class NewFaces {
                     metrics.histogram("new_faces_commonSortProfilesSeenPart").update(sortingTime);
 
                     log.info("new_faces (seen part) for userId [%s] size is [%s]", request.getUserId(), seen.size());
-                    profileList.addAll(createProfileListWithResizedAndSortedPhotos(request, seen, false, sourceUser, database, metrics));
+                    profileList.addAll(createProfileListWithResizedAndSortedPhotos(request.getResolution(), seen, false, sourceUser, database, metrics));
                 }
 
                 if (profileList.size() > request.getLimit()) {
@@ -379,7 +379,7 @@ public class NewFaces {
         return response;
     }
 
-    private static List<Profile> createProfileListWithResizedAndSortedPhotos(NewFacesRequest request, List<Node> source,
+    private static List<Profile> createProfileListWithResizedAndSortedPhotos(String resolution, List<Node> source,
                                                                              boolean isItUnseenPart, Node sourceUser, GraphDatabaseService database,
                                                                              MetricRegistry metrics) {
         long start = System.currentTimeMillis();
@@ -388,9 +388,9 @@ public class NewFaces {
             Profile prof = new Profile();
             prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
             if (isItUnseenPart) {
-                prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortNewFacesUnseenPhotos(eachProfile), request.getResolution(), database));
+                prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortNewFacesUnseenPhotos(eachProfile), resolution, database));
             } else {
-                prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortLMHISPhotos(sourceUser, eachProfile), request.getResolution(), database));
+                prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortLMHISPhotos(sourceUser, eachProfile), resolution, database));
             }
             if (!prof.getPhotos().isEmpty()) {
                 prof = enrichProfile(eachProfile, sourceUser, prof);
