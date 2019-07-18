@@ -42,6 +42,8 @@ public class Discover {
 
     private final static Log log = LoggerFactory.getLogger(Discover.class);
 
+    private final static int HARDCODED_MAX_FEED_NUM = 100;
+
     //$sourceUserId, $targetSex, $limitParam
     private static final String GEO_NOT_SEEN_SORTED_BY_ONLINE_TIME_DESC = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
@@ -90,10 +92,6 @@ public class Discover {
             }
 
             String distancePart = "";
-            if (Objects.nonNull(filter.getMinDistance())) {
-                distancePart += String.format(" AND distance(sourceUser.%s, target.%s) >= %s",
-                        LOCATION.getPropertyName(), LOCATION.getPropertyName(), filter.getMinDistance().toString());
-            }
             if (Objects.nonNull(filter.getMaxDistance())) {
                 distancePart += String.format(" AND distance(sourceUser.%s, target.%s) <= %s",
                         LOCATION.getPropertyName(), LOCATION.getPropertyName(), filter.getMaxDistance().toString());
@@ -162,7 +160,7 @@ public class Discover {
 
                 int resultSize = request.getLimit();
                 if (response.getNewFaces().isEmpty()) {
-                    resultSize = 100;
+                    resultSize = HARDCODED_MAX_FEED_NUM;
                 }
 
                 Map<String, List<Node>> seenGroups = new HashMap<>();

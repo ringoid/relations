@@ -14,6 +14,7 @@ build-go:
 	GOOS=linux go build fetch-for-conversion/fetch_for_conversion.go
 	GOOS=linux go build chats/chat.go
 	GOOS=linux go build prepare-new-faces/prepare_new_faces.go
+	GOOS=linux go build discover-function/discover.go
 
 zip-go: build-go
 	@echo '--- Zip Go modules ---'
@@ -27,6 +28,7 @@ zip-go: build-go
 	zip fetch_for_conversion.zip ./fetch_for_conversion
 	zip chat.zip ./chat
 	zip prepare_new_faces.zip ./prepare_new_faces
+	zip discover.zip ./discover
 
 buildgradle:
 	@echo '--- Building kinesis-consumer-relationships function ---'
@@ -85,4 +87,6 @@ clean:
 	rm -rf chat.zip
 	rm -rf prepare_new_faces
 	rm -rf prepare_new_faces.zip
+	rm -rf discover
+	rm -rf discover.zip
 

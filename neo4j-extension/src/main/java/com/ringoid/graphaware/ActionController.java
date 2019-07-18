@@ -12,6 +12,7 @@ import com.ringoid.PhotoProperties;
 import com.ringoid.api.ChatRequest;
 import com.ringoid.api.ChatResponse;
 import com.ringoid.api.Chats;
+import com.ringoid.api.Discover;
 import com.ringoid.api.DiscoverRequest;
 import com.ringoid.api.LMHIS;
 import com.ringoid.api.LMHISRequest;
@@ -308,7 +309,7 @@ public class ActionController {
         long start = System.currentTimeMillis();
         ObjectMapper objectMapper = new ObjectMapper();
         DiscoverRequest request = objectMapper.readValue(body, DiscoverRequest.class);
-        NewFacesResponse response = null;
+        NewFacesResponse response = Discover.discover(request, database, metrics);
         long fullTime = System.currentTimeMillis() - start;
         log.info("handle discover for userId [%s] with result size %s in %s millis",
                 request.getUserId(), response.getNewFaces().size(), fullTime);

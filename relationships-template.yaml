@@ -65,6 +65,10 @@ Mappings:
       test: test-internal-prepare-new-faces-relationships
       stage: stage-internal-prepare-new-faces-relationships
       prod: prod-internal-prepare-new-faces-relationships
+    DiscoverFunction:
+      test: test-discover-relationships
+      stage: stage-discover-relationships
+      prod: prod-discover-relationships
 
   BotSqsResourcesName:
     BotSqsQueue:
@@ -150,6 +154,17 @@ Resources:
       CodeUri: ./new_faces.zip
       FunctionName: !FindInMap [FunctionName, NewFacesFunction, !Ref Env]
       Description: New Faces Relationsips function
+      Policies:
+        - SecretsManagerReadWrite
+
+  DiscoverFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: discover
+      CodeUri: ./discover.zip
+      FunctionName: !FindInMap [FunctionName, DiscoverFunction, !Ref Env]
+      Description: Discover Relationsips function
       Policies:
         - SecretsManagerReadWrite
 
@@ -284,6 +299,10 @@ Outputs:
     Value: !FindInMap [FunctionName, NewFacesFunction, !Ref Env]
     Export:
       Name: !Join [ "-", [ !Ref Env, NewFacesFunctionExport] ]
+  DiscoverFunctionExport:
+    Value: !FindInMap [FunctionName, DiscoverFunction, !Ref Env]
+    Export:
+      Name: !Join [ "-", [ !Ref Env, DiscoverFunctionExport] ]
   LikesYouFunctionExport:
     Value: !FindInMap [FunctionName, LikesYouFunction, !Ref Env]
     Export:

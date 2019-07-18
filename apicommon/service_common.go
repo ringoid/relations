@@ -31,6 +31,7 @@ const (
 	FetchForConversionExtensionSuffix = ":7474/graphaware/fetch_for_convertion"
 	LMHISExtensionSuffix              = ":7474/graphaware/lmhis"
 	ChatExtensionSuffix               = ":7474/graphaware/chat"
+	DiscoverExtensionSuffix           = ":7474/graphaware/discover"
 )
 
 func InitLambdaVars(lambdaName string) {
