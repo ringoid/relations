@@ -39,6 +39,7 @@ public class Profile {
     private String tikTok;
     private String whereLive;
     private String whereFrom;
+    private boolean unseen;
 
     public Profile() {
         this.photos = new ArrayList<>();
@@ -275,5 +276,13 @@ public class Profile {
 
     public void setWhereFrom(String whereFrom) {
         this.whereFrom = whereFrom;
+    }
+
+    public boolean isUnseen() {
+        return unseen;
+    }
+
+    public void setUnseen(boolean unseen) {
+        this.unseen = unseen;
     }
 }

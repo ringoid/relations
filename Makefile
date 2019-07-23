@@ -15,6 +15,8 @@ build-go:
 	GOOS=linux go build chats/chat.go
 	GOOS=linux go build prepare-new-faces/prepare_new_faces.go
 	GOOS=linux go build discover-function/discover.go
+	GOOS=linux go build get-lc-likes/get_lc_likes.go
+	GOOS=linux go build get-lc-messages/get_lc_messages.go
 
 zip-go: build-go
 	@echo '--- Zip Go modules ---'
@@ -29,6 +31,8 @@ zip-go: build-go
 	zip chat.zip ./chat
 	zip prepare_new_faces.zip ./prepare_new_faces
 	zip discover.zip ./discover
+	zip get_lc_likes.zip ./get_lc_likes
+	zip get_lc_messages.zip ./get_lc_messages
 
 buildgradle:
 	@echo '--- Building kinesis-consumer-relationships function ---'
@@ -89,4 +93,8 @@ clean:
 	rm -rf prepare_new_faces.zip
 	rm -rf discover
 	rm -rf discover.zip
+	rm -rf get_lc_messages
+	rm -rf get_lc_messages.zip
+	rm -rf get_lc_likes
+	rm -rf get_lc_likes.zip
 

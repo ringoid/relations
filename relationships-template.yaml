@@ -69,6 +69,14 @@ Mappings:
       test: test-discover-relationships
       stage: stage-discover-relationships
       prod: prod-discover-relationships
+    GetLcLikesFunction:
+      test: test-get-lc-likes-relationships
+      stage: stage-get-lc-likes-relationships
+      prod: prod-get-lc-likes-relationships
+    GetLcMessagesFunction:
+      test: test-get-lc-messages-relationships
+      stage: stage-get-lc-messages-relationships
+      prod: prod-get-lc-messages-relationships
 
   BotSqsResourcesName:
     BotSqsQueue:
@@ -165,6 +173,28 @@ Resources:
       CodeUri: ./discover.zip
       FunctionName: !FindInMap [FunctionName, DiscoverFunction, !Ref Env]
       Description: Discover Relationsips function
+      Policies:
+        - SecretsManagerReadWrite
+
+  GetLcLikesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: get_lc_likes
+      CodeUri: ./get_lc_likes.zip
+      FunctionName: !FindInMap [FunctionName, GetLcLikesFunction, !Ref Env]
+      Description: GetLC likes Relationsips function
+      Policies:
+        - SecretsManagerReadWrite
+
+  GetLcMessagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: get_lc_messages
+      CodeUri: ./get_lc_messages.zip
+      FunctionName: !FindInMap [FunctionName, GetLcMessagesFunction, !Ref Env]
+      Description: GetLC messages Relationsips function
       Policies:
         - SecretsManagerReadWrite
 
@@ -335,3 +365,11 @@ Outputs:
     Value: !FindInMap [FunctionName, PrepareNewFacesFunction, !Ref Env]
     Export:
       Name: !Join [ "-", [ !Ref Env, PrepareNewFacesFunctionExport] ]
+  GetLcMessagesFunctionExport:
+    Value: !FindInMap [FunctionName, GetLcMessagesFunction, !Ref Env]
+    Export:
+      Name: !Join [ "-", [ !Ref Env, GetLcMessagesFunctionExport] ]
+  GetLcLikesFunctionExport:
+    Value: !FindInMap [FunctionName, GetLcLikesFunction, !Ref Env]
+    Export:
+      Name: !Join [ "-", [ !Ref Env, GetLcLikesFunctionExport] ]

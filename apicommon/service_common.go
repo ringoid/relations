@@ -32,6 +32,8 @@ const (
 	LMHISExtensionSuffix              = ":7474/graphaware/lmhis"
 	ChatExtensionSuffix               = ":7474/graphaware/chat"
 	DiscoverExtensionSuffix           = ":7474/graphaware/discover"
+	GetLcLikesExtensionSuffix           = ":7474/graphaware/get_lc_likes"
+	GetLcMessagesExtensionSuffix           = ":7474/graphaware/get_lc_messages"
 )
 
 func InitLambdaVars(lambdaName string) {

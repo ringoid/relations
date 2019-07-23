@@ -236,73 +236,6 @@ public class Utils {
         return profile;
     }
 
-    public static List<Node> discoverSortProfilesSeenPart(Node sourceUser, List<Node> sourceList) {
-        List<NodeWrapper> wrapperList = new ArrayList<>(sourceList.size());
-        for (Node each : sourceList) {
-            int photoCounter = 0;
-            int likeCounter = 0;
-            int viewedFromSource = 0;
-            Iterable<Relationship> uploads = each.getRelationships(RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()), Direction.OUTGOING);
-            for (Relationship eachUpload : uploads) {
-                Node photo = eachUpload.getOtherNode(each);
-                if (photo.hasLabel(Label.label(Labels.PHOTO.getLabelName()))) {
-                    Boolean onlyOwnerCanSee = (Boolean) photo.getProperty(PhotoProperties.ONLY_OWNER_CAN_SEE.getPropertyName(), false);
-                    if (!onlyOwnerCanSee) {
-                        photoCounter++;
-                        Iterable<Relationship> photoLikes = photo.getRelationships(RelationshipType.withName(Relationships.LIKE.name()), Direction.INCOMING);
-                        //todo:here we can check who liked this photo - hidden user or not, but mb later
-                        for (Relationship eachLike : photoLikes) {
-                            likeCounter++;
-                        }
-                        Iterable<Relationship> viewRels = photo.getRelationships(RelationshipType.withName(Relationships.VIEW.name()), Direction.INCOMING);
-                        for (Relationship eachView : viewRels) {
-                            Node other = eachView.getOtherNode(photo);
-                            if (other.hasLabel(Label.label(Labels.PERSON.getLabelName())) &&
-                                    other.getId() == sourceUser.getId()) {
-                                viewedFromSource++;
-                                break;
-                            }
-                        }
-                    }
-                }//end each single photo
-            }//end loop by all photos
-            NodeWrapper nodeWrapper = new NodeWrapper();
-            nodeWrapper.node = each;
-            nodeWrapper.allPhotoCount = photoCounter;
-            nodeWrapper.likes = likeCounter;
-            nodeWrapper.unseenPhotos = photoCounter - viewedFromSource;
-            wrapperList.add(nodeWrapper);
-        }//end
-        Collections.sort(wrapperList, new Comparator<NodeWrapper>() {
-            @Override
-            public int compare(NodeWrapper node1, NodeWrapper node2) {
-                if (node1.unseenPhotos > node2.unseenPhotos) {
-                    return -1;
-                } else if (node1.unseenPhotos < node2.unseenPhotos) {
-                    return 1;
-                }
-
-                if (node1.allPhotoCount > node2.allPhotoCount) {
-                    return -1;
-                } else if (node1.allPhotoCount < node2.allPhotoCount) {
-                    return 1;
-                }
-
-                if (node1.likes > node2.likes) {
-                    return -1;
-                } else if (node1.likes < node2.likes) {
-                    return 1;
-                }
-                return 0;
-            }
-        });
-        List<Node> result = new ArrayList<>(wrapperList.size());
-        for (NodeWrapper eachWrapper : wrapperList) {
-            result.add(eachWrapper.node);
-        }
-        return result;
-    }
-
     public static List<Node> commonSortProfilesSeenPart(Node sourceUser, List<Node> sourceList) {
         String sex = (String) sourceUser.getProperty(SEX.getPropertyName(), "male");
         String targetSex = "female";
@@ -570,62 +503,6 @@ public class Utils {
                     return 1;
                 }
 
-                //now count photos
-                int photoCounter1 = 0;
-                for (Relationship each : node1.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
-                    Node eachPhoto = each.getOtherNode(node1);
-                    if (Objects.nonNull(eachPhoto) && eachPhoto.hasLabel(Label.label(Labels.PHOTO.getLabelName()))) {
-                        if (!((Boolean) eachPhoto.getProperty(ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
-                            photoCounter1++;
-                        }
-                    }
-                }
-                int photoCounter2 = 0;
-                for (Relationship each : node2.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
-                    Node eachPhoto = each.getOtherNode(node2);
-                    if (Objects.nonNull(eachPhoto) && eachPhoto.hasLabel(Label.label(Labels.PHOTO.getLabelName()))) {
-                        if (!((Boolean) eachPhoto.getProperty(ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
-                            photoCounter2++;
-                        }
-                    }
-                }
-
-                if (photoCounter1 > photoCounter2) {
-                    return -1;
-                } else if (photoCounter1 < photoCounter2) {
-                    return 1;
-                }
-
-                long likeCounter1 = (Long) node1.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
-                long likeCounter2 = (Long) node2.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
-                if (likeCounter1 > likeCounter2) {
-                    return -1;
-                } else if (likeCounter1 < likeCounter2) {
-                    return 1;
-                }
-
-                //compare last online time
-//                long lastOnline1 = (Long) node1.getProperty(LAST_ONLINE_TIME.getPropertyName(), 0L);
-//                long lastOnline2 = (Long) node2.getProperty(LAST_ONLINE_TIME.getPropertyName(), 0L);
-//                if (lastOnline1 > lastOnline2) {
-//                    return -1;
-//                } else if (lastOnline1 < lastOnline2) {
-//                    return 1;
-//                }
-                return 0;
-            }
-        });
-        return tmpResult;
-    }
-
-    public static List<Node> sortDiscoverUnseenPartProfiles(List<Node> tmpResult) {
-        if (tmpResult.isEmpty()) {
-            return tmpResult;
-        }
-
-        Collections.sort(tmpResult, new Comparator<Node>() {
-            @Override
-            public int compare(Node node1, Node node2) {
                 //now count photos
                 int photoCounter1 = 0;
                 for (Relationship each : node1.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {

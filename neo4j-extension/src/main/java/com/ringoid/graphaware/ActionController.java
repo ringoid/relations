@@ -14,6 +14,10 @@ import com.ringoid.api.ChatResponse;
 import com.ringoid.api.Chats;
 import com.ringoid.api.Discover;
 import com.ringoid.api.DiscoverRequest;
+import com.ringoid.api.GetLCLikes;
+import com.ringoid.api.GetLCMessages;
+import com.ringoid.api.LCRequest;
+import com.ringoid.api.LCResponse;
 import com.ringoid.api.LMHIS;
 import com.ringoid.api.LMHISRequest;
 import com.ringoid.api.LMHISResponse;
@@ -194,6 +198,12 @@ public class ActionController {
         result += ",\n";
         result += metricsToString("discover_full");
 
+        result += ",\n";
+        result += metricsToString("get_lc_likes_full");
+
+        result += ",\n";
+        result += metricsToString("get_lc_messages_full");
+
         return result;
     }
 
@@ -314,6 +324,34 @@ public class ActionController {
         log.info("handle discover for userId [%s] with result size %s in %s millis",
                 request.getUserId(), response.getNewFaces().size(), fullTime);
         metrics.histogram("discover_full").update(fullTime);
+        return objectMapper.writeValueAsString(response);
+    }
+
+    @RequestMapping(value = "/get_lc_likes", method = RequestMethod.GET)
+    @ResponseBody
+    public String getLcLikes(@RequestBody String body) throws IOException {
+        long start = System.currentTimeMillis();
+        ObjectMapper objectMapper = new ObjectMapper();
+        LCRequest request = objectMapper.readValue(body, LCRequest.class);
+        LCResponse response = GetLCLikes.likesYou(request, database, metrics);
+        long fullTime = System.currentTimeMillis() - start;
+        log.info("handle get_lc likes for userId [%s] with result size %s in %s millis",
+                request.getUserId(), response.getProfiles().size(), fullTime);
+        metrics.histogram("get_lc_likes_full").update(fullTime);
+        return objectMapper.writeValueAsString(response);
+    }
+
+    @RequestMapping(value = "/get_lc_messages", method = RequestMethod.GET)
+    @ResponseBody
+    public String getLcMessages(@RequestBody String body) throws IOException {
+        long start = System.currentTimeMillis();
+        ObjectMapper objectMapper = new ObjectMapper();
+        LCRequest request = objectMapper.readValue(body, LCRequest.class);
+        LCResponse response = GetLCMessages.messages(request, database, metrics);
+        long fullTime = System.currentTimeMillis() - start;
+        log.info("handle get_lc messages for userId [%s] with result size %s in %s millis",
+                request.getUserId(), response.getProfiles().size(), fullTime);
+        metrics.histogram("get_lc_messages_full").update(fullTime);
         return objectMapper.writeValueAsString(response);
     }
 
