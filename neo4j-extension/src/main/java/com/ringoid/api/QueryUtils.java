@@ -145,7 +145,7 @@ public class QueryUtils {
 
     //$sourceUserId
     static final String GET_LC_MESSAGES_NUM = String.format(
-            "MATCH (sourceUser:%s {%s:$sourceUserId})<-[:%s|%s]-(target:%s)-[:%s]->(photo:%s) " +//1
+            "MATCH (sourceUser:%s {%s:$sourceUserId})-[:%s|%s]-(target:%s)-[:%s]->(photo:%s) " +//1
                     "WHERE (NOT exists(photo.%s) OR photo.%s = false)" +//2
                     "AND NOT('%s' in labels(target)) " +//2.2
                     "RETURN count(DISTINCT target.%s) as num",//3
