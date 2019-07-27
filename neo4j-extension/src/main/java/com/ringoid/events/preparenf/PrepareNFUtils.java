@@ -77,6 +77,9 @@ public class PrepareNFUtils {
         }
 
         Relationship prRel = getOrCreateRelationship(sourceUser, targetUser, Direction.OUTGOING, Relationships.PREPARE_NF.name());
+        if (Objects.isNull(prRel)) {
+            return;
+        }
         prRel.setProperty(PrepareNFRelationshipProperties.INDEX.getPropertyName(), event.getIndex());
         sourceUser.setProperty(PREPARED_NF_UNIX_TIME_IN_MILLIS.getPropertyName(), System.currentTimeMillis());
         log.debug("prepare node for new faces, userId [%s]", event.getUserId());

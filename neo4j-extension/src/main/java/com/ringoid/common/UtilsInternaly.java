@@ -89,6 +89,9 @@ public class UtilsInternaly {
     }
 
     public static Relationship getOrCreateRelationship(Node source, Node target, Direction direction, String relType) {
+        if (Objects.isNull(source) || Objects.isNull(target)) {
+            return null;
+        }
         Iterable<Relationship> rels = source.getRelationships(direction, RelationshipType.withName(relType));
         for (Relationship relationship : rels) {
             Node other = relationship.getOtherNode(source);
@@ -130,6 +133,9 @@ public class UtilsInternaly {
     public static List<Relationship> getAllRelationshipBetweenNodes(Node source, Node target) {
         Iterable<Relationship> rels = source.getRelationships();
         List<Relationship> result = new ArrayList<>();
+        if (Objects.isNull(source) || Objects.isNull(target)) {
+            return result;
+        }
         for (Relationship each : rels) {
             if (each.getOtherNode(source).getId() == target.getId()) {
                 result.add(each);

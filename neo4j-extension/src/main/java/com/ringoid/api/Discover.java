@@ -9,14 +9,15 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
-import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
 
@@ -47,38 +48,21 @@ public class Discover {
                     targetSex = "male";
                 }
 
-                List<Node> unseen = unseenFilteredResult(request, targetSex, database, metrics);
-                Map<String, List<Node>> groups = sortByOnlineGroups(unseen);
-                List<Node> onlineUnseen = groups.get("ONLINE");
-                onlineUnseen = QueryUtils.sortDiscoverUnseenPartProfiles(onlineUnseen);
-                response.getNewFaces().addAll(QueryUtils.createProfileListWithResizedAndSortedPhotos(request.getResolution(), onlineUnseen, true, sourceUser, database, metrics));
+                List<Node> unseen = unseen(request, targetSex, database, metrics);
+                response.getNewFaces().addAll(QueryUtils.createProfileListWithResizedAndSortedPhotos(request.getResolution(), unseen, true, sourceUser, database, metrics));
 
                 int resultSize = request.getLimit();
                 if (response.getNewFaces().isEmpty()) {
                     resultSize = HARDCODED_MAX_FEED_NUM;
                 }
 
-                Map<String, List<Node>> seenGroups = new HashMap<>();
 
                 if (response.getNewFaces().size() < resultSize) {
-                    List<Node> seen = seenFilteredResult(request, targetSex, resultSize, database, metrics);
-                    seenGroups = sortByOnlineGroups(seen);
-                    List<Node> onlineSeen = seenGroups.get("ONLINE");
-                    onlineSeen = QueryUtils.discoverSortProfilesSeenPart(sourceUser, onlineSeen);
-                    response.getNewFaces().addAll(QueryUtils.createProfileListWithResizedAndSortedPhotos(request.getResolution(), onlineSeen, false, sourceUser, database, metrics));
-
-                }
-
-                if (response.getNewFaces().size() < resultSize) {
-                    List<Node> oldUnseen = groups.get("OLD");
-                    oldUnseen = QueryUtils.sortDiscoverUnseenPartProfiles(oldUnseen);
-                    response.getNewFaces().addAll(QueryUtils.createProfileListWithResizedAndSortedPhotos(request.getResolution(), oldUnseen, true, sourceUser, database, metrics));
-                }
-
-                if (response.getNewFaces().size() < resultSize) {
-                    List<Node> oldSeen = seenGroups.get("OLD");
-                    oldSeen = QueryUtils.discoverSortProfilesSeenPart(sourceUser, oldSeen);
-                    response.getNewFaces().addAll(QueryUtils.createProfileListWithResizedAndSortedPhotos(request.getResolution(), oldSeen, false, sourceUser, database, metrics));
+                    List<Node> seen = seen(sourceUser, request, targetSex, database, metrics);
+                    if (seen.size() > resultSize) {
+                        seen = seen.subList(0, resultSize);
+                    }
+                    response.getNewFaces().addAll(QueryUtils.createProfileListWithResizedAndSortedPhotos(request.getResolution(), seen, false, sourceUser, database, metrics));
                 }
 
                 if (response.getNewFaces().size() > resultSize) {
@@ -91,35 +75,144 @@ public class Discover {
         return response;
     }
 
-
-    private static List<Node> unseenFilteredResult(DiscoverRequest request, String targetSex, GraphDatabaseService database, MetricRegistry metrics) {
-        String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_GEO_NOT_SEEN_SORTED_BY_ONLINE_TIME_DESC, request.getFilter());
-        List<Node> result = QueryUtils.execute(query, request.getUserId(), targetSex, 0, request.getLimit(), database, metrics);
-        result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
-        return result;
-    }
-
-    private static List<Node> seenFilteredResult(DiscoverRequest request, String targetSex, int limit, GraphDatabaseService database, MetricRegistry metrics) {
-        String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_GEO_SEEN_SORTED_BY_ONLINE_TIME_DESC, request.getFilter());
-        List<Node> result = QueryUtils.execute(query, request.getUserId(), targetSex, 0, limit, database, metrics);
-        result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
-        return result;
-    }
-
-    private static Map<String, List<Node>> sortByOnlineGroups(List<Node> source) {
-        Map<String, List<Node>> result = new HashMap<>();
-        result.put("ONLINE", new ArrayList<Node>());
-        result.put("OLD", new ArrayList<Node>());
-        for (Node each : source) {
-            long onlineTime = (Long) each.getProperty(LAST_ONLINE_TIME.getPropertyName(), 0L);
-            long now = System.currentTimeMillis();
-            if (now - onlineTime < 1_000 * 60 * 60 * 24 * 3) {
-                result.get("ONLINE").add(each);
-            } else {
-                result.get("OLD").add(each);
+    private static Map<Long, List<Node>> groupByDistance(List<DistanceWrapper> source, long step) {
+        if (source.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, List<Node>> map = new HashMap<>();
+        for (DistanceWrapper each : source) {
+            long eachDistance = each.distance;
+            long tmp = eachDistance / step;
+            if (tmp == 0L) {
+                tmp = 1L;
             }
+            if (eachDistance % step > 0) {
+                tmp++;
+            }
+            List<Node> part = map.get(tmp);
+            if (Objects.isNull(part)) {
+                part = new ArrayList<>();
+            }
+            part.add(each.node);
+            map.put(tmp, part);
+        }
+        return map;
+    }
+
+    private static void sortDiscoverUnseenGroups(Map<Long, List<Node>> groups) {
+        for (Map.Entry<Long, List<Node>> each : groups.entrySet()) {
+            QueryUtils.sortDiscoverUnseenPartProfiles(each.getValue());
+        }
+    }
+
+    private static void sortDiscoverSeenGroups(Node source, Map<Long, List<Node>> groups) {
+        for (Map.Entry<Long, List<Node>> each : groups.entrySet()) {
+            QueryUtils.discoverSortProfilesSeenPart(source, each.getValue());
+        }
+    }
+
+    private static List<Node> combineGroup(Map<Long, List<Node>> source) {
+        List<Node> result = new ArrayList<>();
+        List<Long> keys = new ArrayList<>(source.keySet());
+        Collections.sort(keys);
+        for (Long eachKey : keys) {
+            result.addAll(source.get(eachKey));
         }
         return result;
     }
 
+    private static List<Node> prepareNodesResult(List<Node> onlineGroup, List<Node> activeGroup,
+                                                 int onlineNum, int activeNum) {
+        List<Node> result = new ArrayList<>();
+        while (true) {
+            List<Node> tmpResult = new ArrayList<>(10);
+            Iterator<Node> onlineIt = onlineGroup.iterator();
+            Iterator<Node> activeIt = activeGroup.iterator();
+            for (int i = 0; i < onlineNum; i++) {
+                if (onlineIt.hasNext()) {
+                    tmpResult.add(onlineIt.next());
+                    onlineIt.remove();
+                }
+            }
+            for (int i = 0; i < activeNum; i++) {
+                if (activeIt.hasNext()) {
+                    tmpResult.add(activeIt.next());
+                    activeIt.remove();
+                }
+            }
+
+            if (tmpResult.isEmpty()) {
+                return result;
+            }
+
+            Collections.shuffle(tmpResult);
+            result.addAll(tmpResult);
+        }
+    }
+
+    private static List<Node> seen(Node sourceNode, DiscoverRequest request, String targetSex, GraphDatabaseService database, MetricRegistry metrics) {
+        List<DistanceWrapper> onlineSeen = onlineSeenFilteredResult(request, targetSex, 1000, database, metrics);
+        List<DistanceWrapper> activeSeen = activeSeenFilteredResult(request, targetSex, 1000, database, metrics);
+
+        Map<Long, List<Node>> onlineSeenDistanceGroup = groupByDistance(onlineSeen, 15_000L);
+        sortDiscoverSeenGroups(sourceNode, onlineSeenDistanceGroup);
+        Map<Long, List<Node>> activeSeenDistanceGroup = groupByDistance(activeSeen, 15_000L);
+        sortDiscoverSeenGroups(sourceNode, activeSeenDistanceGroup);
+
+        List<Node> onlineGroup = combineGroup(onlineSeenDistanceGroup);
+        List<Node> activeGroup = combineGroup(activeSeenDistanceGroup);
+
+        List<Node> finalResult = prepareNodesResult(onlineGroup, activeGroup, 8, 2);
+        return finalResult;
+    }
+
+    private static List<Node> unseen(DiscoverRequest request, String targetSex, GraphDatabaseService database, MetricRegistry metrics) {
+        List<DistanceWrapper> online = onlineUnseenFilteredResult(request, targetSex, database, metrics);
+        List<DistanceWrapper> active = activeUnseenFilteredResult(request, targetSex, database, metrics);
+
+        Map<Long, List<Node>> onlineDistanceGroup = groupByDistance(online, 15_000L);
+        sortDiscoverUnseenGroups(onlineDistanceGroup);
+        Map<Long, List<Node>> activeDistanceGroup = groupByDistance(active, 15_000L);
+        sortDiscoverUnseenGroups(activeDistanceGroup);
+
+        List<Node> onlineGroup = combineGroup(onlineDistanceGroup);
+        List<Node> activeGroup = combineGroup(activeDistanceGroup);
+
+        List<Node> finalResult = prepareNodesResult(onlineGroup, activeGroup, 6, 4);
+        return finalResult;
+    }
+
+    private static List<DistanceWrapper> onlineUnseenFilteredResult(DiscoverRequest request, String targetSex, GraphDatabaseService database, MetricRegistry metrics) {
+        String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ONLINE_USERS_GEO_NOT_SEEN_SORTED_BY_DISTANCE, request.getFilter());
+        List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), targetSex, 0, request.getLimit(), database, metrics);
+        result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
+        return result;
+    }
+
+    private static List<DistanceWrapper> activeUnseenFilteredResult(DiscoverRequest request, String targetSex, GraphDatabaseService database, MetricRegistry metrics) {
+        String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ACTIVE_USERS_GEO_NOT_SEEN_SORTED_BY_DISTANCE, request.getFilter());
+        List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), targetSex, 0, request.getLimit(), database, metrics);
+        result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
+        return result;
+    }
+
+    private static List<DistanceWrapper> onlineSeenFilteredResult(DiscoverRequest request, String targetSex, int limit, GraphDatabaseService database, MetricRegistry metrics) {
+        String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ONLINE_USERS_GEO_SEEN_SORTED_BY_DISTANCE, request.getFilter());
+        List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), targetSex, 0, limit, database, metrics);
+        result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
+        return result;
+    }
+
+    private static List<DistanceWrapper> activeSeenFilteredResult(DiscoverRequest request, String targetSex, int limit, GraphDatabaseService database, MetricRegistry metrics) {
+        String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ACTIVE_USERS_GEO_SEEN_SORTED_BY_DISTANCE, request.getFilter());
+        List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), targetSex, 0, limit, database, metrics);
+        result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
+        return result;
+    }
+
+}
+
+class DistanceWrapper {
+    Node node;
+    long distance;
 }

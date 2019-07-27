@@ -8,6 +8,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -62,14 +63,22 @@ public class GetLCLikes {
 
     private static List<Node> unseenFilteredResult(LCRequest request, int skip, int limit, GraphDatabaseService database, MetricRegistry metrics) {
         String query = QueryUtils.constructFilteredQuery(QueryUtils.GET_LC_LIKES_GEO_UNSEEN_SORTED_BY_USER_ID, request.getFilter());
-        List<Node> result = QueryUtils.execute(query, request.getUserId(), "n/a", skip, limit, database, metrics);
-        return result;
+        List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), "n/a", skip, limit, database, metrics);
+        List<Node> finalResult = new ArrayList<>(result.size());
+        for (DistanceWrapper each : result) {
+            finalResult.add(each.node);
+        }
+        return finalResult;
     }
 
     private static List<Node> seenFilteredResult(LCRequest request, int skip, int limit, GraphDatabaseService database, MetricRegistry metrics) {
         String query = QueryUtils.constructFilteredQuery(QueryUtils.GET_LC_LIKES_GEO_SEEN_SORTED_BY_USER_ID, request.getFilter());
-        List<Node> result = QueryUtils.execute(query, request.getUserId(), "n/a", skip, limit, database, metrics);
-        return result;
+        List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), "n/a", skip, limit, database, metrics);
+        List<Node> finalResult = new ArrayList<>(result.size());
+        for (DistanceWrapper each : result) {
+            finalResult.add(each.node);
+        }
+        return finalResult;
     }
 
 }

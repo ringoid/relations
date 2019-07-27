@@ -49,37 +49,78 @@ public class QueryUtils {
 
     private static final Log log = LoggerFactory.getLogger(QueryUtils.class);
 
-    //$sourceUserId, $targetSex, $limitParam
-    static final String DISCOVER_GEO_NOT_SEEN_SORTED_BY_ONLINE_TIME_DESC = String.format(
+    //$sourceUserId, $targetSex, $limitParam, onlineTime
+    static final String DISCOVER_ONLINE_USERS_GEO_NOT_SEEN_SORTED_BY_DISTANCE = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
-                    "MATCH (target:%s) WHERE target.%s = $targetSex" +//2
+                    "MATCH (target:%s) WHERE target.%s = $targetSex AND target.%s >= $onlineTime" +//2
                     //!!!dynamic part
                     "AGE_FILTER DISTANCE_FILTER" +
                     //!!!
                     "WITH sourceUser, target " +
-                    "WHERE NOT (target)<-[:%s|%s|%s|%s|%s|%s|%s|%s]-(sourceUser) " +//2.1
+                    "WHERE (NOT (target)<-[:%s|%s|%s|%s]-(sourceUser)) " +//2.1
+                    "AND (NOT (target)-[:%s|%s|%s|%s]-(sourceUser)) " +//2.1.2
                     "AND (target)-[:%s]->(:%s) AND NOT('%s' in labels(target)) " +//2.2
-                    "RETURN DISTINCT target.%s AS userId, target.%s AS onlineTime ORDER BY onlineTime DESC LIMIT $limitParam",//3
+                    "RETURN DISTINCT target.%s AS userId, distance(sourceUser.%s, target.%s) as dist ORDER BY dist LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
-            PERSON.getLabelName(), SEX.getPropertyName(),//2
-            Relationships.VIEW, Relationships.VIEW_IN_LIKES_YOU, Relationships.VIEW_IN_MATCHES, Relationships.VIEW_IN_MESSAGES, Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
+            PERSON.getLabelName(), SEX.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(),//2
+            Relationships.VIEW, Relationships.VIEW_IN_LIKES_YOU, Relationships.VIEW_IN_MATCHES, Relationships.VIEW_IN_MESSAGES, //2.1
+            Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1.2
             Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), Labels.HIDDEN.getLabelName(),//2.2
-            USER_ID.getPropertyName(), LAST_ONLINE_TIME.getPropertyName()//3
+            USER_ID.getPropertyName(), LOCATION.getPropertyName(), LOCATION.getPropertyName()//3
     );
 
-    //$sourceUserId, $targetSex, $skipParam, $limitParam
-    static final String DISCOVER_GEO_SEEN_SORTED_BY_ONLINE_TIME_DESC = String.format(
+    //$sourceUserId, $targetSex, $limitParam, onlineTime, activeTime
+    static final String DISCOVER_ACTIVE_USERS_GEO_NOT_SEEN_SORTED_BY_DISTANCE = String.format(
+            "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
+                    "MATCH (target:%s) WHERE target.%s = $targetSex AND target.%s >= $activeTime AND target.%s < $onlineTime" +//2
+                    //!!!dynamic part
+                    "AGE_FILTER DISTANCE_FILTER" +
+                    //!!!
+                    "WITH sourceUser, target " +
+                    "WHERE (NOT (target)<-[:%s|%s|%s|%s]-(sourceUser)) " +//2.1
+                    "AND (NOT (target)-[:%s|%s|%s|%s]-(sourceUser)) " +//2.1.2
+                    "AND (target)-[:%s]->(:%s) AND NOT('%s' in labels(target)) " +//2.2
+                    "RETURN DISTINCT target.%s AS userId, distance(sourceUser.%s, target.%s) as dist ORDER BY dist LIMIT $limitParam",//3
+            PERSON.getLabelName(), USER_ID.getPropertyName(),//1
+            PERSON.getLabelName(), SEX.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(),//2
+            Relationships.VIEW, Relationships.VIEW_IN_LIKES_YOU, Relationships.VIEW_IN_MATCHES, Relationships.VIEW_IN_MESSAGES, //2.1
+            Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1.2
+            Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), Labels.HIDDEN.getLabelName(),//2.2
+            USER_ID.getPropertyName(), LOCATION.getPropertyName(), LOCATION.getPropertyName()//3
+    );
+
+    //$sourceUserId, $targetSex, $skipParam, $limitParam, $onlineTime
+    static final String DISCOVER_ONLINE_USERS_GEO_SEEN_SORTED_BY_DISTANCE = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId})-[:%s]->(target:%s)-[:%s]->(:%s) " +//1
-                    "WHERE target.%s = $targetSex" +//2
+                    "WHERE (NOT (target)-[:%s|%s|%s|%s]-(sourceUser)) " +//1.2
+                    "AND target.%s = $targetSex AND target.%s >= $onlineTime" +//2
                     //!!!dynamic part
                     "AGE_FILTER DISTANCE_FILTER" +
                     //!!!
                     "AND NOT('%s' in labels(target)) " +//2.2
-                    "RETURN DISTINCT target.%s AS userId, target.%s AS onlineTime ORDER BY onlineTime DESC SKIP $skipParam LIMIT $limitParam",//3
+                    "RETURN DISTINCT target.%s AS userId, distance(sourceUser.%s, target.%s) as dist ORDER BY dist SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.VIEW.name(), PERSON.getLabelName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//1
-            SEX.getPropertyName(),//2
+            Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//1.2
+            SEX.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(),//2
             Labels.HIDDEN.getLabelName(),//2.2
-            USER_ID.getPropertyName(), LAST_ONLINE_TIME.getPropertyName()//3
+            USER_ID.getPropertyName(), LOCATION.getPropertyName(), LOCATION.getPropertyName()//3
+    );
+
+    //$sourceUserId, $targetSex, $skipParam, $limitParam, $onlineTime
+    static final String DISCOVER_ACTIVE_USERS_GEO_SEEN_SORTED_BY_DISTANCE = String.format(
+            "MATCH (sourceUser:%s {%s:$sourceUserId})-[:%s]->(target:%s)-[:%s]->(:%s) " +//1
+                    "WHERE (NOT (target)-[:%s|%s|%s|%s]-(sourceUser)) " +//1.2
+                    "AND target.%s = $targetSex AND target.%s >= $activeTime AND target.%s < $onlineTime" +//2
+                    //!!!dynamic part
+                    "AGE_FILTER DISTANCE_FILTER" +
+                    //!!!
+                    "AND NOT('%s' in labels(target)) " +//2.2
+                    "RETURN DISTINCT target.%s AS userId, distance(sourceUser.%s, target.%s) as dist ORDER BY dist SKIP $skipParam LIMIT $limitParam",//3
+            PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.VIEW.name(), PERSON.getLabelName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//1
+            Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//1.2
+            SEX.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(),//2
+            Labels.HIDDEN.getLabelName(),//2.2
+            USER_ID.getPropertyName(), LOCATION.getPropertyName(), LOCATION.getPropertyName()//3
     );
 
     //$sourceUserId, $targetSex, $skipParam, $limitParam
@@ -202,32 +243,41 @@ public class QueryUtils {
         return result.intValue();
     }
 
-    public static List<Node> execute(String query, String sourceUserId, String targetSex, int skip, int limit,
-                                     GraphDatabaseService database, MetricRegistry metrics) {
+    public static List<DistanceWrapper> execute(String query, String sourceUserId, String targetSex, int skip, int limit,
+                                                GraphDatabaseService database, MetricRegistry metrics) {
         log.info("execute query : %s", query);
-        log.info("with params : sourceUserId : %s, targetSex : %s, skipParam : %s, limitParam : %s",
-                sourceUserId, targetSex, Integer.toString(skip), Integer.toString(limit));
-        List<Node> result = new ArrayList<>();
+        long onlineTime = System.currentTimeMillis() - 86_400_000L;//24h ago
+        long activeTime = System.currentTimeMillis() - 3 * 86_400_000L;//3d ago
+        log.info("with params : sourceUserId : %s, targetSex : %s, skipParam : %s, limitParam : %s, onlineTime : %s, activeTime : %s",
+                sourceUserId, targetSex, Integer.toString(skip), Integer.toString(limit), Long.toString(onlineTime), Long.toString(activeTime));
+        List<DistanceWrapper> result = new ArrayList<>();
         Map<String, Object> params = new HashMap<>();
         params.put("sourceUserId", sourceUserId);
         params.put("targetSex", targetSex);
+        params.put("onlineTime", onlineTime);
+        params.put("activeTime", activeTime);
         params.put("skipParam", skip);
         params.put("limitParam", limit);
         Result queryResult = database.execute(query, params, 10L, TimeUnit.SECONDS);
 
         while (queryResult.hasNext()) {
-            Node node = database.findNode(Label.label(Labels.PERSON.getLabelName()), USER_ID.getPropertyName(), queryResult.next().get("userId"));
+            Map<String, Object> resultMap = queryResult.next();
+            Node node = database.findNode(Label.label(Labels.PERSON.getLabelName()), USER_ID.getPropertyName(), resultMap.get("userId"));
+            double distTmp = (Double) resultMap.getOrDefault("dist", -1.0);
             if (Objects.nonNull(node)) {
-                result.add(node);
+                DistanceWrapper wr = new DistanceWrapper();
+                wr.node = node;
+                wr.distance = Double.valueOf(distTmp).longValue();
+                result.add(wr);
             }
         }
         return result;
     }
 
-    public static List<Node> filterNodesByVisiblePhotos(String sourceUserId, List<Node> source) {
-        Iterator<Node> it = source.iterator();
+    public static List<DistanceWrapper> filterNodesByVisiblePhotos(String sourceUserId, List<DistanceWrapper> source) {
+        Iterator<DistanceWrapper> it = source.iterator();
         while (it.hasNext()) {
-            Node each = it.next();
+            Node each = it.next().node;
             String userId = (String) each.getProperty(USER_ID.getPropertyName(), "n/a");
             if (Objects.equals(sourceUserId, userId)) {
                 it.remove();
