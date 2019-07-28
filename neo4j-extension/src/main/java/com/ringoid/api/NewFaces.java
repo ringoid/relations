@@ -57,12 +57,12 @@ public class NewFaces {
     private static final String SEEN_SORTED_BY_LIKES_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
-                    "WHERE NOT (target)-[:%s|%s|%s|%s]-(sourceUser) " +//2.1
+                    "WHERE NOT (target)-[:%s|%s|%s|%s]-(sourceUser) AND target.%s >= $onlineTime " +//2.1
                     "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
-            Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
+            Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH, LAST_ONLINE_TIME.getPropertyName(),//2.1
             ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
     );
@@ -70,14 +70,14 @@ public class NewFaces {
     private static final String GEO_SEEN_SORTED_BY_LIKES_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s {%s:$sex}) " +//2
-                    "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
+                    "WHERE distance(sourceUser.%s, target.%s) <= $distance AND target.%s >= $onlineTime " +//2.01
                     "WITH sourceUser, target " +//2.01
                     "WHERE (NOT (target)<-[:%s|%s|%s|%s]-(sourceUser)) " +//2.1
                     "AND (target)-[:%s]->(:%s) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), SEX.getPropertyName(),//2
-            LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
+            LOCATION.getPropertyName(), LOCATION.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(), //2.01
             Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
             Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//2.2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
@@ -86,12 +86,12 @@ public class NewFaces {
     private static final String SEEN_SORTED_BY_ONLINE_TIME_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
-                    "WHERE NOT (target)-[:%s|%s|%s|%s]-(sourceUser) " +//2.1
+                    "WHERE NOT (target)-[:%s|%s|%s|%s]-(sourceUser) AND target.%s >= $onlineTime " +//2.1
                     "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes, target.%s AS onlineTime ORDER BY onlineTime DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
-            Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
+            Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH, LAST_ONLINE_TIME.getPropertyName(),//2.1
             ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName(), LAST_ONLINE_TIME.getPropertyName()//3
     );
@@ -99,14 +99,14 @@ public class NewFaces {
     private static final String GEO_SEEN_SORTED_BY_ONLINE_TIME_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s {%s:$sex}) " +//2
-                    "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
+                    "WHERE distance(sourceUser.%s, target.%s) <= $distance AND target.%s >= $onlineTime " +//2.01
                     "WITH sourceUser, target " +//2.01
                     "WHERE (NOT (target)<-[:%s|%s|%s|%s]-(sourceUser)) " +//2.1
                     "AND (target)-[:%s]->(:%s) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes, target.%s AS onlineTime ORDER BY onlineTime DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), SEX.getPropertyName(),//2
-            LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
+            LOCATION.getPropertyName(), LOCATION.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(),//2.01
             Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
             Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//2.2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName(), LAST_ONLINE_TIME.getPropertyName()//3
@@ -115,13 +115,13 @@ public class NewFaces {
     private static final String NOT_SEEN_SORTED_BY_LIKES_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
-                    "WHERE NOT (target)<-[:%s|%s|%s|%s|%s|%s|%s|%s]-(sourceUser) " +//2.1
+                    "WHERE NOT (target)<-[:%s|%s|%s|%s|%s|%s|%s|%s]-(sourceUser) AND target.%s >= $onlineTime " +//2.1
                     "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
             //we need this line to enable preparenf relationships take part in new preparation
-            Relationships.VIEW, Relationships.VIEW_IN_LIKES_YOU, Relationships.VIEW_IN_MATCHES, Relationships.VIEW_IN_MESSAGES, Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
+            Relationships.VIEW, Relationships.VIEW_IN_LIKES_YOU, Relationships.VIEW_IN_MATCHES, Relationships.VIEW_IN_MESSAGES, Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH, LAST_ONLINE_TIME.getPropertyName(),//2.1
             ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName()//3
     );
@@ -129,14 +129,14 @@ public class NewFaces {
     private static final String GEO_NOT_SEEN_SORTED_BY_LIKES_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s {%s:$sex}) " +//2
-                    "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
+                    "WHERE distance(sourceUser.%s, target.%s) <= $distance AND target.%s >= $onlineTime " +//2.01
                     "WITH sourceUser, target " +
                     "WHERE NOT (target)<-[:%s|%s|%s|%s|%s|%s|%s|%s]-(sourceUser) " +//2.1
                     "AND (target)-[:%s]->(:%s) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes ORDER BY likes DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), SEX.getPropertyName(),//2
-            LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
+            LOCATION.getPropertyName(), LOCATION.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(),//2.01
             //we need this line to enable preparenf relationships take part in new preparation
             Relationships.VIEW, Relationships.VIEW_IN_LIKES_YOU, Relationships.VIEW_IN_MATCHES, Relationships.VIEW_IN_MESSAGES, Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
             Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//2.2
@@ -146,13 +146,13 @@ public class NewFaces {
     private static final String NOT_SEEN_SORTED_BY_ONLINE_TIME_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s {%s:$sex})-[:%s]->(pp:%s) " +//2
-                    "WHERE NOT (target)<-[:%s|%s|%s|%s|%s|%s|%s|%s]-(sourceUser) " +//2.1
+                    "WHERE NOT (target)<-[:%s|%s|%s|%s|%s|%s|%s|%s]-(sourceUser) AND target.%s >= $onlineTime " +//2.1
                     "AND (NOT exists(pp.%s) OR pp.%s = false) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes, target.%s AS onlineTime ORDER BY onlineTime DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), SEX.getPropertyName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(), //2
             //we need this line to enable preparenf relationships take part in new preparation
-            Relationships.VIEW, Relationships.VIEW_IN_LIKES_YOU, Relationships.VIEW_IN_MATCHES, Relationships.VIEW_IN_MESSAGES, Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
+            Relationships.VIEW, Relationships.VIEW_IN_LIKES_YOU, Relationships.VIEW_IN_MATCHES, Relationships.VIEW_IN_MESSAGES, Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH, LAST_ONLINE_TIME.getPropertyName(),//2.1
             ONLY_OWNER_CAN_SEE.getPropertyName(), ONLY_OWNER_CAN_SEE.getPropertyName(),//2.2
             USER_ID.getPropertyName(), LIKE_COUNTER.getPropertyName(), LAST_ONLINE_TIME.getPropertyName()//3
     );
@@ -160,14 +160,14 @@ public class NewFaces {
     private static final String GEO_NOT_SEEN_SORTED_BY_ONLINE_TIME_QUERY = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
                     "MATCH (target:%s {%s:$sex}) " +//2
-                    "WHERE distance(sourceUser.%s, target.%s) <= $distance " +//2.01
+                    "WHERE distance(sourceUser.%s, target.%s) <= $distance AND target.%s >= $onlineTime " +//2.01
                     "WITH sourceUser, target " +
                     "WHERE NOT (target)<-[:%s|%s|%s|%s|%s|%s|%s|%s]-(sourceUser) " +//2.1
                     "AND (target)-[:%s]->(:%s) " +//2.2
                     "RETURN DISTINCT target.%s AS userId, target.%s AS likes, target.%s AS onlineTime ORDER BY onlineTime DESC, userId SKIP $skipParam LIMIT $limitParam",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(),//1
             PERSON.getLabelName(), SEX.getPropertyName(),//2
-            LOCATION.getPropertyName(), LOCATION.getPropertyName(), //2.01
+            LOCATION.getPropertyName(), LOCATION.getPropertyName(), LAST_ONLINE_TIME.getPropertyName(),//2.01
             //we need this line to enable preparenf relationships take part in new preparation
             Relationships.VIEW, Relationships.VIEW_IN_LIKES_YOU, Relationships.VIEW_IN_MATCHES, Relationships.VIEW_IN_MESSAGES, Relationships.BLOCK, Relationships.LIKE, Relationships.MESSAGE, Relationships.MATCH,//2.1
             Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//2.2
@@ -678,12 +678,14 @@ public class NewFaces {
                                                           int maxFirstPart, int maxSecondPart,
                                                           GraphDatabaseService database) {
         List<Node> result = new ArrayList<>();
+        long onlineTime = System.currentTimeMillis() - 4 * 24 * 60 * 60 * 1000;//4days
         Map<String, Object> params = new HashMap<>();
         params.put("sourceUserId", sourceUserId);
         params.put("skipParam", skip);
         params.put("limitParam", limit);
         params.put("sex", targetSex);
         params.put("distance", distance);
+        params.put("onlineTime", onlineTime);
         List<String> newUsers = executeQueryAndReturnUserIds(queryFirstPart, params, database);
         if (newUsers.size() < limit) {
             //it means that we can skip popular request
