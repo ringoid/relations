@@ -328,18 +328,18 @@ public class QueryUtils {
         return profileList;
     }
 
-    public static List<Node> sortDiscoverUnseenPartProfiles(List<Node> tmpResult) {
+    public static List<DistanceWrapper> sortDiscoverUnseenPartProfiles(List<DistanceWrapper> tmpResult) {
         if (tmpResult.isEmpty()) {
             return tmpResult;
         }
 
-        Collections.sort(tmpResult, new Comparator<Node>() {
+        Collections.sort(tmpResult, new Comparator<DistanceWrapper>() {
             @Override
-            public int compare(Node node1, Node node2) {
+            public int compare(DistanceWrapper node1, DistanceWrapper node2) {
                 //now count photos
                 int photoCounter1 = 0;
-                for (Relationship each : node1.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
-                    Node eachPhoto = each.getOtherNode(node1);
+                for (Relationship each : node1.node.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
+                    Node eachPhoto = each.getOtherNode(node1.node);
                     if (Objects.nonNull(eachPhoto) && eachPhoto.hasLabel(Label.label(Labels.PHOTO.getLabelName()))) {
                         if (!((Boolean) eachPhoto.getProperty(ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
                             photoCounter1++;
@@ -347,8 +347,8 @@ public class QueryUtils {
                     }
                 }
                 int photoCounter2 = 0;
-                for (Relationship each : node2.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
-                    Node eachPhoto = each.getOtherNode(node2);
+                for (Relationship each : node2.node.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
+                    Node eachPhoto = each.getOtherNode(node2.node);
                     if (Objects.nonNull(eachPhoto) && eachPhoto.hasLabel(Label.label(Labels.PHOTO.getLabelName()))) {
                         if (!((Boolean) eachPhoto.getProperty(ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
                             photoCounter2++;
@@ -362,8 +362,8 @@ public class QueryUtils {
                     return 1;
                 }
 
-                long likeCounter1 = (Long) node1.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
-                long likeCounter2 = (Long) node2.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
+                long likeCounter1 = (Long) node1.node.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
+                long likeCounter2 = (Long) node2.node.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
                 if (likeCounter1 > likeCounter2) {
                     return -1;
                 } else if (likeCounter1 < likeCounter2) {
@@ -376,15 +376,15 @@ public class QueryUtils {
         return tmpResult;
     }
 
-    public static List<Node> discoverSortProfilesSeenPart(Node sourceUser, List<Node> sourceList) {
+    public static List<DistanceWrapper> discoverSortProfilesSeenPart(Node sourceUser, List<DistanceWrapper> sourceList) {
         List<Utils.NodeWrapper> wrapperList = new ArrayList<>(sourceList.size());
-        for (Node each : sourceList) {
+        for (DistanceWrapper each : sourceList) {
             int photoCounter = 0;
             int likeCounter = 0;
             int viewedFromSource = 0;
-            Iterable<Relationship> uploads = each.getRelationships(RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()), Direction.OUTGOING);
+            Iterable<Relationship> uploads = each.node.getRelationships(RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()), Direction.OUTGOING);
             for (Relationship eachUpload : uploads) {
-                Node photo = eachUpload.getOtherNode(each);
+                Node photo = eachUpload.getOtherNode(each.node);
                 if (photo.hasLabel(Label.label(Labels.PHOTO.getLabelName()))) {
                     Boolean onlyOwnerCanSee = (Boolean) photo.getProperty(PhotoProperties.ONLY_OWNER_CAN_SEE.getPropertyName(), false);
                     if (!onlyOwnerCanSee) {
@@ -407,10 +407,11 @@ public class QueryUtils {
                 }//end each single photo
             }//end loop by all photos
             Utils.NodeWrapper nodeWrapper = new Utils.NodeWrapper();
-            nodeWrapper.node = each;
+            nodeWrapper.node = each.node;
             nodeWrapper.allPhotoCount = photoCounter;
             nodeWrapper.likes = likeCounter;
             nodeWrapper.unseenPhotos = photoCounter - viewedFromSource;
+            nodeWrapper.distanceWrapper = each;
             wrapperList.add(nodeWrapper);
         }//end
         Collections.sort(wrapperList, new Comparator<Utils.NodeWrapper>() {
@@ -436,9 +437,9 @@ public class QueryUtils {
                 return 0;
             }
         });
-        List<Node> result = new ArrayList<>(wrapperList.size());
+        List<DistanceWrapper> result = new ArrayList<>(wrapperList.size());
         for (Utils.NodeWrapper eachWrapper : wrapperList) {
-            result.add(eachWrapper.node);
+            result.add(eachWrapper.distanceWrapper);
         }
         return result;
     }

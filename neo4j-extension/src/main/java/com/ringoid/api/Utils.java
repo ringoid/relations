@@ -892,5 +892,6 @@ public class Utils {
         int likes;
         long onlineTime;
         int targetYear;
+        DistanceWrapper distanceWrapper;
     }
 }

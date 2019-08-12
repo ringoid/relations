@@ -10,6 +10,7 @@ import org.neo4j.logging.Log;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -75,11 +76,11 @@ public class Discover {
         return response;
     }
 
-    private static Map<Long, List<Node>> groupByDistance(List<DistanceWrapper> source, long step) {
+    private static Map<Long, List<DistanceWrapper>> groupByDistance(List<DistanceWrapper> source, long step) {
         if (source.isEmpty()) {
             return Collections.emptyMap();
         }
-        Map<Long, List<Node>> map = new HashMap<>();
+        Map<Long, List<DistanceWrapper>> map = new HashMap<>();
         for (DistanceWrapper each : source) {
             long eachDistance = each.distance;
             long tmp = eachDistance / step;
@@ -89,30 +90,30 @@ public class Discover {
             if (eachDistance % step > 0) {
                 tmp++;
             }
-            List<Node> part = map.get(tmp);
+            List<DistanceWrapper> part = map.get(tmp);
             if (Objects.isNull(part)) {
                 part = new ArrayList<>();
             }
-            part.add(each.node);
+            part.add(each);
             map.put(tmp, part);
         }
         return map;
     }
 
-    private static void sortDiscoverUnseenGroups(Map<Long, List<Node>> groups) {
-        for (Map.Entry<Long, List<Node>> each : groups.entrySet()) {
+    private static void sortDiscoverUnseenGroups(Map<Long, List<DistanceWrapper>> groups) {
+        for (Map.Entry<Long, List<DistanceWrapper>> each : groups.entrySet()) {
             QueryUtils.sortDiscoverUnseenPartProfiles(each.getValue());
         }
     }
 
-    private static void sortDiscoverSeenGroups(Node source, Map<Long, List<Node>> groups) {
-        for (Map.Entry<Long, List<Node>> each : groups.entrySet()) {
+    private static void sortDiscoverSeenGroups(Node source, Map<Long, List<DistanceWrapper>> groups) {
+        for (Map.Entry<Long, List<DistanceWrapper>> each : groups.entrySet()) {
             QueryUtils.discoverSortProfilesSeenPart(source, each.getValue());
         }
     }
 
-    private static List<Node> combineGroup(Map<Long, List<Node>> source) {
-        List<Node> result = new ArrayList<>();
+    private static List<DistanceWrapper> combineGroup(Map<Long, List<DistanceWrapper>> source) {
+        List<DistanceWrapper> result = new ArrayList<>();
         List<Long> keys = new ArrayList<>(source.keySet());
         Collections.sort(keys);
         for (Long eachKey : keys) {
@@ -121,13 +122,13 @@ public class Discover {
         return result;
     }
 
-    private static List<Node> prepareNodesResult(List<Node> onlineGroup, List<Node> activeGroup,
+    private static List<Node> prepareNodesResult(List<DistanceWrapper> onlineGroup, List<DistanceWrapper> activeGroup,
                                                  int onlineNum, int activeNum) {
         List<Node> result = new ArrayList<>();
         while (true) {
-            List<Node> tmpResult = new ArrayList<>(10);
-            Iterator<Node> onlineIt = onlineGroup.iterator();
-            Iterator<Node> activeIt = activeGroup.iterator();
+            List<DistanceWrapper> tmpResult = new ArrayList<>(10);
+            Iterator<DistanceWrapper> onlineIt = onlineGroup.iterator();
+            Iterator<DistanceWrapper> activeIt = activeGroup.iterator();
             for (int i = 0; i < onlineNum; i++) {
                 if (onlineIt.hasNext()) {
                     tmpResult.add(onlineIt.next());
@@ -145,8 +146,21 @@ public class Discover {
                 return result;
             }
 
-            Collections.shuffle(tmpResult);
-            result.addAll(tmpResult);
+            //currently we first sort by distance (later should delete)
+            Collections.sort(tmpResult, new Comparator<DistanceWrapper>() {
+                @Override
+                public int compare(DistanceWrapper o1, DistanceWrapper o2) {
+                    return Long.compare(o1.distance, o2.distance);
+                }
+            });
+
+            for (DistanceWrapper each : tmpResult) {
+                result.add(each.node);
+            }
+
+            //after that (when we delete previous hack) we need to shuffle
+            //Collections.shuffle(tmpResult);
+            //result.addAll(tmpResult);
         }
     }
 
@@ -154,13 +168,13 @@ public class Discover {
         List<DistanceWrapper> onlineSeen = onlineSeenFilteredResult(request, targetSex, 1000, database, metrics);
         List<DistanceWrapper> activeSeen = activeSeenFilteredResult(request, targetSex, 1000, database, metrics);
 
-        Map<Long, List<Node>> onlineSeenDistanceGroup = groupByDistance(onlineSeen, 15_000L);
+        Map<Long, List<DistanceWrapper>> onlineSeenDistanceGroup = groupByDistance(onlineSeen, 15_000L);
         sortDiscoverSeenGroups(sourceNode, onlineSeenDistanceGroup);
-        Map<Long, List<Node>> activeSeenDistanceGroup = groupByDistance(activeSeen, 15_000L);
+        Map<Long, List<DistanceWrapper>> activeSeenDistanceGroup = groupByDistance(activeSeen, 15_000L);
         sortDiscoverSeenGroups(sourceNode, activeSeenDistanceGroup);
 
-        List<Node> onlineGroup = combineGroup(onlineSeenDistanceGroup);
-        List<Node> activeGroup = combineGroup(activeSeenDistanceGroup);
+        List<DistanceWrapper> onlineGroup = combineGroup(onlineSeenDistanceGroup);
+        List<DistanceWrapper> activeGroup = combineGroup(activeSeenDistanceGroup);
 
         List<Node> finalResult = prepareNodesResult(onlineGroup, activeGroup, 8, 2);
         return finalResult;
@@ -170,13 +184,13 @@ public class Discover {
         List<DistanceWrapper> online = onlineUnseenFilteredResult(request, targetSex, database, metrics);
         List<DistanceWrapper> active = activeUnseenFilteredResult(request, targetSex, database, metrics);
 
-        Map<Long, List<Node>> onlineDistanceGroup = groupByDistance(online, 15_000L);
+        Map<Long, List<DistanceWrapper>> onlineDistanceGroup = groupByDistance(online, 15_000L);
         sortDiscoverUnseenGroups(onlineDistanceGroup);
-        Map<Long, List<Node>> activeDistanceGroup = groupByDistance(active, 15_000L);
+        Map<Long, List<DistanceWrapper>> activeDistanceGroup = groupByDistance(active, 15_000L);
         sortDiscoverUnseenGroups(activeDistanceGroup);
 
-        List<Node> onlineGroup = combineGroup(onlineDistanceGroup);
-        List<Node> activeGroup = combineGroup(activeDistanceGroup);
+        List<DistanceWrapper> onlineGroup = combineGroup(onlineDistanceGroup);
+        List<DistanceWrapper> activeGroup = combineGroup(activeDistanceGroup);
 
         List<Node> finalResult = prepareNodesResult(onlineGroup, activeGroup, 6, 4);
         return finalResult;
