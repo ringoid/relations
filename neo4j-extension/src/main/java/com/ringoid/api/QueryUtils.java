@@ -52,7 +52,7 @@ public class QueryUtils {
     //$sourceUserId, $targetSex, $limitParam, onlineTime
     static final String DISCOVER_ONLINE_USERS_GEO_NOT_SEEN_SORTED_BY_DISTANCE = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
-                    "MATCH (target:%s) WHERE target.%s = $targetSex AND target.%s >= $onlineTime" +//2
+                    "MATCH (target:%s) WHERE target.%s = $targetSex AND target.%s >= $onlineTime AND exists(target.location)" +//2
                     //!!!dynamic part
                     "AGE_FILTER DISTANCE_FILTER" +
                     //!!!
@@ -72,7 +72,7 @@ public class QueryUtils {
     //$sourceUserId, $targetSex, $limitParam, onlineTime, activeTime
     static final String DISCOVER_ACTIVE_USERS_GEO_NOT_SEEN_SORTED_BY_DISTANCE = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
-                    "MATCH (target:%s) WHERE target.%s = $targetSex AND target.%s >= $activeTime AND target.%s < $onlineTime" +//2
+                    "MATCH (target:%s) WHERE target.%s = $targetSex AND target.%s >= $activeTime AND target.%s < $onlineTime AND exists(target.location)" +//2
                     //!!!dynamic part
                     "AGE_FILTER DISTANCE_FILTER" +
                     //!!!
@@ -93,7 +93,7 @@ public class QueryUtils {
     static final String DISCOVER_ONLINE_USERS_GEO_SEEN_SORTED_BY_DISTANCE = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId})-[:%s]->(target:%s)-[:%s]->(:%s) " +//1
                     "WHERE (NOT (target)-[:%s|%s|%s|%s]-(sourceUser)) " +//1.2
-                    "AND target.%s = $targetSex AND target.%s >= $onlineTime" +//2
+                    "AND target.%s = $targetSex AND target.%s >= $onlineTime AND exists(target.location)" +//2
                     //!!!dynamic part
                     "AGE_FILTER DISTANCE_FILTER" +
                     //!!!
@@ -110,7 +110,7 @@ public class QueryUtils {
     static final String DISCOVER_ACTIVE_USERS_GEO_SEEN_SORTED_BY_DISTANCE = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId})-[:%s]->(target:%s)-[:%s]->(:%s) " +//1
                     "WHERE (NOT (target)-[:%s|%s|%s|%s]-(sourceUser)) " +//1.2
-                    "AND target.%s = $targetSex AND target.%s >= $activeTime AND target.%s < $onlineTime" +//2
+                    "AND target.%s = $targetSex AND target.%s >= $activeTime AND target.%s < $onlineTime AND exists(target.location)" +//2
                     //!!!dynamic part
                     "AGE_FILTER DISTANCE_FILTER" +
                     //!!!
@@ -126,7 +126,7 @@ public class QueryUtils {
     //$sourceUserId, $targetSex, $skipParam, $limitParam
     static final String GET_LC_LIKES_GEO_UNSEEN_SORTED_BY_USER_ID = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId})<-[:%s]-(target:%s)-[:%s]->(photo:%s) " +//1
-                    "WHERE (NOT exists(photo.%s) OR photo.%s = false)" +//2
+                    "WHERE (NOT exists(photo.%s) OR photo.%s = false) AND exists(target.location)" +//2
                     //!!!dynamic part
                     "AGE_FILTER DISTANCE_FILTER" +
                     //!!!
@@ -143,7 +143,7 @@ public class QueryUtils {
     //$sourceUserId, $targetSex, $skipParam, $limitParam
     static final String GET_LC_LIKES_GEO_SEEN_SORTED_BY_USER_ID = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId})<-[:%s]-(target:%s)-[:%s]->(photo:%s) " +//1
-                    "WHERE (NOT exists(photo.%s) OR photo.%s = false)" +//2
+                    "WHERE (NOT exists(photo.%s) OR photo.%s = false) AND exists(target.location)" +//2
                     //!!!dynamic part
                     "AGE_FILTER DISTANCE_FILTER" +
                     //!!!
@@ -160,7 +160,7 @@ public class QueryUtils {
     //$sourceUserId
     static final String GET_LC_LIKES_NUM = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId})<-[:%s]-(target:%s)-[:%s]->(photo:%s) " +//1
-                    "WHERE (NOT exists(photo.%s) OR photo.%s = false)" +//2
+                    "WHERE (NOT exists(photo.%s) OR photo.%s = false) AND exists(target.location)" +//2
                     "AND NOT('%s' in labels(target)) " +//2.2
                     "RETURN count(DISTINCT target.%s) as num",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.LIKE.name(), PERSON.getLabelName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//1
@@ -172,7 +172,7 @@ public class QueryUtils {
     //$sourceUserId
     static final String GET_LC_MESSAGES_AND_MATCHES_GEO = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId})-[:%s|%s]-(target:%s)-[:%s]->(photo:%s) " +//1
-                    "WHERE (NOT exists(photo.%s) OR photo.%s = false)" +//2
+                    "WHERE (NOT exists(photo.%s) OR photo.%s = false) AND exists(target.location)" +//2
                     //!!!dynamic part
                     "AGE_FILTER DISTANCE_FILTER" +
                     //!!!
@@ -187,7 +187,7 @@ public class QueryUtils {
     //$sourceUserId
     static final String GET_LC_MESSAGES_NUM = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId})-[:%s|%s]-(target:%s)-[:%s]->(photo:%s) " +//1
-                    "WHERE (NOT exists(photo.%s) OR photo.%s = false)" +//2
+                    "WHERE (NOT exists(photo.%s) OR photo.%s = false) AND exists(target.location)" +//2
                     "AND NOT('%s' in labels(target)) " +//2.2
                     "RETURN count(DISTINCT target.%s) as num",//3
             PERSON.getLabelName(), USER_ID.getPropertyName(), Relationships.MATCH.name(), Relationships.MESSAGE, PERSON.getLabelName(), Relationships.UPLOAD_PHOTO.name(), PHOTO.getLabelName(),//1
@@ -263,6 +263,7 @@ public class QueryUtils {
         while (queryResult.hasNext()) {
             Map<String, Object> resultMap = queryResult.next();
             Node node = database.findNode(Label.label(Labels.PERSON.getLabelName()), USER_ID.getPropertyName(), resultMap.get("userId"));
+
             double distTmp = (Double) resultMap.getOrDefault("dist", -1.0);
             if (Objects.nonNull(node)) {
                 DistanceWrapper wr = new DistanceWrapper();
