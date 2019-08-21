@@ -62,7 +62,7 @@ public class GetLCLikes {
     }
 
     private static List<Node> unseenFilteredResult(LCRequest request, int skip, int limit, GraphDatabaseService database, MetricRegistry metrics) {
-        String query = QueryUtils.constructFilteredQuery(QueryUtils.GET_LC_LIKES_GEO_UNSEEN_SORTED_BY_USER_ID, request.getFilter());
+        String query = QueryUtils.constructFilteredQuery(QueryUtils.GET_LC_LIKES_GEO_UNSEEN_SORTED_BY_USER_ID, request.getFilter(), false);
         List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), "n/a", skip, limit, database, metrics);
         List<Node> finalResult = new ArrayList<>(result.size());
         for (DistanceWrapper each : result) {
@@ -72,7 +72,7 @@ public class GetLCLikes {
     }
 
     private static List<Node> seenFilteredResult(LCRequest request, int skip, int limit, GraphDatabaseService database, MetricRegistry metrics) {
-        String query = QueryUtils.constructFilteredQuery(QueryUtils.GET_LC_LIKES_GEO_SEEN_SORTED_BY_USER_ID, request.getFilter());
+        String query = QueryUtils.constructFilteredQuery(QueryUtils.GET_LC_LIKES_GEO_SEEN_SORTED_BY_USER_ID, request.getFilter(), false);
         List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), "n/a", skip, limit, database, metrics);
         List<Node> finalResult = new ArrayList<>(result.size());
         for (DistanceWrapper each : result) {

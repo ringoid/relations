@@ -49,7 +49,7 @@ public class Discover {
                     targetSex = "male";
                 }
 
-                List<Node> unseen = unseen(request, targetSex, database, metrics);
+                List<Node> unseen = unseen(request, targetSex, false, database, metrics);
                 response.getNewFaces().addAll(QueryUtils.createProfileListWithResizedAndSortedPhotos(request.getResolution(), unseen, true, sourceUser, database, metrics));
 
                 int resultSize = request.getLimit();
@@ -59,7 +59,7 @@ public class Discover {
 
 
                 if (response.getNewFaces().size() < resultSize) {
-                    List<Node> seen = seen(sourceUser, request, targetSex, database, metrics);
+                    List<Node> seen = seen(sourceUser, request, targetSex, false, database, metrics);
                     if (seen.size() > resultSize) {
                         seen = seen.subList(0, resultSize);
                     }
@@ -69,6 +69,31 @@ public class Discover {
                 if (response.getNewFaces().size() > resultSize) {
                     response.setNewFaces(response.getNewFaces().subList(0, resultSize));
                 }
+
+                //dirty hack (remove after fixing bug with empty location on android)
+                if (response.getNewFaces().isEmpty()) {
+                    log.warn("request discover with Kiev location for userId [%s]", request.getUserId());
+                    unseen = unseen(request, targetSex, true, database, metrics);
+                    response.getNewFaces().addAll(QueryUtils.createProfileListWithResizedAndSortedPhotos(request.getResolution(), unseen, true, sourceUser, database, metrics));
+
+                    resultSize = request.getLimit();
+                    if (response.getNewFaces().isEmpty()) {
+                        resultSize = HARDCODED_MAX_FEED_NUM;
+                    }
+
+                    if (response.getNewFaces().size() < resultSize) {
+                        List<Node> seen = seen(sourceUser, request, targetSex, true, database, metrics);
+                        if (seen.size() > resultSize) {
+                            seen = seen.subList(0, resultSize);
+                        }
+                        response.getNewFaces().addAll(QueryUtils.createProfileListWithResizedAndSortedPhotos(request.getResolution(), seen, false, sourceUser, database, metrics));
+                    }
+
+                    if (response.getNewFaces().size() > resultSize) {
+                        response.setNewFaces(response.getNewFaces().subList(0, resultSize));
+                    }
+                }
+                //end of hack
 
             }
             tx.success();
@@ -164,9 +189,9 @@ public class Discover {
         }
     }
 
-    private static List<Node> seen(Node sourceNode, DiscoverRequest request, String targetSex, GraphDatabaseService database, MetricRegistry metrics) {
-        List<DistanceWrapper> onlineSeen = onlineSeenFilteredResult(request, targetSex, 1000, database, metrics);
-        List<DistanceWrapper> activeSeen = activeSeenFilteredResult(request, targetSex, 1000, database, metrics);
+    private static List<Node> seen(Node sourceNode, DiscoverRequest request, String targetSex, boolean useKievLocation, GraphDatabaseService database, MetricRegistry metrics) {
+        List<DistanceWrapper> onlineSeen = onlineSeenFilteredResult(request, targetSex, 1000, useKievLocation, database, metrics);
+        List<DistanceWrapper> activeSeen = activeSeenFilteredResult(request, targetSex, 1000, useKievLocation, database, metrics);
 
         Map<Long, List<DistanceWrapper>> onlineSeenDistanceGroup = groupByDistance(onlineSeen, 15_000L);
         sortDiscoverSeenGroups(sourceNode, onlineSeenDistanceGroup);
@@ -180,9 +205,9 @@ public class Discover {
         return finalResult;
     }
 
-    private static List<Node> unseen(DiscoverRequest request, String targetSex, GraphDatabaseService database, MetricRegistry metrics) {
-        List<DistanceWrapper> online = onlineUnseenFilteredResult(request, targetSex, database, metrics);
-        List<DistanceWrapper> active = activeUnseenFilteredResult(request, targetSex, database, metrics);
+    private static List<Node> unseen(DiscoverRequest request, String targetSex, boolean useKievLocation, GraphDatabaseService database, MetricRegistry metrics) {
+        List<DistanceWrapper> online = onlineUnseenFilteredResult(request, targetSex, useKievLocation, database, metrics);
+        List<DistanceWrapper> active = activeUnseenFilteredResult(request, targetSex, useKievLocation, database, metrics);
 
         Map<Long, List<DistanceWrapper>> onlineDistanceGroup = groupByDistance(online, 15_000L);
         sortDiscoverUnseenGroups(onlineDistanceGroup);
@@ -196,29 +221,29 @@ public class Discover {
         return finalResult;
     }
 
-    private static List<DistanceWrapper> onlineUnseenFilteredResult(DiscoverRequest request, String targetSex, GraphDatabaseService database, MetricRegistry metrics) {
-        String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ONLINE_USERS_GEO_NOT_SEEN_SORTED_BY_DISTANCE, request.getFilter());
+    private static List<DistanceWrapper> onlineUnseenFilteredResult(DiscoverRequest request, String targetSex, boolean useKievLocation, GraphDatabaseService database, MetricRegistry metrics) {
+        String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ONLINE_USERS_GEO_NOT_SEEN_SORTED_BY_DISTANCE, request.getFilter(), useKievLocation);
         List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), targetSex, 0, request.getLimit(), database, metrics);
         result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
         return result;
     }
 
-    private static List<DistanceWrapper> activeUnseenFilteredResult(DiscoverRequest request, String targetSex, GraphDatabaseService database, MetricRegistry metrics) {
-        String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ACTIVE_USERS_GEO_NOT_SEEN_SORTED_BY_DISTANCE, request.getFilter());
+    private static List<DistanceWrapper> activeUnseenFilteredResult(DiscoverRequest request, String targetSex, boolean useKievLocation, GraphDatabaseService database, MetricRegistry metrics) {
+        String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ACTIVE_USERS_GEO_NOT_SEEN_SORTED_BY_DISTANCE, request.getFilter(), useKievLocation);
         List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), targetSex, 0, request.getLimit(), database, metrics);
         result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
         return result;
     }
 
-    private static List<DistanceWrapper> onlineSeenFilteredResult(DiscoverRequest request, String targetSex, int limit, GraphDatabaseService database, MetricRegistry metrics) {
-        String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ONLINE_USERS_GEO_SEEN_SORTED_BY_DISTANCE, request.getFilter());
+    private static List<DistanceWrapper> onlineSeenFilteredResult(DiscoverRequest request, String targetSex, int limit, boolean useKievLocation, GraphDatabaseService database, MetricRegistry metrics) {
+        String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ONLINE_USERS_GEO_SEEN_SORTED_BY_DISTANCE, request.getFilter(), useKievLocation);
         List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), targetSex, 0, limit, database, metrics);
         result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
         return result;
     }
 
-    private static List<DistanceWrapper> activeSeenFilteredResult(DiscoverRequest request, String targetSex, int limit, GraphDatabaseService database, MetricRegistry metrics) {
-        String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ACTIVE_USERS_GEO_SEEN_SORTED_BY_DISTANCE, request.getFilter());
+    private static List<DistanceWrapper> activeSeenFilteredResult(DiscoverRequest request, String targetSex, int limit, boolean useKievLocation, GraphDatabaseService database, MetricRegistry metrics) {
+        String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ACTIVE_USERS_GEO_SEEN_SORTED_BY_DISTANCE, request.getFilter(), useKievLocation);
         List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), targetSex, 0, limit, database, metrics);
         result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
         return result;

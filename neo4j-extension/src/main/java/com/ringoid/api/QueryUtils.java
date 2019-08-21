@@ -196,9 +196,19 @@ public class QueryUtils {
             USER_ID.getPropertyName()//3
     );
 
-    public static String constructFilteredQuery(String baseQuery, Filter filter) {
+    public static String constructFilteredQuery(String baseQuery, Filter filter, boolean useKievLocation) {
         if (Objects.isNull(filter)) {
-            return baseQuery.replaceFirst("AGE_FILTER DISTANCE_FILTER", " ");
+            String finalResult = baseQuery.replaceFirst("AGE_FILTER DISTANCE_FILTER", " ");
+            if (useKievLocation) {
+                finalResult = finalResult.replaceAll(
+                        String.format("distance(sourceUser.%s, target.%s)",
+                                LOCATION.getPropertyName(), LOCATION.getPropertyName()),
+
+                        String.format("distance(point({longitude: 30.523550, latitude: 50.450441}), target.%s)",
+                                LOCATION.getPropertyName())
+                );
+            }
+            return finalResult;
         } else {
             String agePart = "";
             if (Objects.nonNull(filter.getMinAge())) {
@@ -217,18 +227,29 @@ public class QueryUtils {
             }
 
             //return final result
+            String finalResult;
             if (Objects.equals("", agePart) && Objects.equals("", distancePart)) {
-                return baseQuery.replaceFirst("AGE_FILTER DISTANCE_FILTER", " ");
+                finalResult = baseQuery.replaceFirst("AGE_FILTER DISTANCE_FILTER", " ");
             } else if (!Objects.equals("", agePart) && Objects.equals("", distancePart)) {
                 String tmpStr = baseQuery.replaceFirst(" DISTANCE_FILTER", "");
-                return tmpStr.replaceFirst("AGE_FILTER", agePart + " ");
+                finalResult = tmpStr.replaceFirst("AGE_FILTER", agePart + " ");
             } else if (Objects.equals("", agePart) && !Objects.equals("", distancePart)) {
                 String tmpStr = baseQuery.replaceFirst("AGE_FILTER ", "");
-                return tmpStr.replaceFirst("DISTANCE_FILTER", distancePart + " ");
+                finalResult = tmpStr.replaceFirst("DISTANCE_FILTER", distancePart + " ");
             } else {
                 String tmpStr = baseQuery.replaceFirst("AGE_FILTER", agePart);
-                return tmpStr.replaceFirst("DISTANCE_FILTER", distancePart + " ");
+                finalResult = tmpStr.replaceFirst("DISTANCE_FILTER", distancePart + " ");
             }
+            if (useKievLocation) {
+                finalResult = finalResult.replaceAll(
+                        String.format("distance(sourceUser.%s, target.%s)",
+                                LOCATION.getPropertyName(), LOCATION.getPropertyName()),
+
+                        String.format("distance(point({longitude: 30.523550, latitude: 50.450441}), target.%s)",
+                                LOCATION.getPropertyName())
+                );
+            }
+            return finalResult;
         }
     }
 

@@ -65,7 +65,7 @@ public class GetLCMessages {
     }
 
     private static List<Node> allMatchesAndMessages(LCRequest request, GraphDatabaseService database, MetricRegistry metrics) {
-        String query = QueryUtils.constructFilteredQuery(QueryUtils.GET_LC_MESSAGES_AND_MATCHES_GEO, request.getFilter());
+        String query = QueryUtils.constructFilteredQuery(QueryUtils.GET_LC_MESSAGES_AND_MATCHES_GEO, request.getFilter(), false);
         List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), "n/a", -1, -1, database, metrics);
         List<Node> finalResult = new ArrayList<>(result.size());
         for (DistanceWrapper each : result) {
