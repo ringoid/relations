@@ -38,6 +38,7 @@ public enum PersonProperties {
     TIKTOK("tikTok"),
     WHERE_I_LIVE("where_i_live"),
     WHERE_I_FROM("where_i_from"),
+    STATUS_TEXT("status_text"),
 
     PREPARED_NF_UNIX_TIME_IN_MILLIS("prepare_nf_time");
 

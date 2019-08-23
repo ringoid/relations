@@ -40,6 +40,7 @@ public class Profile {
     private String whereLive;
     private String whereFrom;
     private boolean unseen;
+    private String statusText;
 
     public Profile() {
         this.photos = new ArrayList<>();
@@ -284,5 +285,13 @@ public class Profile {
 
     public void setUnseen(boolean unseen) {
         this.unseen = unseen;
+    }
+
+    public String getStatusText() {
+        return statusText;
+    }
+
+    public void setStatusText(String statusText) {
+        this.statusText = statusText;
     }
 }

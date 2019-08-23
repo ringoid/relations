@@ -45,6 +45,7 @@ import static com.ringoid.PersonProperties.SETTINGS_NEW_MESSAGE_PUSH;
 import static com.ringoid.PersonProperties.SETTINGS_PUSH;
 import static com.ringoid.PersonProperties.SETTINGS_TIMEZONE;
 import static com.ringoid.PersonProperties.SEX;
+import static com.ringoid.PersonProperties.STATUS_TEXT;
 import static com.ringoid.PersonProperties.TIKTOK;
 import static com.ringoid.PersonProperties.TRANSPORT;
 import static com.ringoid.PersonProperties.USER_ID;
@@ -61,10 +62,10 @@ public class AuthUtilsInternaly {
             String.format(
                     "MATCH (n:%s {%s: $userIdValue}) " +
                             "SET n.%s = $property, n.%s = $transport, n.%s = $income, n.%s = $height, n.%s = $educationLevel, n.%s = $hairColor, n.%s = $children, " +
-                            "n.%s = $name, n.%s = $jobTitle, n.%s = $company, n.%s = $education, n.%s = $about, n.%s = $instagram, n.%s = $tikTok, n.%s = $whereLive, n.%s = $whereFrom",
+                            "n.%s = $name, n.%s = $jobTitle, n.%s = $company, n.%s = $education, n.%s = $about, n.%s = $instagram, n.%s = $tikTok, n.%s = $whereLive, n.%s = $whereFrom, n.%s = $statusText",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
                     PROPERTY.getPropertyName(), TRANSPORT.getPropertyName(), INCOME.getPropertyName(), HEIGHT.getPropertyName(), EDU_LEVEL.getPropertyName(), HAIR_COLOR.getPropertyName(), CHILDREN.getPropertyName(),
-                    NAME.getPropertyName(), JOB_TITLE.getPropertyName(), COMPANY.getPropertyName(), EDUCATION_TEXT.getPropertyName(), ABOUT.getPropertyName(), INSTAGRAM.getPropertyName(), TIKTOK.getPropertyName(), WHERE_I_LIVE.getPropertyName(), WHERE_I_FROM.getPropertyName()
+                    NAME.getPropertyName(), JOB_TITLE.getPropertyName(), COMPANY.getPropertyName(), EDUCATION_TEXT.getPropertyName(), ABOUT.getPropertyName(), INSTAGRAM.getPropertyName(), TIKTOK.getPropertyName(), WHERE_I_LIVE.getPropertyName(), WHERE_I_FROM.getPropertyName(), STATUS_TEXT.getPropertyName()
             );
 
     private final static String HIDE_PROFILE =
@@ -220,6 +221,7 @@ public class AuthUtilsInternaly {
         parameters.put("tikTok", event.getTikTok());
         parameters.put("whereLive", event.getWhereLive());
         parameters.put("whereFrom", event.getWhereFrom());
+        parameters.put("statusText", event.getStatusText());
 
         database.execute(UPDATE_PROFILE, parameters);
     }

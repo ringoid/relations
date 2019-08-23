@@ -49,6 +49,11 @@ public class QueryUtils {
 
     private static final Log log = LoggerFactory.getLogger(QueryUtils.class);
 
+    static final String LOCATION_EXISTS = String.format(
+            "MATCH (sourceUser:%s {%s:$sourceUserId}) return exists(sourceUser.%s) as lexists",
+            PERSON.getLabelName(), USER_ID.getPropertyName(), LOCATION.getPropertyName()
+    );
+
     //$sourceUserId, $targetSex, $limitParam, onlineTime
     static final String DISCOVER_ONLINE_USERS_GEO_NOT_SEEN_SORTED_BY_DISTANCE = String.format(
             "MATCH (sourceUser:%s {%s:$sourceUserId}) WITH sourceUser " +//1
@@ -197,16 +202,19 @@ public class QueryUtils {
     );
 
     public static String constructFilteredQuery(String baseQuery, Filter filter, boolean useKievLocation) {
+        log.info("constructFilteredQuery with useKievLocation : %s", Boolean.toString(useKievLocation));
         if (Objects.isNull(filter)) {
             String finalResult = baseQuery.replaceFirst("AGE_FILTER DISTANCE_FILTER", " ");
             if (useKievLocation) {
+                log.info("constructFilteredQuery query before : %s", finalResult);
                 finalResult = finalResult.replaceAll(
-                        String.format("distance(sourceUser.%s, target.%s)",
+                        String.format("distance\\(sourceUser\\.%s, target\\.%s\\)",
                                 LOCATION.getPropertyName(), LOCATION.getPropertyName()),
 
                         String.format("distance(point({longitude: 30.523550, latitude: 50.450441}), target.%s)",
                                 LOCATION.getPropertyName())
                 );
+                log.info("constructFilteredQuery query after : %s", finalResult);
             }
             return finalResult;
         } else {
@@ -241,13 +249,15 @@ public class QueryUtils {
                 finalResult = tmpStr.replaceFirst("DISTANCE_FILTER", distancePart + " ");
             }
             if (useKievLocation) {
+                log.info("constructFilteredQuery query before : %s", finalResult);
                 finalResult = finalResult.replaceAll(
-                        String.format("distance(sourceUser.%s, target.%s)",
+                        String.format("distance\\(sourceUser\\.%s, target\\.%s\\)",
                                 LOCATION.getPropertyName(), LOCATION.getPropertyName()),
 
                         String.format("distance(point({longitude: 30.523550, latitude: 50.450441}), target.%s)",
                                 LOCATION.getPropertyName())
                 );
+                log.info("constructFilteredQuery query after : %s", finalResult);
             }
             return finalResult;
         }
@@ -262,6 +272,20 @@ public class QueryUtils {
             result = (Long) queryResult.next().get("num");
         }
         return result.intValue();
+    }
+
+    public static boolean locationExists(String sourceUserId, GraphDatabaseService database, MetricRegistry metrics) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("sourceUserId", sourceUserId);
+        log.info("execute query : %s", LOCATION_EXISTS);
+        log.info("with params : sourceUserId : %s", sourceUserId);
+        Result queryResult = database.execute(LOCATION_EXISTS, params, 10L, TimeUnit.SECONDS);
+        while (queryResult.hasNext()) {
+            Map<String, Object> resultMap = queryResult.next();
+            boolean locationExist = (Boolean) resultMap.getOrDefault("lexists", false);
+            return locationExist;
+        }
+        return false;
     }
 
     public static List<DistanceWrapper> execute(String query, String sourceUserId, String targetSex, int skip, int limit,

@@ -49,7 +49,9 @@ public class Discover {
                     targetSex = "male";
                 }
 
-                List<Node> unseen = unseen(request, targetSex, false, database, metrics);
+                boolean useKievLocation = !QueryUtils.locationExists(request.getUserId(), database, metrics);
+
+                List<Node> unseen = unseen(request, targetSex, useKievLocation, database, metrics);
                 response.getNewFaces().addAll(QueryUtils.createProfileListWithResizedAndSortedPhotos(request.getResolution(), unseen, true, sourceUser, database, metrics));
 
                 int resultSize = request.getLimit();
@@ -59,7 +61,7 @@ public class Discover {
 
 
                 if (response.getNewFaces().size() < resultSize) {
-                    List<Node> seen = seen(sourceUser, request, targetSex, false, database, metrics);
+                    List<Node> seen = seen(sourceUser, request, targetSex, useKievLocation, database, metrics);
                     if (seen.size() > resultSize) {
                         seen = seen.subList(0, resultSize);
                     }
@@ -70,32 +72,8 @@ public class Discover {
                     response.setNewFaces(response.getNewFaces().subList(0, resultSize));
                 }
 
-                //dirty hack (remove after fixing bug with empty location on android)
-                if (response.getNewFaces().isEmpty()) {
-                    log.warn("request discover with Kiev location for userId [%s]", request.getUserId());
-                    unseen = unseen(request, targetSex, true, database, metrics);
-                    response.getNewFaces().addAll(QueryUtils.createProfileListWithResizedAndSortedPhotos(request.getResolution(), unseen, true, sourceUser, database, metrics));
-
-                    resultSize = request.getLimit();
-                    if (response.getNewFaces().isEmpty()) {
-                        resultSize = HARDCODED_MAX_FEED_NUM;
-                    }
-
-                    if (response.getNewFaces().size() < resultSize) {
-                        List<Node> seen = seen(sourceUser, request, targetSex, true, database, metrics);
-                        if (seen.size() > resultSize) {
-                            seen = seen.subList(0, resultSize);
-                        }
-                        response.getNewFaces().addAll(QueryUtils.createProfileListWithResizedAndSortedPhotos(request.getResolution(), seen, false, sourceUser, database, metrics));
-                    }
-
-                    if (response.getNewFaces().size() > resultSize) {
-                        response.setNewFaces(response.getNewFaces().subList(0, resultSize));
-                    }
-                }
-                //end of hack
-
             }
+
             tx.success();
         }
         return response;

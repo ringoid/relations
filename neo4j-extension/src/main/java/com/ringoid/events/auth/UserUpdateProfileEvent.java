@@ -23,6 +23,7 @@ public class UserUpdateProfileEvent extends BaseEvent {
     private String tikTok;
     private String whereLive;
     private String whereFrom;
+    private String statusText;
 
     public String getUserId() {
         return userId;
@@ -158,5 +159,13 @@ public class UserUpdateProfileEvent extends BaseEvent {
 
     public void setWhereFrom(String whereFrom) {
         this.whereFrom = whereFrom;
+    }
+
+    public String getStatusText() {
+        return statusText;
+    }
+
+    public void setStatusText(String statusText) {
+        this.statusText = statusText;
     }
 }

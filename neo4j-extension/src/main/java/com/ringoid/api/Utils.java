@@ -46,6 +46,7 @@ import static com.ringoid.PersonProperties.NAME;
 import static com.ringoid.PersonProperties.PROPERTY;
 import static com.ringoid.PersonProperties.SETTINGS_LOCALE;
 import static com.ringoid.PersonProperties.SEX;
+import static com.ringoid.PersonProperties.STATUS_TEXT;
 import static com.ringoid.PersonProperties.TIKTOK;
 import static com.ringoid.PersonProperties.TRANSPORT;
 import static com.ringoid.PersonProperties.WHERE_I_FROM;
@@ -131,6 +132,9 @@ public class Utils {
 
         String whereIFrom = (String) node.getProperty(WHERE_I_FROM.getPropertyName(), "unknown");
         prof.setWhereFrom(whereIFrom);
+
+        String statusText = (String) node.getProperty(STATUS_TEXT.getPropertyName(), "unknown");
+        prof.setStatusText(statusText);
 
         return prof;
     }
