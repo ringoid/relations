@@ -29,7 +29,7 @@ public class Discover {
     private final static int HARDCODED_MAX_FEED_NUM = 100;
 
     public static NewFacesResponse discover(DiscoverRequest request, GraphDatabaseService database, MetricRegistry metrics) {
-        log.info("handle discover request %s", request);
+//        log.info("handle discover request %s", request);
         NewFacesResponse response = new NewFacesResponse();
         try (Transaction tx = database.beginTx()) {
             Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), request.getUserId());

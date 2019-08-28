@@ -34,14 +34,14 @@ public class GetLCLikes {
             if (request.getLastActionTime() <= actionTime) {
 
                 List<Node> unseen = unseenFilteredResult(request, 0, request.getLimit(), database, metrics);
-                log.info("unseen request return [%s] nodes", unseen.size());
+//                log.info("unseen request return [%s] nodes", unseen.size());
                 unseen = QueryUtils.sortGetLCUnseenPartProfiles(sourceUser, unseen);
 
                 response.getProfiles().addAll(QueryUtils.createProfileListWithResizedAndSortedPhotos(request.getResolution(), unseen, true, sourceUser, database, metrics));
 
                 if (response.getProfiles().size() < request.getLimit()) {
                     List<Node> seen = seenFilteredResult(request, 0, request.getLimit(), database, metrics);
-                    log.info("seen request return [%s] nodes", seen.size());
+//                    log.info("seen request return [%s] nodes", seen.size());
                     seen = QueryUtils.sortGetLCSeenPartProfiles(sourceUser, seen);
 
                     response.getProfiles().addAll(QueryUtils.createProfileListWithResizedAndSortedPhotos(request.getResolution(), seen, false, sourceUser, database, metrics));
@@ -52,7 +52,7 @@ public class GetLCLikes {
                 }
 
                 int countAll = QueryUtils.count(QueryUtils.GET_LC_LIKES_NUM, request.getUserId(), database, metrics);
-                log.info("count all request return [%s] nodes", unseen.size());
+//                log.info("count all request return [%s] nodes", unseen.size());
                 response.setAllProfilesNum(countAll);
             }
 
