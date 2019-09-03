@@ -299,11 +299,9 @@ public class QueryUtils {
 
     public static List<DistanceWrapper> execute(String query, String sourceUserId, String targetSex, int skip, int limit,
                                                 GraphDatabaseService database, MetricRegistry metrics) {
-//        log.info("execute query : %s", query);
         long onlineTime = System.currentTimeMillis() - 86_400_000L;//24h ago
         long activeTime = System.currentTimeMillis() - 3 * 86_400_000L;//3d ago
-//        log.info("with params : sourceUserId : %s, targetSex : %s, skipParam : %s, limitParam : %s, onlineTime : %s, activeTime : %s",
-//                sourceUserId, targetSex, Integer.toString(skip), Integer.toString(limit), Long.toString(onlineTime), Long.toString(activeTime));
+//        log.info("execute query for userId [%s] : %s\nwith params : sourceUserId : %s, targetSex : %s, skipParam : %s, limitParam : %s, onlineTime : %s, activeTime : %s", sourceUserId, query, sourceUserId, targetSex, Integer.toString(skip), Integer.toString(limit), Long.toString(onlineTime), Long.toString(activeTime));
         List<DistanceWrapper> result = new ArrayList<>();
         Map<String, Object> params = new HashMap<>();
         params.put("sourceUserId", sourceUserId);
