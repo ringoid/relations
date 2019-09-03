@@ -17,6 +17,7 @@ build-go:
 	GOOS=linux go build discover-function/discover.go
 	GOOS=linux go build get-lc-likes/get_lc_likes.go
 	GOOS=linux go build get-lc-messages/get_lc_messages.go
+	GOOS=linux go build how-user-see-get-lc-likes/how_user_see_get_lc_likes.go
 
 zip-go: build-go
 	@echo '--- Zip Go modules ---'
@@ -33,6 +34,7 @@ zip-go: build-go
 	zip discover.zip ./discover
 	zip get_lc_likes.zip ./get_lc_likes
 	zip get_lc_messages.zip ./get_lc_messages
+	zip how_user_see_get_lc_likes.zip ./how_user_see_get_lc_likes
 
 buildgradle:
 	@echo '--- Building kinesis-consumer-relationships function ---'
@@ -97,4 +99,6 @@ clean:
 	rm -rf get_lc_messages.zip
 	rm -rf get_lc_likes
 	rm -rf get_lc_likes.zip
+	rm -rf how_user_see_get_lc_likes
+	rm -rf how_user_see_get_lc_likes.zip
 

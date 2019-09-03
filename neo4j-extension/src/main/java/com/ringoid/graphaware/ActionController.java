@@ -341,6 +341,15 @@ public class ActionController {
         return objectMapper.writeValueAsString(response);
     }
 
+    @RequestMapping(value = "/how_user_see_get_lc_likes", method = RequestMethod.GET)
+    @ResponseBody
+    public String howUserSeeGetLcLikes(@RequestBody String body) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        LCRequest request = objectMapper.readValue(body, LCRequest.class);
+        LCResponse response = GetLCLikes.howUserSeeLikes(request, database, metrics);
+        return objectMapper.writeValueAsString(response);
+    }
+
     @RequestMapping(value = "/get_lc_messages", method = RequestMethod.GET)
     @ResponseBody
     public String getLcMessages(@RequestBody String body) throws IOException {
@@ -461,7 +470,7 @@ public class ActionController {
                 batch.clear();
             }
 
-            log.info("(extension-report) complete handle %s actions in %s millis", actionCounter, (System.currentTimeMillis() - start));
+            log.info("(extension-report-complete-handle) complete handle %s actions in %s millis", actionCounter, (System.currentTimeMillis() - start));
         } catch (IOException e) {
             throw new RuntimeException(e.getCause());
         }
@@ -476,7 +485,7 @@ public class ActionController {
                     doStuff(each, objectMapper);
                 }
                 tx.success();
-                log.info("(extension-report) successfully handle %s actions in %s millis", list.size(), (System.currentTimeMillis() - start));
+                log.info("(extension-report-successfully-commit-tx) successfully handle %s actions in %s millis", list.size(), (System.currentTimeMillis() - start));
                 return;
             } catch (DeadlockDetectedException ex) {
                 log.warn("catch a DeadlockDetectedException on %s retries, lets sleep for %s millis", i, BACKOFF);

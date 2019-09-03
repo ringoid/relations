@@ -34,11 +34,20 @@ import java.util.concurrent.TimeUnit;
 
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
+import static com.ringoid.PersonProperties.CHILDREN;
+import static com.ringoid.PersonProperties.COMPANY;
+import static com.ringoid.PersonProperties.EDUCATION_TEXT;
+import static com.ringoid.PersonProperties.EDU_LEVEL;
+import static com.ringoid.PersonProperties.INCOME;
+import static com.ringoid.PersonProperties.JOB_TITLE;
 import static com.ringoid.PersonProperties.LAST_ONLINE_TIME;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
 import static com.ringoid.PersonProperties.LOCATION;
+import static com.ringoid.PersonProperties.NAME;
 import static com.ringoid.PersonProperties.SEX;
+import static com.ringoid.PersonProperties.STATUS_TEXT;
 import static com.ringoid.PersonProperties.USER_ID;
+import static com.ringoid.PersonProperties.WHERE_I_LIVE;
 import static com.ringoid.PersonProperties.YEAR;
 import static com.ringoid.PhotoProperties.ONLY_OWNER_CAN_SEE;
 import static com.ringoid.api.Utils.enrichProfile;
@@ -490,7 +499,126 @@ public class QueryUtils {
         return result;
     }
 
-    public static List<Node> sortGetLCUnseenPartProfiles(Node sourceUser, List<Node> tmpResult) {
+    public static List<Node> sortLCUnseenPartProfilesForWomen(Node sourceUser, List<Node> tmpResult) {
+        Collections.sort(tmpResult, new Comparator<Node>() {
+            @Override
+            public int compare(Node node1, Node node2) {
+                return countSortingScores(node1, null).compareTo(countSortingScores(node2, null));
+            }
+        });
+
+        return tmpResult;
+    }
+
+    public static Integer countSortingScores(Node node, Profile profile) {
+        int scores = 0;
+        int totalChatCount = Utils.countConversationWithMessagesMoreThan(node, 5);
+        scores += 4 * totalChatCount;
+
+        if (Objects.nonNull(profile)) {
+            profile.setTotalChatCount(totalChatCount);
+            profile.setTotalChatCountScores(4 * totalChatCount);
+        }
+
+        int totalMatchesCount = Utils.countMatchesAndChats(node);
+        scores += totalMatchesCount;
+
+        if (Objects.nonNull(profile)) {
+            profile.setTotalMatchesCount(totalMatchesCount);
+            profile.setTotalMatchesCountScores(totalMatchesCount);
+        }
+
+        int photos = Utils.countPhotos(node);
+        if (photos > 0) {
+            Double tmp = 10 * Math.log10(new Double(photos));
+            scores += tmp.intValue();
+            if (Objects.nonNull(profile)) {
+                profile.setPhotosCount(photos);
+                profile.setPhotosCountScores(tmp.intValue());
+            }
+        }
+
+
+        int income = (Integer) node.getProperty(INCOME.getPropertyName(), 0);
+        if (income != 0) {
+            scores += 2;
+            if (Objects.nonNull(profile)) {
+                profile.setIncomeScores(2);
+            }
+        }
+
+        int children = (Integer) node.getProperty(CHILDREN.getPropertyName(), 0);
+        if (children != 0) {
+            scores += 3;
+            if (Objects.nonNull(profile)) {
+                profile.setChildrenScores(3);
+            }
+        }
+
+        int eduLevel = (Integer) node.getProperty(EDU_LEVEL.getPropertyName(), 0);
+        if (eduLevel != 0) {
+            scores += 1;
+            if (Objects.nonNull(profile)) {
+                profile.setEduScores(1);
+            }
+        }
+
+        String jobTitle = (String) node.getProperty(JOB_TITLE.getPropertyName(), "unknown");
+        if (!Objects.equals("unknown", jobTitle)) {
+            scores += 2;
+            if (Objects.nonNull(profile)) {
+                profile.setJobTitleScore(2);
+            }
+        }
+
+        String company = (String) node.getProperty(COMPANY.getPropertyName(), "unknown");
+        if (!Objects.equals("unknown", company)) {
+            scores += 2;
+            if (Objects.nonNull(profile)) {
+                profile.setCompanyScores(2);
+            }
+        }
+
+        String educationText = (String) node.getProperty(EDUCATION_TEXT.getPropertyName(), "unknown");
+        if (!Objects.equals("unknown", educationText)) {
+            scores += 1;
+            if (Objects.nonNull(profile)) {
+                profile.setEduScores(profile.getEduScores() + 1);
+            }
+        }
+
+        String statusText = (String) node.getProperty(STATUS_TEXT.getPropertyName(), "unknown");
+        if (!Objects.equals("unknown", statusText)) {
+            scores += 1;
+            if (Objects.nonNull(profile)) {
+                profile.setStatusScores(1);
+            }
+        }
+
+        String name = (String) node.getProperty(NAME.getPropertyName(), "unknown");
+        if (!Objects.equals("unknown", name)) {
+            scores += 3;
+            if (Objects.nonNull(profile)) {
+                profile.setNameScores(3);
+            }
+        }
+
+        String whereILive = (String) node.getProperty(WHERE_I_LIVE.getPropertyName(), "unknown");
+        if (!Objects.equals("unknown", whereILive)) {
+            scores += 1;
+            if (Objects.nonNull(profile)) {
+                profile.setCityScores(1);
+            }
+        }
+
+        if (Objects.nonNull(profile)) {
+            profile.setTotalScores(scores);
+        }
+
+        return Integer.valueOf(scores);
+    }
+
+    public static List<Node> sortLCUnseenPartProfilesForMen(Node sourceUser, List<Node> tmpResult) {
         Collections.sort(tmpResult, new Comparator<Node>() {
             @Override
             public int compare(Node node1, Node node2) {
@@ -692,4 +820,5 @@ public class QueryUtils {
         });
         return tmpResult;
     }
+
 }

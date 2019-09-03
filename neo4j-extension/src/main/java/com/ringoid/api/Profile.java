@@ -42,6 +42,27 @@ public class Profile {
     private boolean unseen;
     private String statusText;
 
+    //These properties needs for debug mode
+    private int totalScores;
+
+    private int totalChatCount;
+    private int totalChatCountScores;
+
+    private int totalMatchesCount;
+    private int totalMatchesCountScores;
+
+    private int photosCount;
+    private int photosCountScores;
+
+    private int incomeScores;
+    private int childrenScores;
+    private int eduScores;
+    private int cityScores;
+    private int jobTitleScore;
+    private int companyScores;
+    private int statusScores;
+    private int nameScores;
+
     public Profile() {
         this.photos = new ArrayList<>();
         this.messages = new ArrayList<>();
@@ -293,5 +314,125 @@ public class Profile {
 
     public void setStatusText(String statusText) {
         this.statusText = statusText;
+    }
+
+    public int getTotalChatCount() {
+        return totalChatCount;
+    }
+
+    public void setTotalChatCount(int totalChatCount) {
+        this.totalChatCount = totalChatCount;
+    }
+
+    public int getTotalChatCountScores() {
+        return totalChatCountScores;
+    }
+
+    public void setTotalChatCountScores(int totalChatCountScores) {
+        this.totalChatCountScores = totalChatCountScores;
+    }
+
+    public int getTotalMatchesCount() {
+        return totalMatchesCount;
+    }
+
+    public void setTotalMatchesCount(int totalMatchesCount) {
+        this.totalMatchesCount = totalMatchesCount;
+    }
+
+    public int getTotalMatchesCountScores() {
+        return totalMatchesCountScores;
+    }
+
+    public void setTotalMatchesCountScores(int totalMatchesCountScores) {
+        this.totalMatchesCountScores = totalMatchesCountScores;
+    }
+
+    public int getPhotosCount() {
+        return photosCount;
+    }
+
+    public void setPhotosCount(int photosCount) {
+        this.photosCount = photosCount;
+    }
+
+    public int getPhotosCountScores() {
+        return photosCountScores;
+    }
+
+    public void setPhotosCountScores(int photosCountScores) {
+        this.photosCountScores = photosCountScores;
+    }
+
+    public int getIncomeScores() {
+        return incomeScores;
+    }
+
+    public void setIncomeScores(int incomeScores) {
+        this.incomeScores = incomeScores;
+    }
+
+    public int getChildrenScores() {
+        return childrenScores;
+    }
+
+    public void setChildrenScores(int childrenScores) {
+        this.childrenScores = childrenScores;
+    }
+
+    public int getEduScores() {
+        return eduScores;
+    }
+
+    public void setEduScores(int eduScores) {
+        this.eduScores = eduScores;
+    }
+
+    public int getCityScores() {
+        return cityScores;
+    }
+
+    public void setCityScores(int cityScores) {
+        this.cityScores = cityScores;
+    }
+
+    public int getJobTitleScore() {
+        return jobTitleScore;
+    }
+
+    public void setJobTitleScore(int jobTitleScore) {
+        this.jobTitleScore = jobTitleScore;
+    }
+
+    public int getCompanyScores() {
+        return companyScores;
+    }
+
+    public void setCompanyScores(int companyScores) {
+        this.companyScores = companyScores;
+    }
+
+    public int getStatusScores() {
+        return statusScores;
+    }
+
+    public void setStatusScores(int statusScores) {
+        this.statusScores = statusScores;
+    }
+
+    public int getNameScores() {
+        return nameScores;
+    }
+
+    public void setNameScores(int nameScores) {
+        this.nameScores = nameScores;
+    }
+
+    public int getTotalScores() {
+        return totalScores;
+    }
+
+    public void setTotalScores(int totalScores) {
+        this.totalScores = totalScores;
     }
 }

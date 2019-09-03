@@ -835,6 +835,51 @@ public class Utils {
         return result;
     }
 
+    public static int countConversationWithMessagesMoreThan(Node sourceNode, int limit) {
+        int result = 0;
+        Iterable<Relationship> takePart = sourceNode.getRelationships(
+                RelationshipType.withName(Relationships.TAKE_PART_IN_CONVERSATION.name()),
+                Direction.OUTGOING);
+        for (Relationship out : takePart) {
+            Node conversationNode = out.getOtherNode(sourceNode);
+            if (conversationNode.hasLabel(Label.label(Labels.CONVERSATION.getLabelName()))) {
+                List<Node> fullConversation = new ArrayList<>();
+                fullConversation = UtilsInternaly.getFullConversation(conversationNode, fullConversation);
+                if (fullConversation.size() >= limit) {
+                    result++;
+                }
+            }
+        }
+        return result;
+    }
+
+    public static int countMatchesAndChats(Node sourceNode) {
+        int result = 0;
+        Iterable<Relationship> matches = sourceNode.getRelationships(RelationshipType.withName(Relationships.MATCH.name()));
+        Iterable<Relationship> chats = sourceNode.getRelationships(
+                RelationshipType.withName(Relationships.TAKE_PART_IN_CONVERSATION.name()),
+                Direction.OUTGOING);
+        for (Relationship each : matches) {
+            result++;
+        }
+        for (Relationship each : chats) {
+            result++;
+        }
+        return result;
+    }
+
+    public static int countPhotos(Node sourceNode) {
+        int result = 0;
+        for (Relationship each : sourceNode.getRelationships(Direction.OUTGOING, RelationshipType.withName(Relationships.UPLOAD_PHOTO.name()))) {
+            Node eachPhoto = each.getOtherNode(sourceNode);
+            if (Objects.nonNull(eachPhoto) &&
+                    !((Boolean) eachPhoto.getProperty(PhotoProperties.ONLY_OWNER_CAN_SEE.getPropertyName(), false))) {
+                result++;
+            }
+        }
+        return result;
+    }
+
     public static List<Message> messages(Node sourceNode, Node withHim) {
         List<Message> result = new ArrayList<>();
 

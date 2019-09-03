@@ -77,6 +77,10 @@ Mappings:
       test: test-get-lc-messages-relationships
       stage: stage-get-lc-messages-relationships
       prod: prod-get-lc-messages-relationships
+    HowUserSeeGetLcLikesFunction:
+      test: test-how-user-see-get-lc-likes-relationships
+      stage: stage-how-user-see-get-lc-likes-relationships
+      prod: prod-how-user-see-get-lc-likes-relationships
 
   BotSqsResourcesName:
     BotSqsQueue:
@@ -184,6 +188,17 @@ Resources:
       CodeUri: ./get_lc_likes.zip
       FunctionName: !FindInMap [FunctionName, GetLcLikesFunction, !Ref Env]
       Description: GetLC likes Relationsips function
+      Policies:
+        - SecretsManagerReadWrite
+
+  HowUserSeeGetLcLikesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: how_user_see_get_lc_likes
+      CodeUri: ./how_user_see_get_lc_likes.zip
+      FunctionName: !FindInMap [FunctionName, HowUserSeeGetLcLikesFunction, !Ref Env]
+      Description: How user see GetLC likes Relationsips function
       Policies:
         - SecretsManagerReadWrite
 

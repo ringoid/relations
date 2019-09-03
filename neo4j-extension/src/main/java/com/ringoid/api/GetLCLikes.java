@@ -14,10 +14,23 @@ import java.util.Objects;
 
 import static com.ringoid.Labels.PERSON;
 import static com.ringoid.PersonProperties.LAST_ACTION_TIME;
+import static com.ringoid.PersonProperties.SEX;
 import static com.ringoid.PersonProperties.USER_ID;
 
 public class GetLCLikes {
     private static final Log log = LoggerFactory.getLogger(GetLCLikes.class);
+
+    public static LCResponse howUserSeeLikes(LCRequest request, GraphDatabaseService database, MetricRegistry metrics) {
+        LCResponse response = likesYou(request, database, metrics);
+        try (Transaction tx = database.beginTx()) {
+            for (Profile each : response.getProfiles()) {
+                Node node = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), each.getUserId());
+                QueryUtils.countSortingScores(node, each);
+            }
+            tx.success();
+        }
+        return response;
+    }
 
     public static LCResponse likesYou(LCRequest request, GraphDatabaseService database, MetricRegistry metrics) {
         LCResponse response = new LCResponse();
@@ -33,9 +46,15 @@ public class GetLCLikes {
             response.setLastActionTime(actionTime);
             if (request.getLastActionTime() <= actionTime) {
 
+                String sex = (String) sourceUser.getProperty(SEX.getPropertyName(), "male");
+
                 List<Node> unseen = unseenFilteredResult(request, 0, request.getLimit(), database, metrics);
 //                log.info("unseen request return [%s] nodes", unseen.size());
-                unseen = QueryUtils.sortGetLCUnseenPartProfiles(sourceUser, unseen);
+                if (Objects.equals("male", sex)) {
+                    unseen = QueryUtils.sortLCUnseenPartProfilesForMen(sourceUser, unseen);
+                } else {
+                    unseen = QueryUtils.sortLCUnseenPartProfilesForWomen(sourceUser, unseen);
+                }
 
                 response.getProfiles().addAll(QueryUtils.createProfileListWithResizedAndSortedPhotos(request.getResolution(), unseen, true, sourceUser, database, metrics));
 

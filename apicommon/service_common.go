@@ -21,19 +21,20 @@ var AwsDynamoDbClient *dynamodb.DynamoDB
 var AlreadyStartedPreparedProcessTable string
 
 const (
-	ActionExtensionSuffix             = ":7474/graphaware/actions"
-	NewFacesExtensionSuffix           = ":7474/graphaware/new_faces"
-	PrepareNewFacesExtensionSuffix    = ":7474/graphaware/prepare_new_faces"
-	LikesYouExtensionSuffix           = ":7474/graphaware/likes_you"
-	MatchYouExtensionSuffix           = ":7474/graphaware/matches"
-	MessageYouExtensionSuffix         = ":7474/graphaware/messages"
-	ReadyForPushExtensionSuffix       = ":7474/graphaware/ready_for_push"
-	FetchForConversionExtensionSuffix = ":7474/graphaware/fetch_for_convertion"
-	LMHISExtensionSuffix              = ":7474/graphaware/lmhis"
-	ChatExtensionSuffix               = ":7474/graphaware/chat"
-	DiscoverExtensionSuffix           = ":7474/graphaware/discover"
+	ActionExtensionSuffix               = ":7474/graphaware/actions"
+	NewFacesExtensionSuffix             = ":7474/graphaware/new_faces"
+	PrepareNewFacesExtensionSuffix      = ":7474/graphaware/prepare_new_faces"
+	LikesYouExtensionSuffix             = ":7474/graphaware/likes_you"
+	MatchYouExtensionSuffix             = ":7474/graphaware/matches"
+	MessageYouExtensionSuffix           = ":7474/graphaware/messages"
+	ReadyForPushExtensionSuffix         = ":7474/graphaware/ready_for_push"
+	FetchForConversionExtensionSuffix   = ":7474/graphaware/fetch_for_convertion"
+	LMHISExtensionSuffix                = ":7474/graphaware/lmhis"
+	ChatExtensionSuffix                 = ":7474/graphaware/chat"
+	DiscoverExtensionSuffix             = ":7474/graphaware/discover"
 	GetLcLikesExtensionSuffix           = ":7474/graphaware/get_lc_likes"
-	GetLcMessagesExtensionSuffix           = ":7474/graphaware/get_lc_messages"
+	GetLcMessagesExtensionSuffix        = ":7474/graphaware/get_lc_messages"
+	HowUserSeeGetLcLikesExtensionSuffix = ":7474/graphaware/how_user_see_get_lc_likes"
 )
 
 func InitLambdaVars(lambdaName string) {
