@@ -41,6 +41,7 @@ public class Profile {
     private String whereFrom;
     private boolean unseen;
     private String statusText;
+    private long totalLikes;
 
     //These properties needs for debug mode
     private int totalScores;
@@ -66,6 +67,14 @@ public class Profile {
     public Profile() {
         this.photos = new ArrayList<>();
         this.messages = new ArrayList<>();
+    }
+
+    public long getTotalLikes() {
+        return totalLikes;
+    }
+
+    public void setTotalLikes(long totalLikes) {
+        this.totalLikes = totalLikes;
     }
 
     public String getUserId() {

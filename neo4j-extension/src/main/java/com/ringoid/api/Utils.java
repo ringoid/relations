@@ -136,6 +136,9 @@ public class Utils {
         String statusText = (String) node.getProperty(STATUS_TEXT.getPropertyName(), "unknown");
         prof.setStatusText(statusText);
 
+        Long allLikeCounter = (Long) node.getProperty(LIKE_COUNTER.getPropertyName(), 0L);
+        prof.setTotalLikes(allLikeCounter);
+
         return prof;
     }
 

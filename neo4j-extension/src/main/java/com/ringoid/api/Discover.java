@@ -51,7 +51,11 @@ public class Discover {
 
                 boolean useKievLocation = !QueryUtils.locationExists(request.getUserId(), database, metrics);
 
+                long startUnseen = System.currentTimeMillis();
                 List<Node> unseen = unseen(request, targetSex, useKievLocation, database, metrics);
+                long loopTime = System.currentTimeMillis() - startUnseen;
+                metrics.histogram("discover_unseen_part").update(loopTime);
+
                 response.getNewFaces().addAll(QueryUtils.createProfileListWithResizedAndSortedPhotos(request.getResolution(), unseen, true, sourceUser, database, metrics));
 
                 int resultSize = request.getLimit();
@@ -61,7 +65,11 @@ public class Discover {
 
 
                 if (response.getNewFaces().size() < resultSize) {
+                    long startSeen = System.currentTimeMillis();
                     List<Node> seen = seen(sourceUser, request, targetSex, useKievLocation, database, metrics);
+                    loopTime = System.currentTimeMillis() - startSeen;
+                    metrics.histogram("discover_seen_part").update(loopTime);
+
                     if (seen.size() > resultSize) {
                         seen = seen.subList(0, resultSize);
                     }
@@ -247,34 +255,42 @@ public class Discover {
     }
 
     private static List<DistanceWrapper> onlineUnseenFilteredResult(DiscoverRequest request, String targetSex, boolean useKievLocation, GraphDatabaseService database, MetricRegistry metrics) {
+        long start = System.currentTimeMillis();
         String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ONLINE_USERS_GEO_NOT_SEEN_SORTED_BY_DISTANCE, request.getFilter(), useKievLocation);
         List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), targetSex, 0, request.getLimit(), database, metrics);
         result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
 //        log.info("onlineUnseenFilteredResult for userId [%s] size : [%s]", request.getUserId(), Integer.toString(result.size()));
+        metrics.histogram("discover_online_unseen_filtered_result").update(System.currentTimeMillis() - start);
         return result;
     }
 
     private static List<DistanceWrapper> activeUnseenFilteredResult(DiscoverRequest request, String targetSex, boolean useKievLocation, GraphDatabaseService database, MetricRegistry metrics) {
+        long start = System.currentTimeMillis();
         String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ACTIVE_USERS_GEO_NOT_SEEN_SORTED_BY_DISTANCE, request.getFilter(), useKievLocation);
         List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), targetSex, 0, request.getLimit(), database, metrics);
         result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
 //        log.info("activeUnseenFilteredResult for userId [%s] size : [%s]", request.getUserId(), Integer.toString(result.size()));
+        metrics.histogram("discover_active_unseen_filtered_result").update(System.currentTimeMillis() - start);
         return result;
     }
 
     private static List<DistanceWrapper> onlineSeenFilteredResult(DiscoverRequest request, String targetSex, int limit, boolean useKievLocation, GraphDatabaseService database, MetricRegistry metrics) {
+        long start = System.currentTimeMillis();
         String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ONLINE_USERS_GEO_SEEN_SORTED_BY_DISTANCE, request.getFilter(), useKievLocation);
         List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), targetSex, 0, limit, database, metrics);
         result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
 //        log.info("onlineSeenFilteredResult for userId [%s] size : [%s]", request.getUserId(), Integer.toString(result.size()));
+        metrics.histogram("discover_online_seen_filtered_result").update(System.currentTimeMillis() - start);
         return result;
     }
 
     private static List<DistanceWrapper> activeSeenFilteredResult(DiscoverRequest request, String targetSex, int limit, boolean useKievLocation, GraphDatabaseService database, MetricRegistry metrics) {
+        long start = System.currentTimeMillis();
         String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ACTIVE_USERS_GEO_SEEN_SORTED_BY_DISTANCE, request.getFilter(), useKievLocation);
         List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), targetSex, 0, limit, database, metrics);
         result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
 //        log.info("activeSeenFilteredResult for userId [%s] size : [%s]", request.getUserId(), Integer.toString(result.size()));
+        metrics.histogram("discover_active_seen_filtered_result").update(System.currentTimeMillis() - start);
         return result;
     }
 

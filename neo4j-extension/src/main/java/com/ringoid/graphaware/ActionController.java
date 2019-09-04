@@ -135,68 +135,68 @@ public class ActionController {
     @RequestMapping(value = "/get_metrics", method = RequestMethod.GET)
     @ResponseBody
     public String getMetrics() {
-        String result = metricsToString("likes_you_full");
-        result += ",\n";
-        result += metricsToString("matches_full");
-        result += ",\n";
-        result += metricsToString("messages_full");
-        result += ",\n";
-        result += metricsToString("lmhis_full");
-        result += ",\n";
-        result += metricsToString("chat_full");
-        result += ",\n";
-        result += metricsToString("new_faces_full");
-
-        result += ",\n";
-        result += metricsToString("new_faces_loopByUnseenPart");
-        result += ",\n";
-        result += metricsToString("new_faces_createProfileListWithResizedAndSortedPhotos");
-        result += ",\n";
-        result += metricsToString("new_faces_loopBySeenPart");
-        result += ",\n";
-        result += metricsToString("new_faces_commonSortProfilesSeenPart");
-
-        result += ",\n";
-        result += metricsToString("new_faces_loopByUnseenPart_without_geo_full");
-
-        result += ",\n";
-        result += metricsToString("new_faces_loopByUnseenPart_geo_full");
-
-        result += ",\n";
-        result += metricsToString("new_faces_loopBySeenPart_without_geo_full_target_male");
-
-        result += ",\n";
-        result += metricsToString("new_faces_loopBySeenPart_without_geo_full_target_female");
-
-        result += ",\n";
-        result += metricsToString("new_faces_loopBySeenPart_geo_full_target_male");
-
-        result += ",\n";
-        result += metricsToString("new_faces_loopBySeenPart_geo_full_target_female");
-
-        result += ",\n";
-        result += metricsToString("new_faces_loopBySeenPart_geo_steps");
-
-        result += ",\n";
-        result += metricsToString("new_faces_loopByUnseenPart_geo_steps");
-
-        result += ",\n";
-        result += metricsToString("prepare_new_faces_loopByUnseenPart");
-
-        result += ",\n";
-        result += metricsToString("prepare_new_faces_loopBySeenPart");
-
-        result += ",\n";
-        result += metricsToString("prepare_new_faces_full");
-
-        result += ",\n";
-        result += metricsToString("new_faces_no_prepared_full");
-
-        result += ",\n";
-        result += metricsToString("new_faces_prepared_full");
-
-        result += ",\n";
-        result += metricsToString("discover_full");
+//        String result = metricsToString("likes_you_full");
+//        result += ",\n";
+//        result += metricsToString("matches_full");
+//        result += ",\n";
+//        result += metricsToString("messages_full");
+//        result += ",\n";
+//        result += metricsToString("lmhis_full");
+//        result += ",\n";
+//        result += metricsToString("chat_full");
+//        result += ",\n";
+//        result += metricsToString("new_faces_full");
+//
+//        result += ",\n";
+//        result += metricsToString("new_faces_loopByUnseenPart");
+//        result += ",\n";
+//        result += metricsToString("new_faces_createProfileListWithResizedAndSortedPhotos");
+//        result += ",\n";
+//        result += metricsToString("new_faces_loopBySeenPart");
+//        result += ",\n";
+//        result += metricsToString("new_faces_commonSortProfilesSeenPart");
+//
+//        result += ",\n";
+//        result += metricsToString("new_faces_loopByUnseenPart_without_geo_full");
+//
+//        result += ",\n";
+//        result += metricsToString("new_faces_loopByUnseenPart_geo_full");
+//
+//        result += ",\n";
+//        result += metricsToString("new_faces_loopBySeenPart_without_geo_full_target_male");
+//
+//        result += ",\n";
+//        result += metricsToString("new_faces_loopBySeenPart_without_geo_full_target_female");
+//
+//        result += ",\n";
+//        result += metricsToString("new_faces_loopBySeenPart_geo_full_target_male");
+//
+//        result += ",\n";
+//        result += metricsToString("new_faces_loopBySeenPart_geo_full_target_female");
+//
+//        result += ",\n";
+//        result += metricsToString("new_faces_loopBySeenPart_geo_steps");
+//
+//        result += ",\n";
+//        result += metricsToString("new_faces_loopByUnseenPart_geo_steps");
+//
+//        result += ",\n";
+//        result += metricsToString("prepare_new_faces_loopByUnseenPart");
+//
+//        result += ",\n";
+//        result += metricsToString("prepare_new_faces_loopBySeenPart");
+//
+//        result += ",\n";
+//        result += metricsToString("prepare_new_faces_full");
+//
+//        result += ",\n";
+//        result += metricsToString("new_faces_no_prepared_full");
+//
+//        result += ",\n";
+//        result += metricsToString("new_faces_prepared_full");
+//
+//        result += ",\n";
+        String result = metricsToString("discover_full");
 
         result += ",\n";
         result += metricsToString("get_lc_likes_full");
@@ -204,6 +204,23 @@ public class ActionController {
         result += ",\n";
         result += metricsToString("get_lc_messages_full");
 
+        result += ",\n";
+        result += metricsToString("discover_unseen_part");
+
+        result += ",\n";
+        result += metricsToString("discover_seen_part");
+
+        result += ",\n";
+        result += metricsToString("discover_online_unseen_filtered_result");
+
+        result += ",\n";
+        result += metricsToString("discover_active_unseen_filtered_result");
+
+        result += ",\n";
+        result += metricsToString("discover_online_seen_filtered_result");
+
+        result += ",\n";
+        result += metricsToString("discover_active_seen_filtered_result");
         return result;
     }
 
