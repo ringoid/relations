@@ -66,7 +66,7 @@ public class Discover {
 
                 if (response.getNewFaces().size() < resultSize) {
                     long startSeen = System.currentTimeMillis();
-                    List<Node> seen = seen(sourceUser, request, targetSex, useKievLocation, database, metrics);
+                    List<Node> seen = seen(sourceUser, request, database, metrics);
                     loopTime = System.currentTimeMillis() - startSeen;
                     metrics.histogram("discover_seen_part").update(loopTime);
 
@@ -175,25 +175,13 @@ public class Discover {
         }
     }
 
-    private static List<Node> seen(Node sourceNode, DiscoverRequest request, String targetSex, boolean useKievLocation, GraphDatabaseService database, MetricRegistry metrics) {
-        //make some hack, step 1
-        Integer maxDistance = null;
-        if (Objects.nonNull(request.getFilter()) && Objects.nonNull(request.getFilter().getMaxDistance())) {
-            maxDistance = request.getFilter().getMaxDistance();
-            request.getFilter().setMaxDistance(null);
-        }
-        //end step 1
+    private static List<Node> seen(Node sourceNode, DiscoverRequest request, GraphDatabaseService database, MetricRegistry metrics) {
+        Map<String, List<DistanceWrapper>> seen = QueryUtils.seen(sourceNode, request.getFilter(), 100, database, metrics);
 
-        List<DistanceWrapper> onlineSeen = onlineSeenFilteredResult(request, targetSex, 1000, useKievLocation, database, metrics);
-        List<DistanceWrapper> activeSeen = activeSeenFilteredResult(request, targetSex, 1000, useKievLocation, database, metrics);
-
-        //make some hack, step 2
-        onlineSeen = filterByDistance(onlineSeen, maxDistance);
-        activeSeen = filterByDistance(activeSeen, maxDistance);
-        if (Objects.nonNull(request.getFilter()) && Objects.nonNull(maxDistance)) {
-            request.getFilter().setMaxDistance(maxDistance);
-        }
-        //end step 2
+        List<DistanceWrapper> onlineSeen = seen.get("online");
+        onlineSeen = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), onlineSeen);
+        List<DistanceWrapper> activeSeen = seen.get("active");
+        activeSeen = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), activeSeen);
 
         Map<Long, List<DistanceWrapper>> onlineSeenDistanceGroup = groupByDistance(onlineSeen, 15_000L);
         sortDiscoverSeenGroups(sourceNode, onlineSeenDistanceGroup);
@@ -271,26 +259,6 @@ public class Discover {
         result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
 //        log.info("activeUnseenFilteredResult for userId [%s] size : [%s]", request.getUserId(), Integer.toString(result.size()));
         metrics.histogram("discover_active_unseen_filtered_result").update(System.currentTimeMillis() - start);
-        return result;
-    }
-
-    private static List<DistanceWrapper> onlineSeenFilteredResult(DiscoverRequest request, String targetSex, int limit, boolean useKievLocation, GraphDatabaseService database, MetricRegistry metrics) {
-        long start = System.currentTimeMillis();
-        String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ONLINE_USERS_GEO_SEEN_SORTED_BY_DISTANCE, request.getFilter(), useKievLocation);
-        List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), targetSex, 0, limit, database, metrics);
-        result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
-//        log.info("onlineSeenFilteredResult for userId [%s] size : [%s]", request.getUserId(), Integer.toString(result.size()));
-        metrics.histogram("discover_online_seen_filtered_result").update(System.currentTimeMillis() - start);
-        return result;
-    }
-
-    private static List<DistanceWrapper> activeSeenFilteredResult(DiscoverRequest request, String targetSex, int limit, boolean useKievLocation, GraphDatabaseService database, MetricRegistry metrics) {
-        long start = System.currentTimeMillis();
-        String query = QueryUtils.constructFilteredQuery(QueryUtils.DISCOVER_ACTIVE_USERS_GEO_SEEN_SORTED_BY_DISTANCE, request.getFilter(), useKievLocation);
-        List<DistanceWrapper> result = QueryUtils.execute(query, request.getUserId(), targetSex, 0, limit, database, metrics);
-        result = QueryUtils.filterNodesByVisiblePhotos(request.getUserId(), result);
-//        log.info("activeSeenFilteredResult for userId [%s] size : [%s]", request.getUserId(), Integer.toString(result.size()));
-        metrics.histogram("discover_active_seen_filtered_result").update(System.currentTimeMillis() - start);
         return result;
     }
 

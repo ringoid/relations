@@ -216,11 +216,6 @@ public class ActionController {
         result += ",\n";
         result += metricsToString("discover_active_unseen_filtered_result");
 
-        result += ",\n";
-        result += metricsToString("discover_online_seen_filtered_result");
-
-        result += ",\n";
-        result += metricsToString("discover_active_seen_filtered_result");
         return result;
     }
 

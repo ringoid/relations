@@ -15,6 +15,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.logging.Log;
 
 import java.time.Instant;
@@ -25,10 +26,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -209,6 +212,153 @@ public class QueryUtils {
             Labels.HIDDEN.getLabelName(),//2.2
             USER_ID.getPropertyName()//3
     );
+
+    public static Map<String, List<DistanceWrapper>> seen(Node sourceNode, Filter filter, int limit, GraphDatabaseService database, MetricRegistry metrics) {
+        Map<String, List<DistanceWrapper>> result = new HashMap<>();
+        result.put("online", new ArrayList<DistanceWrapper>());
+        result.put("active", new ArrayList<DistanceWrapper>());
+
+        Set<Long> blocks = new HashSet<>();
+        Set<Long> matches = new HashSet<>();
+        Set<Long> messages = new HashSet<>();
+        Set<Long> likes = new HashSet<>();
+
+        Iterable<Relationship> iterable = sourceNode.getRelationships(
+                RelationshipType.withName(Relationships.BLOCK.name()),
+                RelationshipType.withName(Relationships.LIKE.name()),
+                RelationshipType.withName(Relationships.MESSAGE.name()),
+                RelationshipType.withName(Relationships.MATCH.name()));
+
+
+        for (Relationship each : iterable) {
+            Node other = each.getOtherNode(sourceNode);
+            if (Objects.nonNull(other) && other.hasLabel(Label.label(PERSON.getLabelName()))) {
+                if (each.isType(RelationshipType.withName(Relationships.BLOCK.name()))) {
+                    blocks.add(other.getId());
+                } else if (each.isType(RelationshipType.withName(Relationships.LIKE.name()))) {
+                    likes.add(other.getId());
+                } else if (each.isType(RelationshipType.withName(Relationships.MESSAGE.name()))) {
+                    messages.add(other.getId());
+                } else if (each.isType(RelationshipType.withName(Relationships.MATCH.name()))) {
+                    matches.add(other.getId());
+                }
+            }
+        }
+
+        int counter = 0;
+        iterable = sourceNode.getRelationships(RelationshipType.withName(Relationships.VIEW.name()), Direction.OUTGOING);
+        for (Relationship each : iterable) {
+            Node other = each.getOtherNode(sourceNode);
+            if (Objects.nonNull(other) && other.hasLabel(Label.label(PERSON.getLabelName()))) {
+                if (!blocks.contains(other.getId()) && !likes.contains(other.getId()) &&
+                        !messages.contains(other.getId()) && !matches.contains(other.getId())) {
+                    boolean wasValid = putIfValid(sourceNode, filter, other, result);
+                    if (wasValid) {
+                        counter++;
+                    }
+                }
+            }
+
+            if (counter >= limit) {
+                return result;
+            }
+        }
+
+        return result;
+    }
+
+    private static boolean putIfValid(Node sourceNode, Filter filter, Node node, Map<String, List<DistanceWrapper>> result) {
+        long dist = distance(sourceNode, node);
+        if (dist < 0) {
+            return false;
+        }
+
+        if (Objects.nonNull(filter)) {
+            int age = ((Integer) node.getProperty(PersonProperties.YEAR.getPropertyName(), 3000L)).intValue();
+            if (Objects.nonNull(filter.getMinAge())) {
+                int minAge = LocalDate.now().getYear() - filter.getMinAge();
+                if (age > minAge) {
+                    return false;
+                }
+            }
+            if (Objects.nonNull(filter.getMaxAge())) {
+                int maxAge = LocalDate.now().getYear() - filter.getMaxAge();
+                if (age < maxAge) {
+                    return false;
+                }
+            }
+
+            if (Objects.nonNull(filter.getMaxDistance())) {
+                if (dist > filter.getMaxDistance()) {
+                    return false;
+                }
+            }
+        }
+
+        DistanceWrapper wr = new DistanceWrapper();
+        wr.distance = dist;
+        wr.node = node;
+
+        long time = (Long) node.getProperty(LAST_ONLINE_TIME.getPropertyName(), 0L);
+        long onlineTime = System.currentTimeMillis() - 86_400_000L;//24h ago
+        long activeTime = System.currentTimeMillis() - 3 * 86_400_000L;//3d ago
+
+        boolean wasAdded = false;
+        if (time >= onlineTime) {
+            List<DistanceWrapper> list = result.get("online");
+            list.add(wr);
+            wasAdded = true;
+        } else if (time < onlineTime && time >= activeTime) {
+            List<DistanceWrapper> list = result.get("active");
+            list.add(wr);
+            wasAdded = true;
+        }
+
+        return wasAdded;
+    }
+
+    private static long distance(Node sourceNode, Node targetNode) {
+        double R = 6372.8;
+        Object obj = targetNode.getProperty(LOCATION.getPropertyName(), null);
+        if (Objects.isNull(obj)) {
+            return -1;
+        }
+        Point p2 = (Point) obj;
+        if (Objects.isNull(p2.getCoordinate()) ||
+                p2.getCoordinate().getCoordinate().isEmpty()) {
+            return -1;
+        }
+        List<Double> coordinates = p2.getCoordinate().getCoordinate();
+        Double lon2 = coordinates.get(0);
+        Double lat2 = coordinates.get(1);
+
+        obj = sourceNode.getProperty(LOCATION.getPropertyName(), null);
+        //default Kiev location
+        Double lon1 = 30.523550;
+        Double lat1 = 50.450441;
+        if (Objects.nonNull(obj)) {
+            Point p1 = (Point) obj;
+            if (Objects.nonNull(p1.getCoordinate()) &&
+                    !p1.getCoordinate().getCoordinate().isEmpty()) {
+                coordinates = p1.getCoordinate().getCoordinate();
+                lon1 = coordinates.get(0);
+                lat1 = coordinates.get(1);
+            } else {
+                log.info("warning_kiev, use Kiev location for userId [%s]", sourceNode.getProperty("user_id"));
+            }
+        }
+
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        lat1 = Math.toRadians(lat1);
+        lat2 = Math.toRadians(lat2);
+
+        double a = Math.pow(Math.sin(dLat / 2), 2) + Math.pow(Math.sin(dLon / 2), 2) * Math.cos(lat1) * Math.cos(lat2);
+        double c = 2 * Math.asin(Math.sqrt(a));
+        long result = Double.valueOf(R * c * 1000).longValue();
+//        log.info("distance between source [%s] and target [%s] = %s", sourceNode.getProperty("user_id"), targetNode.getProperty("user_id"), result);
+        return result;
+    }
 
     public static String constructFilteredQuery(String baseQuery, Filter filter, boolean useKievLocation) {
 //        log.info("constructFilteredQuery with useKievLocation : %s", Boolean.toString(useKievLocation));
