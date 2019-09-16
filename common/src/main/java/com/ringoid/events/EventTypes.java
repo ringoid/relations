@@ -18,6 +18,7 @@ public enum EventTypes {
     AUTH_USER_UPDATE_PROFILE,
 
     ACTION_USER_MESSAGE,
+    ACTION_READ_MESSAGE,
 
     INTERNAL_PHOTO_LIKE_EVENT, //this event goes outside to image service
     INTERNAL_USER_SEND_MESSAGE_EVENT, //this event goes to messages service

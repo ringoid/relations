@@ -21,7 +21,7 @@ import static com.ringoid.api.Utils.sortLMHISPhotos;
 public class GetLCMessages {
     private static final Log log = LoggerFactory.getLogger(GetLCMessages.class);
 
-    private static final int MAX_MESSAGES_PROFILES_NUM = 500;
+    private static final int MAX_MESSAGES_IN_DIALOG = 150;
 
     public static LCResponse messages(LCRequest request, GraphDatabaseService database, MetricRegistry metrics) {
         LCResponse response = new LCResponse();
@@ -44,7 +44,7 @@ public class GetLCMessages {
                     Profile prof = new Profile();
                     prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
                     prof.setPhotos(Utils.resizedAndVisibleToEveryOnePhotos(sortLMHISPhotos(sourceUser, eachProfile), request.getResolution(), database));
-                    List<Message> msgs = Utils.messages(sourceUser, eachProfile);
+                    List<Message> msgs = Utils.messages(sourceUser, eachProfile, Chats.MAX_MESSAGES_NUM_IN_CHAT);
                     prof = enrichProfile(eachProfile, sourceUser, prof);
                     prof.setMessages(msgs);
                     prof.setUnseen(false);

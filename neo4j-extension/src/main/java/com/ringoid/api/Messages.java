@@ -58,7 +58,7 @@ public class Messages {
                     if (Objects.isNull(prof.getPhotos()) || prof.getPhotos().size() == 0) {
                         continue;
                     }
-                    List<Message> msgs = Utils.messages(sourceUser, eachProfile);
+                    List<Message> msgs = Utils.messages(sourceUser, eachProfile, -1);
                     prof = enrichProfile(eachProfile, sourceUser, prof);
                     prof.setMessages(msgs);
                     profileList.add(prof);

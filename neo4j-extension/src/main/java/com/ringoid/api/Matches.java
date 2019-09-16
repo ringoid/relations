@@ -60,7 +60,7 @@ public class Matches {
                     if (Objects.isNull(prof.getPhotos()) || prof.getPhotos().size() == 0) {
                         continue;
                     }
-                    List<Message> messages = Utils.messages(sourceUser, eachProfile);
+                    List<Message> messages = Utils.messages(sourceUser, eachProfile, -1);
                     prof.setMessages(messages);
                     prof = enrichProfile(eachProfile, sourceUser,prof);
                     profileList.add(prof);

@@ -40,6 +40,7 @@ import com.ringoid.events.actions.UserBlockOtherEvent;
 import com.ringoid.events.actions.UserChangedLocationEvent;
 import com.ringoid.events.actions.UserLikePhotoEvent;
 import com.ringoid.events.actions.UserMessageEvent;
+import com.ringoid.events.actions.UserReadMessageEvent;
 import com.ringoid.events.actions.UserUnlikePhotoEvent;
 import com.ringoid.events.actions.UserViewChatEvent;
 import com.ringoid.events.actions.UserViewPhotoEvent;
@@ -80,6 +81,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import static com.ringoid.events.EventTypes.ACTION_READ_MESSAGE;
 import static com.ringoid.events.EventTypes.ACTION_USER_BLOCK_OTHER;
 import static com.ringoid.events.EventTypes.ACTION_USER_CHANGE_LOCATION;
 import static com.ringoid.events.EventTypes.ACTION_USER_LIKE_PHOTO;
@@ -573,6 +575,9 @@ public class ActionController {
         } else if (Objects.equals(eventType, DELETE_PREPARED_NEW_FACES_EVENT.name())) {
             DeletePreviousPreparedNFEvent event = objectMapper.readValue(each.traverse(), DeletePreviousPreparedNFEvent.class);
             PrepareNFUtils.deletePreparedNF(event, database);
+        } else if (Objects.equals(eventType, ACTION_READ_MESSAGE.name())) {
+            UserReadMessageEvent event = objectMapper.readValue(each.traverse(), UserReadMessageEvent.class);
+            ActionsUtils.readMessage(event, database);
         }
     }
 

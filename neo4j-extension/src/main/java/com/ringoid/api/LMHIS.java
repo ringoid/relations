@@ -87,7 +87,7 @@ public class LMHIS {
             Profile prof = new Profile();
             prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
 
-            List<Message> msgs = Utils.messages(sourceUser, eachProfile);
+            List<Message> msgs = Utils.messages(sourceUser, eachProfile, -1);
             if (msgs.isEmpty()) {
                 continue;
             }
@@ -130,7 +130,7 @@ public class LMHIS {
             Profile prof = new Profile();
             prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
 
-            List<Message> msgs = Utils.messages(sourceUser, eachProfile);
+            List<Message> msgs = Utils.messages(sourceUser, eachProfile, -1);
             if (msgs.isEmpty()) {
                 continue;
             }
@@ -180,7 +180,7 @@ public class LMHIS {
             Profile prof = new Profile();
             prof.setUserId((String) eachProfile.getProperty(USER_ID.getPropertyName()));
 
-            List<Message> msgs = Utils.messages(sourceUser, eachProfile);
+            List<Message> msgs = Utils.messages(sourceUser, eachProfile, -1);
             if (msgs.isEmpty()) {
                 continue;
             }

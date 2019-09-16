@@ -9,9 +9,18 @@ public class Message {
     private String msgId;
     private long msgAt;
     private String clientMsgId;
+    private boolean haveBeenRead;
 
     //use this property only for sorting inside engine
     private long wasSentAt;
+
+    public boolean isHaveBeenRead() {
+        return haveBeenRead;
+    }
+
+    public void setHaveBeenRead(boolean haveBeenRead) {
+        this.haveBeenRead = haveBeenRead;
+    }
 
     public String getClientMsgId() {
         return clientMsgId;

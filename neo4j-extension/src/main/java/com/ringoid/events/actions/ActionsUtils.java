@@ -31,6 +31,7 @@ import static com.ringoid.Labels.PERSON;
 import static com.ringoid.Labels.PHOTO;
 import static com.ringoid.LikeProperties.LIKE_AT;
 import static com.ringoid.LikeProperties.LIKE_COUNT;
+import static com.ringoid.MessageProperties.MSG_ID;
 import static com.ringoid.MessageRelationshipProperties.MSG_AT;
 import static com.ringoid.MessageRelationshipProperties.MSG_COUNT;
 import static com.ringoid.PersonProperties.LIKE_COUNTER;
@@ -58,6 +59,86 @@ public class ActionsUtils {
                             "SET n.%s = point({ latitude:$lat, longitude:$lon })",
                     PERSON.getLabelName(), USER_ID.getPropertyName(),
                     LOCATION.getPropertyName());
+
+    public static void readMessage(UserReadMessageEvent event, GraphDatabaseService database) {
+        Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getUserId());
+        if (Objects.nonNull(sourceUser)) {
+            updateLastActionTime(sourceUser, event.getReadMessageTimeAt(), database);
+        }
+
+        Node oppositeUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getOppositeUserId());
+        if (Objects.isNull(sourceUser) || Objects.isNull(oppositeUser)
+                || sourceUser.getId() == oppositeUser.getId()) {
+            log.warn("read message action for non exist user or for the same users, " +
+                            "sourceUser exist [%s], oppositeUser exist [%s] : source userId [%s], oppositeUser userId [%s]",
+                    String.valueOf(Objects.nonNull(sourceUser)), String.valueOf(Objects.nonNull(oppositeUser)),
+                    event.getUserId(), event.getOppositeUserId());
+            return;
+        }
+
+        if (doWeHaveBlockInternaly(sourceUser, oppositeUser, database)) {
+            log.warn("can not apply read message action coz there is a block already, source userId [%s], opposite userId [%s]",
+                    event.getUserId(), event.getOppositeUserId());
+            return;
+        }
+
+        //check if users have message relationship first
+        Iterable<Relationship> messages = sourceUser.getRelationships(RelationshipType.withName(Relationships.MESSAGE.name()));
+        boolean doWeHaveMessagesBetween = false;
+        for (Relationship each : messages) {
+            Node other = each.getOtherNode(sourceUser);
+            if (other.getId() == oppositeUser.getId()) {
+                doWeHaveMessagesBetween = true;
+                break;
+            }
+        }
+
+        if (!doWeHaveMessagesBetween) {
+            log.warn("can not apply read message action coz there is NO a message relationship, source userId [%s], opposite userId [%s]",
+                    event.getUserId(), event.getOppositeUserId());
+            return;
+        }
+
+        //now find a conversation
+        Set<Long> conversationIds = new HashSet<>();
+        Node conversation = null;
+        Iterable<Relationship> conversations = sourceUser.getRelationships(RelationshipType.withName(Relationships.TAKE_PART_IN_CONVERSATION.name()), Direction.OUTGOING);
+        for (Relationship each : conversations) {
+            Node conversationNode = each.getOtherNode(sourceUser);
+            if (conversationNode.hasLabel(Label.label(Labels.CONVERSATION.getLabelName()))) {
+                conversationIds.add(conversationNode.getId());
+            }
+        }
+        conversations = oppositeUser.getRelationships(RelationshipType.withName(Relationships.TAKE_PART_IN_CONVERSATION.name()), Direction.OUTGOING);
+        for (Relationship each : conversations) {
+            Node conversationNode = each.getOtherNode(oppositeUser);
+            if (conversationNode.hasLabel(Label.label(Labels.CONVERSATION.getLabelName())) &&
+                    conversationIds.contains(conversationNode.getId())) {
+                conversation = conversationNode;
+                break;
+            }
+        }
+        if (Objects.isNull(conversation)) {
+            log.warn("can not apply read message action coz there is NO a conversation between users, source userId [%s], opposite userId [%s]",
+                    event.getUserId(), event.getOppositeUserId());
+            return;
+        }
+
+        Node msg = database.findNode(Label.label(Labels.MESSAGE.getLabelName()), MSG_ID.getPropertyName(), event.getMsgId());
+        if (Objects.isNull(msg)) {
+            log.warn("can not apply read message action coz there is NO message with such id [%s], source userId [%s], opposite userId [%s]",
+                    event.getMsgId(), event.getUserId(), event.getOppositeUserId());
+            return;
+        }
+
+        String msgSourceUserId = (String) msg.getProperty(MessageProperties.MSG_SOURCE_USER_ID.getPropertyName(), "n/a");
+        if (Objects.equals(event.getUserId(), msgSourceUserId)) {
+            msg.setProperty(MessageProperties.MSG_SOURCE_USER_READ.getPropertyName(), true);
+        } else {
+            msg.setProperty(MessageProperties.MSG_TARGET_USER_READ.getPropertyName(), true);
+        }
+
+    }
 
     public static void message(UserMessageEvent event, GraphDatabaseService database) {
         Node sourceUser = database.findNode(Label.label(PERSON.getLabelName()), USER_ID.getPropertyName(), event.getUserId());
@@ -140,7 +221,7 @@ public class ActionsUtils {
         List<Node> fullConversation = new ArrayList<>();
         fullConversation = getFullConversation(conversationNode, fullConversation);
         for (Node each : fullConversation) {
-            String msgId = (String) each.getProperty(MessageProperties.MSG_ID.getPropertyName());
+            String msgId = (String) each.getProperty(MSG_ID.getPropertyName());
             if (Objects.equals(msgId, event.getMessageId())) {
                 return;
             }
@@ -153,7 +234,7 @@ public class ActionsUtils {
         }
 
         Node lastMessage = database.createNode(Label.label(Labels.MESSAGE.getLabelName()));
-        lastMessage.setProperty(MessageProperties.MSG_ID.getPropertyName(), event.getMessageId());
+        lastMessage.setProperty(MSG_ID.getPropertyName(), event.getMessageId());
         lastMessage.setProperty(MessageProperties.CLIENT_MSG_ID.getPropertyName(), event.getClientMsgId());
         lastMessage.setProperty(MessageProperties.MSG_PHOTO_ID.getPropertyName(), event.getOriginPhotoId());
         lastMessage.setProperty(MessageProperties.MSG_SOURCE_USER_ID.getPropertyName(), event.getUserId());

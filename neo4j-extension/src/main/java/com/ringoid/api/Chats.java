@@ -20,6 +20,9 @@ import static com.ringoid.api.Utils.sortLMHISPhotos;
 public class Chats {
     private static final Log log = LoggerFactory.getLogger(Chats.class);
 
+    //todo:change to 150
+    public static final int MAX_MESSAGES_NUM_IN_CHAT = 5;
+
     public static ChatResponse chat(ChatRequest request, GraphDatabaseService database) {
         ChatResponse response = new ChatResponse();
         response.setChatExists(false);
@@ -63,7 +66,7 @@ public class Chats {
                 prof = enrichProfile(oppositeUser, sourceUser, prof);
                 response.setProfile(prof);
 
-                List<Message> msgs = Utils.messages(sourceUser, oppositeUser);
+                List<Message> msgs = Utils.messages(sourceUser, oppositeUser, MAX_MESSAGES_NUM_IN_CHAT);
                 if (Objects.isNull(msgs) || msgs.isEmpty()) {
                     tx.success();
                     return response;

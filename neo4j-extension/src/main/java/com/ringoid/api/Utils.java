@@ -883,7 +883,7 @@ public class Utils {
         return result;
     }
 
-    public static List<Message> messages(Node sourceNode, Node withHim) {
+    public static List<Message> messages(Node sourceNode, Node withHim, int maxLastMessages) {
         List<Message> result = new ArrayList<>();
 
         Iterable<Relationship> takePart = sourceNode.getRelationships(
@@ -915,6 +915,11 @@ public class Utils {
 
         List<Node> fullConversation = new ArrayList<>();
         fullConversation = UtilsInternaly.getFullConversation(targetConversation, fullConversation);
+
+        if (maxLastMessages > 0 && fullConversation.size() > maxLastMessages) {
+            fullConversation = fullConversation.subList(fullConversation.size() - maxLastMessages, fullConversation.size());
+        }
+
         for (Node each : fullConversation) {
             String originSenderId = (String) sourceNode.getProperty(PersonProperties.USER_ID.getPropertyName());
             String msgSourceUser = (String) each.getProperty(MessageProperties.MSG_SOURCE_USER_ID.getPropertyName());
@@ -930,6 +935,11 @@ public class Utils {
             msg.setText(text);
             msg.setMsgAt(sentAt);
             msg.setWasSentAt(sentAt);
+
+            boolean msgTargetUserRead = (Boolean) each.getProperty(MessageProperties.MSG_TARGET_USER_READ.getPropertyName(), false);
+
+            msg.setHaveBeenRead(msgTargetUserRead);
+
             result.add(msg);
         }
 

@@ -61,7 +61,7 @@ public class LikesYou {
                         continue;
                     }
                     prof = enrichProfile(eachProfile, sourceUser, prof);
-                    List<Message> messages = Utils.messages(sourceUser, eachProfile);
+                    List<Message> messages = Utils.messages(sourceUser, eachProfile, -1);
                     prof.setMessages(messages);
                     profileList.add(prof);
 
