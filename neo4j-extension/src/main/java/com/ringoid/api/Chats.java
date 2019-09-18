@@ -21,7 +21,7 @@ public class Chats {
     private static final Log log = LoggerFactory.getLogger(Chats.class);
 
     //todo:change to 150
-    public static final int MAX_MESSAGES_NUM_IN_CHAT = 5;
+    public static final int MAX_MESSAGES_NUM_IN_CHAT = -1;
 
     public static ChatResponse chat(ChatRequest request, GraphDatabaseService database) {
         ChatResponse response = new ChatResponse();
