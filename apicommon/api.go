@@ -2,6 +2,10 @@ package apimodel
 
 import "fmt"
 
+const (
+	IsDebugLogEnabled = false
+)
+
 type InternalPrepareNewFacesRequest struct {
 	UserId string `json:"userId"`
 	Limit  int    `json:"limit"`
