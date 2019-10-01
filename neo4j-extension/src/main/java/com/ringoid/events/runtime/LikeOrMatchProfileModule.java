@@ -7,6 +7,8 @@ import com.graphaware.runtime.module.BaseTxDrivenModule;
 import com.graphaware.runtime.module.DeliberateTransactionRollbackException;
 import com.graphaware.tx.event.improved.api.ImprovedTransactionData;
 import com.ringoid.Labels;
+import com.ringoid.LikeProperties;
+import com.ringoid.MatchProperties;
 import com.ringoid.PersonProperties;
 import com.ringoid.Relationships;
 import com.ringoid.events.internal.events.PushObjectEvent;
@@ -18,6 +20,10 @@ import org.neo4j.graphdb.RelationshipType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+
+import static com.ringoid.PersonProperties.NAME;
+import static com.ringoid.events.push.PushUtils.mostViewPhotoThumbnail;
 
 //for pushes
 public class LikeOrMatchProfileModule extends BaseTxDrivenModule<List<PushObjectEvent>> {
@@ -102,7 +108,29 @@ public class LikeOrMatchProfileModule extends BaseTxDrivenModule<List<PushObject
                     event.setNewMessageEnabled(newMessageEnabled);
                     event.setOppositeUserId(oppositeUserId);
 
-                    list.add(event);
+                    String name = (String) source.getProperty(NAME.getPropertyName(), "unknown");
+                    Long likedAt = (Long) createdRel.getProperty(LikeProperties.LIKE_AT.getPropertyName(), 0L);
+                    Long matchAt = (Long) createdRel.getProperty(MatchProperties.MATCH_AT.getPropertyName(), 0L);
+                    Long time = 0L;
+                    if (likedAt != 0L) {
+                        time = likedAt;
+                    } else {
+                        time = matchAt;
+                    }
+
+                    String thumb = mostViewPhotoThumbnail(target, source);
+                    List<String> thumbs = new ArrayList<>(1);
+                    if (!Objects.equals("n/a", thumb)) {
+                        thumbs.add(thumb);
+                    }
+
+                    event.setName(name);
+                    event.setTs(time);
+                    event.setThumbnails(thumbs);
+
+                    if (!thumbs.isEmpty()) {
+                        list.add(event);
+                    }
                 }
             }
         }

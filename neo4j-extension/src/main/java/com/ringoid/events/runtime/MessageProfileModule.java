@@ -20,6 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static com.ringoid.PersonProperties.NAME;
+import static com.ringoid.events.push.PushUtils.mostViewPhotoThumbnail;
+
 public class MessageProfileModule extends BaseTxDrivenModule<List<PushObjectEvent>> {
 
     private final GraphDatabaseService database;
@@ -95,7 +98,23 @@ public class MessageProfileModule extends BaseTxDrivenModule<List<PushObjectEven
                             pushObjectEvent.setNewMessageEnabled(newMessageEnabled);
                             pushObjectEvent.setOppositeUserId(oppositeUserId);
 
-                            result.add(pushObjectEvent);
+                            Node oppositeUser = database.findNode(Label.label(Labels.PERSON.getLabelName()), PersonProperties.USER_ID.getPropertyName(), oppositeUserId);
+                            String name = (String) oppositeUser.getProperty(NAME.getPropertyName(), "unknown");
+                            String msgText = (String) each.getProperty(MessageProperties.MSG_TEXT.getPropertyName(), "");
+                            Long time = (Long) each.getProperty(MessageProperties.MSG_AT.getPropertyName(), 0L);
+                            String thumb = mostViewPhotoThumbnail(targetUser, oppositeUser);
+                            List<String> thumbs = new ArrayList<>(1);
+                            if (!Objects.equals("n/a", thumb)) {
+                                thumbs.add(thumb);
+                            }
+                            pushObjectEvent.setName(name);
+                            pushObjectEvent.setText(msgText);
+                            pushObjectEvent.setTs(time);
+                            pushObjectEvent.setThumbnails(thumbs);
+
+                            if (!thumbs.isEmpty()) {
+                                result.add(pushObjectEvent);
+                            }
                         }
                     }
                 }

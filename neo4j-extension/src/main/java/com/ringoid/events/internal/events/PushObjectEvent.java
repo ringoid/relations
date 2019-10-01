@@ -3,6 +3,8 @@ package com.ringoid.events.internal.events;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.ringoid.events.BaseEvent;
 
+import java.util.List;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PushObjectEvent extends BaseEvent {
     private String userId;
@@ -18,6 +20,10 @@ public class PushObjectEvent extends BaseEvent {
     private boolean newMatchEnabled;
     private boolean newMessageEnabled;
     private String oppositeUserId;
+    private String text;
+    private String name;
+    private List<String> thumbnails;
+    private long ts;
 
     public String getUserId() {
         return userId;
@@ -121,5 +127,37 @@ public class PushObjectEvent extends BaseEvent {
 
     public void setOppositeUserId(String oppositeUserId) {
         this.oppositeUserId = oppositeUserId;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public long getTs() {
+        return ts;
+    }
+
+    public void setTs(long ts) {
+        this.ts = ts;
+    }
+
+    public List<String> getThumbnails() {
+        return thumbnails;
+    }
+
+    public void setThumbnails(List<String> thumbnails) {
+        this.thumbnails = thumbnails;
     }
 }
