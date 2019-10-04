@@ -102,7 +102,8 @@ public class MessageProfileModule extends BaseTxDrivenModule<List<PushObjectEven
                             String name = (String) oppositeUser.getProperty(NAME.getPropertyName(), "unknown");
                             String msgText = (String) each.getProperty(MessageProperties.MSG_TEXT.getPropertyName(), "");
                             Long time = (Long) each.getProperty(MessageProperties.MSG_AT.getPropertyName(), 0L);
-                            String thumb = mostViewPhotoThumbnail(targetUser, oppositeUser);
+
+                            String thumb = mostViewPhotoThumbnail(targetUserId, oppositeUserId, true, database);
                             List<String> thumbs = new ArrayList<>(1);
                             if (!Objects.equals("n/a", thumb)) {
                                 thumbs.add(thumb);

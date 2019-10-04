@@ -19,6 +19,6 @@ public class LikeOrMatchProfileModuleBootstrapper implements RuntimeModuleBootst
         //String botStream = config.get("bots_kinesis_queue");
         log.info("bootstrap module with internal stream name [%s] and bots sqs url [%s], bot stream [%s]",
                 internalStreamName, botsSqsQueue, botStream);
-        return new LikeOrMatchProfileModule(moduleId, internalStreamName, botsSqsQueue, botStream);
+        return new LikeOrMatchProfileModule(moduleId, internalStreamName, botsSqsQueue, botStream, database);
     }
 }

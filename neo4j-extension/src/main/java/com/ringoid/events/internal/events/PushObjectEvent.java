@@ -160,4 +160,28 @@ public class PushObjectEvent extends BaseEvent {
     public void setThumbnails(List<String> thumbnails) {
         this.thumbnails = thumbnails;
     }
+
+    @Override
+    public String toString() {
+        return "PushObjectEvent{" +
+                "userId='" + userId + '\'' +
+                ", sex='" + sex + '\'' +
+                ", locale='" + locale + '\'' +
+                ", lastOnlineTime=" + lastOnlineTime +
+                ", newMessageCount=" + newMessageCount +
+                ", newMatchCount=" + newMatchCount +
+                ", newLikeCount=" + newLikeCount +
+                ", newProfiles=" + newProfiles +
+                ", pushType='" + pushType + '\'' +
+                ", newLikeEnabled=" + newLikeEnabled +
+                ", newMatchEnabled=" + newMatchEnabled +
+                ", newMessageEnabled=" + newMessageEnabled +
+                ", oppositeUserId='" + oppositeUserId + '\'' +
+                ", text='" + text + '\'' +
+                ", name='" + name + '\'' +
+                ", thumbnails=" + thumbnails +
+                ", ts=" + ts +
+                ", eventType='" + eventType + '\'' +
+                '}';
+    }
 }

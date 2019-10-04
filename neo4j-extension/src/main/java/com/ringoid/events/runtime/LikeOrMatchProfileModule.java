@@ -1,5 +1,6 @@
 package com.ringoid.events.runtime;
 
+import com.graphaware.common.log.LoggerFactory;
 import com.graphaware.common.policy.inclusion.RelationshipInclusionPolicy;
 import com.graphaware.runtime.config.FluentTxDrivenModuleConfiguration;
 import com.graphaware.runtime.config.TxDrivenModuleConfiguration;
@@ -13,10 +14,12 @@ import com.ringoid.PersonProperties;
 import com.ringoid.Relationships;
 import com.ringoid.events.internal.events.PushObjectEvent;
 import com.ringoid.events.internal.events.PushTypes;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.logging.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,10 +31,13 @@ import static com.ringoid.events.push.PushUtils.mostViewPhotoThumbnail;
 //for pushes
 public class LikeOrMatchProfileModule extends BaseTxDrivenModule<List<PushObjectEvent>> {
 
+    private final Log log = LoggerFactory.getLogger(getClass());
+
     private final TxDrivenModuleConfiguration configuration;
     private final Sender sender;
+    private final GraphDatabaseService database;
 
-    public LikeOrMatchProfileModule(String moduleId, String internalStreamName, String botSqsQueueUrl, String botStream) {
+    public LikeOrMatchProfileModule(String moduleId, String internalStreamName, String botSqsQueueUrl, String botStream, GraphDatabaseService database) {
         super(moduleId);
         this.sender = new Sender(internalStreamName, botSqsQueueUrl, botStream);
         this.configuration = FluentTxDrivenModuleConfiguration
@@ -45,6 +51,7 @@ public class LikeOrMatchProfileModule extends BaseTxDrivenModule<List<PushObject
                             }
                         }
                 );
+        this.database = database;
     }
 
     @Override
@@ -90,6 +97,8 @@ public class LikeOrMatchProfileModule extends BaseTxDrivenModule<List<PushObject
                     boolean newLikeEnabled = (Boolean) target.getProperty(PersonProperties.SETTINGS_NEW_LIKE_PUSH.getPropertyName(), false);
                     boolean newMatchEnabled = (Boolean) target.getProperty(PersonProperties.SETTINGS_NEW_MATCH_PUSH.getPropertyName(), false);
                     boolean newMessageEnabled = (Boolean) target.getProperty(PersonProperties.SETTINGS_NEW_MESSAGE_PUSH.getPropertyName(), false);
+
+                    String targetUserId = (String) target.getProperty(PersonProperties.USER_ID.getPropertyName(), "n/a");
                     String oppositeUserId = (String) source.getProperty(PersonProperties.USER_ID.getPropertyName(), "n/a");
 
                     PushObjectEvent event = new PushObjectEvent();
@@ -118,7 +127,7 @@ public class LikeOrMatchProfileModule extends BaseTxDrivenModule<List<PushObject
                         time = matchAt;
                     }
 
-                    String thumb = mostViewPhotoThumbnail(target, source);
+                    String thumb = mostViewPhotoThumbnail(targetUserId, oppositeUserId, false, database);
                     List<String> thumbs = new ArrayList<>(1);
                     if (!Objects.equals("n/a", thumb)) {
                         thumbs.add(thumb);
