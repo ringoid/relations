@@ -1,5 +1,6 @@
 package com.ringoid.events.runtime;
 
+import com.graphaware.common.log.LoggerFactory;
 import com.graphaware.common.policy.inclusion.BaseNodeInclusionPolicy;
 import com.graphaware.runtime.config.FluentTxDrivenModuleConfiguration;
 import com.graphaware.runtime.config.TxDrivenModuleConfiguration;
@@ -15,7 +16,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.logging.Log;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -24,6 +27,7 @@ import static com.ringoid.PersonProperties.NAME;
 import static com.ringoid.events.push.PushUtils.mostViewPhotoThumbnail;
 
 public class MessageProfileModule extends BaseTxDrivenModule<List<PushObjectEvent>> {
+    private final Log log = LoggerFactory.getLogger(getClass());
 
     private final GraphDatabaseService database;
     private final TxDrivenModuleConfiguration configuration;
@@ -108,8 +112,17 @@ public class MessageProfileModule extends BaseTxDrivenModule<List<PushObjectEven
                             if (!Objects.equals("n/a", thumb)) {
                                 thumbs.add(thumb);
                             }
+
+                            try {
+                                byte[] arr = msgText.getBytes("ISO-8859-1");
+                                String utf8Str = new String(arr);
+                                pushObjectEvent.setText(utf8Str);
+                            } catch (UnsupportedEncodingException e) {
+                                log.error("error converting string to utf8", e);
+                                pushObjectEvent.setText(msgText);
+                            }
+
                             pushObjectEvent.setName(name);
-                            pushObjectEvent.setText(msgText);
                             pushObjectEvent.setTs(time);
                             pushObjectEvent.setThumbnails(thumbs);
 

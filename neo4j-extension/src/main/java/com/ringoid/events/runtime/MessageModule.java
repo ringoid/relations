@@ -1,5 +1,6 @@
 package com.ringoid.events.runtime;
 
+import com.graphaware.common.log.LoggerFactory;
 import com.graphaware.common.policy.inclusion.BaseNodeInclusionPolicy;
 import com.graphaware.runtime.config.FluentTxDrivenModuleConfiguration;
 import com.graphaware.runtime.config.TxDrivenModuleConfiguration;
@@ -11,12 +12,15 @@ import com.ringoid.MessageProperties;
 import com.ringoid.events.internal.events.MessageBotEvent;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.logging.Log;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
 //for bots
 public class MessageModule extends BaseTxDrivenModule<List<MessageBotEvent>> {
+    private final Log log = LoggerFactory.getLogger(getClass());
 
     private final TxDrivenModuleConfiguration configuration;
     private final Sender sender;
@@ -60,6 +64,13 @@ public class MessageModule extends BaseTxDrivenModule<List<MessageBotEvent>> {
                 String targetUserId = (String) each.getProperty(MessageProperties.MSG_TARGET_USER_ID.getPropertyName());
                 String text = (String) each.getProperty(MessageProperties.MSG_TEXT.getPropertyName());
                 MessageBotEvent messageBotEvent = new MessageBotEvent(userId, targetUserId, text);
+                try {
+                    byte[] arr = text.getBytes("ISO-8859-1");
+                    String utf8Str = new String(arr);
+                    messageBotEvent.setText(utf8Str);
+                } catch (UnsupportedEncodingException e) {
+                    log.error("error converting string to utf8", e);
+                }
                 result.add(messageBotEvent);
             }
         }
